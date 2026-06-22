@@ -11,6 +11,8 @@ public interface UserService {
 
     UserResponse createUser(UserCreateRequest request);
 
+    UserResponse createAdminUser(UserCreateRequest request);
+
     UserResponse getUserById(Long id);
 
     List<UserResponse> getAllUsers();
