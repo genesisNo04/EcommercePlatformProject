@@ -13,13 +13,13 @@ public interface UserService {
 
     UserResponse createAdminUser(UserCreateRequest request);
 
-    UserResponse getUserById(Long id);
+    UserResponse getUserById(Long userId);
 
     List<UserResponse> getAllUsers();
 
-    UserResponse putUser(Long id, UserPutRequest request);
+    UserResponse putUser(Long userId, UserPutRequest request);
 
-    UserResponse patchUser(Long id, UserPatchRequest request);
+    UserResponse patchUser(Long userId, UserPatchRequest request);
 
-    void deleteUser(Long id);
+    void deleteUser(Long userId);
 }
