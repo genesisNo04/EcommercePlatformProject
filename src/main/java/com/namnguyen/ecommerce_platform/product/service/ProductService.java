@@ -1,10 +1,11 @@
 package com.namnguyen.ecommerce_platform.product.service;
 
-import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
-import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
-import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
-import com.namnguyen.ecommerce_platform.product.dto.ProductResponse;
+import com.namnguyen.ecommerce_platform.product.dto.*;
+import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface ProductService {
@@ -13,7 +14,8 @@ public interface ProductService {
 
     ProductResponse getProductById(Long id);
 
-    List<ProductResponse> getAllProducts();
+    Page<ProductResponse> getAllProducts(ProductFilterRequest request,
+                                         Pageable pageable);
 
     ProductResponse putProduct(Long productId, ProductPutRequest request);
 

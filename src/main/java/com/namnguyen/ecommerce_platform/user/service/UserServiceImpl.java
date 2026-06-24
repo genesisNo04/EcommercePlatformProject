@@ -7,6 +7,8 @@ import com.namnguyen.ecommerce_platform.user.enums.Role;
 import com.namnguyen.ecommerce_platform.user.mapper.UserMapper;
 import com.namnguyen.ecommerce_platform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,9 +88,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream().map(UserMapper::toResponse).toList();
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable).map(UserMapper::toResponse);
     }
 
     @Override

@@ -44,14 +44,20 @@ public class Product {
     public void prePersist() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-
-        if (status == null) {
-            status = ProductStatus.ACTIVE;
-        }
+        updateStatusBasedOnQuantity();
     }
 
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
+        updateStatusBasedOnQuantity();
+    }
+
+    public void updateStatusBasedOnQuantity() {
+        if (this.quantity == null || this.quantity <= 0) {
+            this.status = ProductStatus.OUT_OF_STOCK;
+        } else {
+            this.status = ProductStatus.ACTIVE;
+        }
     }
 }
