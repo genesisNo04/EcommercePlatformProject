@@ -1,9 +1,6 @@
 package com.namnguyen.ecommerce_platform.user.controller;
 
-import com.namnguyen.ecommerce_platform.user.dto.UserCreateRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserPatchRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserPutRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserResponse;
+import com.namnguyen.ecommerce_platform.user.dto.*;
 import com.namnguyen.ecommerce_platform.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +30,9 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @ModelAttribute UserFilterRequest request,
             @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.ok(userService.getAllUsers(pageable));
+        return ResponseEntity.ok(userService.getAllUsers(request, pageable));
     }
 
     @GetMapping("/{id}")

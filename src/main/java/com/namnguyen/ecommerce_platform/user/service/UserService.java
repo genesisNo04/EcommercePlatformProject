@@ -1,13 +1,8 @@
 package com.namnguyen.ecommerce_platform.user.service;
 
-import com.namnguyen.ecommerce_platform.user.dto.UserCreateRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserPatchRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserPutRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserResponse;
+import com.namnguyen.ecommerce_platform.user.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import java.util.List;
 
 public interface UserService {
 
@@ -17,7 +12,7 @@ public interface UserService {
 
     UserResponse getUserById(Long userId);
 
-    Page<UserResponse> getAllUsers(Pageable pageable);
+    Page<UserResponse> getAllUsers(UserFilterRequest request, Pageable pageable);
 
     UserResponse putUser(Long userId, UserPutRequest request);
 

@@ -4,8 +4,7 @@ import com.namnguyen.ecommerce_platform.user.enums.Role;
 
 public record UserFilterRequest(
         String email,
-        String firstName,
-        String lastName,
+        String keyword,
         Role role
 ) {
 }

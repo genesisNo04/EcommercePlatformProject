@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.user.service;
 
 import com.namnguyen.ecommerce_platform.common.exception.*;
+import com.namnguyen.ecommerce_platform.user.Specifications.UserSpecification;
 import com.namnguyen.ecommerce_platform.user.dto.*;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
@@ -9,6 +10,7 @@ import com.namnguyen.ecommerce_platform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,8 +90,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(UserMapper::toResponse);
+    public Page<UserResponse> getAllUsers(UserFilterRequest request, Pageable pageable) {
+        Specification<User> spec = Specification
+                .where(UserSpecification.nameContains(request.keyword()))
+                .and(UserSpecification.emailContains(request.email()))
+                .and(UserSpecification.hasRole(request.role()));
+
+        return userRepository.findAll(spec, pageable).map(UserMapper::toResponse);
     }
 
     @Override
