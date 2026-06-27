@@ -21,13 +21,6 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(userService.createUser(userCreateRequest));
-    }
-
     @GetMapping
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @ModelAttribute UserFilterRequest request,
