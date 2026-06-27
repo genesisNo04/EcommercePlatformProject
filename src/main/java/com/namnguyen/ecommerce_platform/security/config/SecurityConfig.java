@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.security.config;
 
+import com.namnguyen.ecommerce_platform.security.handler.JwtAccessDeniedHandler;
 import com.namnguyen.ecommerce_platform.security.handler.JwtAuthenticationEntryPoint;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtAuthenticationFilter;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
@@ -25,6 +26,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -45,7 +47,8 @@ public class SecurityConfig {
                 .sessionManagement(session
                         -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()

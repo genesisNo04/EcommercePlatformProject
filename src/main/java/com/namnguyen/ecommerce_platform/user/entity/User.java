@@ -1,10 +1,13 @@
 package com.namnguyen.ecommerce_platform.user.entity;
 
+import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -38,9 +41,14 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "user")
+    private List<Order> orders = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
