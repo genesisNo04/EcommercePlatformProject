@@ -1,11 +1,11 @@
 package com.namnguyen.ecommerce_platform.order.service;
 
+import com.namnguyen.ecommerce_platform.common.exception.InsufficientStockException;
+import com.namnguyen.ecommerce_platform.common.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
-import com.namnguyen.ecommerce_platform.order.dto.CreateOrderItemRequest;
-import com.namnguyen.ecommerce_platform.order.dto.CreateOrderRequest;
-import com.namnguyen.ecommerce_platform.order.dto.OrderResponse;
-import com.namnguyen.ecommerce_platform.order.entity.Order;
-import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
+import com.namnguyen.ecommerce_platform.order.Specifications.OrderSpecification;
+import com.namnguyen.ecommerce_platform.order.dto.*;
+import com.namnguyen.ecommerce_platform.order.entity.*;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.order.mapper.OrderMapper;
 import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
@@ -16,12 +16,11 @@ import com.namnguyen.ecommerce_platform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -32,58 +31,107 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
-    private User getUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new NoResourceFoundException("No user found with email: " + email));
+    private OrderItem createOrderItem(CreateOrderItemRequest request, Order order) {
+
+        Product product = productRepository.findById(request.productId())
+                .orElseThrow(() -> new NoResourceFoundException("No product found with id: " + request.productId()));
+
+        if (product.getQuantity() < request.quantity()) {
+            throw new InsufficientStockException("Not enough stock for product: " + product.getName());
+        }
+
+        product.setQuantity(product.getQuantity() - request.quantity());
+        product.updateStatusBasedOnQuantity();
+
+        return OrderItem.builder()
+                .order(order)
+                .product(product)
+                .quantity(request.quantity())
+                .price(product.getPrice())
+                .build();
     }
 
-    private List<OrderItem> createListOrderItem(List<CreateOrderItemRequest> requests, Order order) {
-        List<OrderItem> items = new ArrayList<>();
-        for (CreateOrderItemRequest request : requests) {
-            OrderItem item = new OrderItem();
-            Product product = productRepository.findById(request.productId())
-                    .orElseThrow(() -> new NoResourceFoundException("No product found with id: " + request.productId()));
-            item.setProduct(product);
-            item.setQuantity(request.quantity());
-            item.setPrice(product.getPrice());
-            item.setOrder(order);
-            items.add(item);
+    private BigDecimal calculateTotal(List<OrderItem> items) {
+        return items.stream().map(item ->
+                item.getPrice()
+                        .multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void restoreStock(Order order) {
+        for (OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            product.setQuantity(product.getQuantity() + item.getQuantity());
+            product.updateStatusBasedOnQuantity();
         }
-        return items;
+    }
+
+    private void validateOrderCanBeCancelled(Order order) {
+        if (order.getStatus() == OrderStatus.DELIVERED) {
+            throw new InvalidOrderStateException("Delivered order cannot be cancelled");
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new InvalidOrderStateException("Order is already cancelled");
+        }
     }
 
     @Override
-    public OrderResponse createOrder(CreateOrderRequest request) {
+    @Transactional
+    public OrderResponse createOrder(CreateOrderRequest request, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoResourceFoundException("No user found with id: " + userId));
+
         Order order = new Order();
         order.setStatus(OrderStatus.PENDING_PAYMENT);
-        order.setUser(getUser());
-        orderRepository.save(order);
-        List<OrderItem> items = createListOrderItem(request.items(), order);
-        BigDecimal total = new BigDecimal(0);
-        for (OrderItem item : items) {
-            total = total.add(item.getPrice().multiply(new BigDecimal(item.getQuantity())));
-        }
-        order.setTotal(total);
-        order.setOrderItems(items);
-        Order savedOrder = orderRepository.save(order);
+        order.setUser(user);
 
-        return OrderMapper.toResponse(savedOrder);
+        List<OrderItem> items = request.items()
+                .stream()
+                .map(item -> createOrderItem(item, order))
+                .toList();
+
+        order.getOrderItems().addAll(items);
+        order.setTotal(calculateTotal(items));
+
+        return OrderMapper.toResponse(orderRepository.save(order));
     }
 
     @Override
-    public OrderResponse getOrderByIdAndUserId(Long orderId) {
-        return null;
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(Long orderId, Long userId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() ->
+                        new NoResourceFoundException("No order with id: " + orderId +  " found for this user id: " + userId));
+        return OrderMapper.toResponse(order);
     }
 
     @Override
-    public Page<OrderResponse> getOrdersAndUserId(Pageable pageable) {
-        return null;
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getOrders(Long userId, OrderFilterRequest request, Pageable pageable) {
+        Specification<Order> spec = Specification
+                .where(OrderSpecification.hasUserId(userId))
+                .and(OrderSpecification.hasStatus(request.status()))
+                .and(OrderSpecification.createdAfter(request.createdAfter()))
+                .and(OrderSpecification.createdBefore(request.createdBefore()))
+                .and(OrderSpecification.totalGreaterThanOrEqual(request.minTotal()))
+                .and(OrderSpecification.totalLessThanOrEqual(request.maxTotal()));
+
+        return orderRepository.findAll(spec, pageable)
+                .map(OrderMapper::toResponse);
     }
 
     @Override
-    public void cancelOrder(Long orderId) {
+    @Transactional
+    public void cancelOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() ->
+                        new NoResourceFoundException("No order with id: " + orderId +  " found for this user id: " + userId));
 
+        validateOrderCanBeCancelled(order);
+
+        restoreStock(order);
+
+        order.setStatus(OrderStatus.CANCELLED);
     }
 }
