@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.user.entity;
 
+import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 import jakarta.persistence.*;
@@ -49,6 +50,9 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<Order> orders = new ArrayList<>();
+
+    @OneToOne(mappedBy = "user")
+    private Cart cart;
 
     @PrePersist
     public void prePersist() {

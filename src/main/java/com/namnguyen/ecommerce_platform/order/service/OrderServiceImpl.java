@@ -1,9 +1,11 @@
 package com.namnguyen.ecommerce_platform.order.service;
 
+import com.namnguyen.ecommerce_platform.cart.entity.Cart;
+import com.namnguyen.ecommerce_platform.cart.service.CartLookupService;
 import com.namnguyen.ecommerce_platform.common.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.common.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
-import com.namnguyen.ecommerce_platform.order.Specifications.OrderSpecification;
+import com.namnguyen.ecommerce_platform.order.specifications.OrderSpecification;
 import com.namnguyen.ecommerce_platform.order.dto.*;
 import com.namnguyen.ecommerce_platform.order.entity.*;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
@@ -30,6 +32,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final CartLookupService cartLookupService;
 
     private OrderItem createOrderItem(CreateOrderItemRequest request, Order order) {
 
@@ -133,5 +136,32 @@ public class OrderServiceImpl implements OrderService {
         restoreStock(order);
 
         order.setStatus(OrderStatus.CANCELLED);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse checkoutCart(Long userId) {
+        Cart cart = cartLookupService.getCartByUserId(userId);
+
+        Order order = new Order();
+        order.setStatus(OrderStatus.PENDING_PAYMENT);
+        order.setUser(cart.getUser());
+
+        List<OrderItem> items = cart.getItems()
+                .stream()
+                .map(item ->
+                        OrderItem
+                                .builder()
+                                .order(order)
+                                .product(item.getProduct())
+                                .quantity(item.getQuantity())
+                                .price(item.getProduct().getPrice())
+                                .build())
+                .toList();
+
+        order.getOrderItems().addAll(items);
+        order.setTotal(calculateTotal(items));
+
+        return OrderMapper.toResponse(orderRepository.save(order));
     }
 }

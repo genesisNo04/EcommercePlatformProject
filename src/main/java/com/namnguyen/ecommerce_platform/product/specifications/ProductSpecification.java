@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.product.Specifications;
+package com.namnguyen.ecommerce_platform.product.specifications;
 
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;

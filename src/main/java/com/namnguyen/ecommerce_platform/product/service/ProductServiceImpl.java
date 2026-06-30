@@ -1,10 +1,9 @@
 package com.namnguyen.ecommerce_platform.product.service;
 
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
-import com.namnguyen.ecommerce_platform.product.Specifications.ProductSpecification;
+import com.namnguyen.ecommerce_platform.product.specifications.ProductSpecification;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
-import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.mapper.ProductMapper;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +12,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor

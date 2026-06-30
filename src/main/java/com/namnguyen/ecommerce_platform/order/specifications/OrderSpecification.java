@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.order.Specifications;
+package com.namnguyen.ecommerce_platform.order.specifications;
 
 import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;

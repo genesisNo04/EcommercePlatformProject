@@ -10,6 +10,8 @@ public interface OrderService {
 
     OrderResponse createOrder(CreateOrderRequest request, Long userId);
 
+    OrderResponse checkoutCart(Long userId);
+
     OrderResponse getOrderById(Long orderId, Long userId);
 
     Page<OrderResponse> getOrders(Long userId, OrderFilterRequest request, Pageable pageable);

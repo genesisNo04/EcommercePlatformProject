@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.user.Specifications;
+package com.namnguyen.ecommerce_platform.user.specifications;
 
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;

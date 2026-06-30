@@ -1,7 +1,7 @@
 package com.namnguyen.ecommerce_platform.user.service;
 
 import com.namnguyen.ecommerce_platform.common.exception.*;
-import com.namnguyen.ecommerce_platform.user.Specifications.UserSpecification;
+import com.namnguyen.ecommerce_platform.user.specifications.UserSpecification;
 import com.namnguyen.ecommerce_platform.user.dto.*;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
@@ -14,8 +14,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
