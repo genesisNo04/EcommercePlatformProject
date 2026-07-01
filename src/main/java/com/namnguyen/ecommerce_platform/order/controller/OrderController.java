@@ -56,4 +56,12 @@ public class OrderController {
         orderService.cancelOrder(orderId, userDetails.getUserId());
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/checkout")
+    public ResponseEntity<OrderResponse> checkoutCart(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(orderService.checkoutCart(userDetails.getUserId()));
+    }
 }

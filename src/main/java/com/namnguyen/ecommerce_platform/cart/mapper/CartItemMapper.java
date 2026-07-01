@@ -9,11 +9,15 @@ import java.util.Locale;
 public class CartItemMapper {
 
     public static CartItemResponse toResponse(CartItem item) {
+        BigDecimal unitPrice = item.getProduct().getPrice();
+        BigDecimal subTotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
+
         return new CartItemResponse(
                 item.getProduct().getId(),
                 item.getProduct().getName(),
-                item.getProduct().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())),
-                item.getQuantity()
+                unitPrice,
+                item.getQuantity(),
+                subTotal
         );
     }
 }

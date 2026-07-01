@@ -1,10 +1,8 @@
 package com.namnguyen.ecommerce_platform.order.service;
 
-import com.namnguyen.ecommerce_platform.cart.entity.Cart;
+import com.namnguyen.ecommerce_platform.cart.entity.*;
 import com.namnguyen.ecommerce_platform.cart.service.CartLookupService;
-import com.namnguyen.ecommerce_platform.common.exception.InsufficientStockException;
-import com.namnguyen.ecommerce_platform.common.exception.InvalidOrderStateException;
-import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
+import com.namnguyen.ecommerce_platform.common.exception.*;
 import com.namnguyen.ecommerce_platform.order.specifications.OrderSpecification;
 import com.namnguyen.ecommerce_platform.order.dto.*;
 import com.namnguyen.ecommerce_platform.order.entity.*;
@@ -14,7 +12,7 @@ import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import com.namnguyen.ecommerce_platform.user.entity.User;
-import com.namnguyen.ecommerce_platform.user.repository.UserRepository;
+import com.namnguyen.ecommerce_platform.user.service.UserLookupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +28,7 @@ import java.util.List;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
+    private final UserLookupService userLookupService;
     private final ProductRepository productRepository;
     private final CartLookupService cartLookupService;
 
@@ -39,17 +37,26 @@ public class OrderServiceImpl implements OrderService {
         Product product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new NoResourceFoundException("No product found with id: " + request.productId()));
 
-        if (product.getQuantity() < request.quantity()) {
+        return createOrderItem(product, request.quantity(), order);
+    }
+
+    private OrderItem createOrderItem(CartItem item, Order order) {
+
+        return createOrderItem(item.getProduct(), item.getQuantity(), order);
+    }
+
+    private OrderItem createOrderItem(Product product, int quantity, Order order) {
+        if (product.getQuantity() < quantity) {
             throw new InsufficientStockException("Not enough stock for product: " + product.getName());
         }
 
-        product.setQuantity(product.getQuantity() - request.quantity());
+        product.setQuantity(product.getQuantity() - quantity);
         product.updateStatusBasedOnQuantity();
 
         return OrderItem.builder()
                 .order(order)
                 .product(product)
-                .quantity(request.quantity())
+                .quantity(quantity)
                 .price(product.getPrice())
                 .build();
     }
@@ -82,8 +89,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request, Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NoResourceFoundException("No user found with id: " + userId));
+        User user = userLookupService.getUserById(userId);
 
         Order order = new Order();
         order.setStatus(OrderStatus.PENDING_PAYMENT);
@@ -143,25 +149,26 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse checkoutCart(Long userId) {
         Cart cart = cartLookupService.getCartByUserId(userId);
 
+        if (cart.getItems().isEmpty()) {
+            throw new InvalidOrderStateException("Cannot checkout an empty cart");
+        }
+
         Order order = new Order();
         order.setStatus(OrderStatus.PENDING_PAYMENT);
         order.setUser(cart.getUser());
 
         List<OrderItem> items = cart.getItems()
                 .stream()
-                .map(item ->
-                        OrderItem
-                                .builder()
-                                .order(order)
-                                .product(item.getProduct())
-                                .quantity(item.getQuantity())
-                                .price(item.getProduct().getPrice())
-                                .build())
+                .map(item -> createOrderItem(item, order))
                 .toList();
 
         order.getOrderItems().addAll(items);
         order.setTotal(calculateTotal(items));
 
-        return OrderMapper.toResponse(orderRepository.save(order));
+        Order savedOrder = orderRepository.save(order);
+
+        cart.getItems().clear();
+
+        return OrderMapper.toResponse(savedOrder);
     }
 }
