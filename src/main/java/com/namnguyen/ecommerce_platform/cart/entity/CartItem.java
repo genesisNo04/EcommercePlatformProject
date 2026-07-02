@@ -6,12 +6,19 @@ import jakarta.validation.constraints.Min;
 import lombok.*;
 
 @Entity
-@Table(name = "cart_items")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Table(
+        name = "cart_items",
+        indexes = {
+                @Index(name = "idx_cart_items_cart_id", columnList = "cart_id"),
+                @Index(name = "idx_cart_items_product_id", columnList = "product_id"),
+                @Index(name = "idx_cart_items_cart_product", columnList = "cart_id,product_id")
+        }
+)
 public class CartItem {
 
     @Id

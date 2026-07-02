@@ -24,30 +24,32 @@ public class PaymentServiceImpl implements PaymentService{
     private final PaymentRepository paymentRepository;
     private final OrderLookupService orderLookupService;
 
-    private void paymentExist(Long orderId) {
+    private void validatePaymentDoesNotExist(Long orderId) {
         if (paymentRepository.existsByOrderId(orderId)) {
-            throw new DuplicateResourceException("This order already have a payment");
+            throw new DuplicateResourceException("This order already has a payment");
         }
+    }
+
+    private Payment getPayment(Long orderId, Long userId) {
+        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+        return paymentRepository.findByOrderId(order.getId())
+                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id:" + order.getId()));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaymentResponse getPaymentByOrderId(Long orderId, Long userId) {
-        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
-        Payment payment = paymentRepository.findByOrderId(order.getId())
-                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id:" + order.getId()));
+        Payment payment = getPayment(orderId, userId);
         return PaymentMapper.toResponse(payment);
     }
 
     @Override
     @Transactional
     public PaymentResponse updatePayment(Long orderId, Long userId, PaymentRequest request) {
-        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
-        Payment payment = paymentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id:" + order.getId()));
+        Payment payment = getPayment(orderId, userId);
 
-        if (payment.getPaymentStatus() != PaymentStatus.SUCCESS) {
-            throw new InvalidPaymentStateException("Cannot update a success payment");
+        if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
+            throw new InvalidPaymentStateException("Only pending payments can be updated");
         }
 
         payment.setPaymentMethod(request.paymentMethod());
@@ -63,7 +65,7 @@ public class PaymentServiceImpl implements PaymentService{
             throw new InvalidOrderStateException("Order is not pending payment");
         }
 
-        paymentExist(orderId);
+        validatePaymentDoesNotExist(orderId);
 
         Payment payment = Payment.builder()
                 .paymentStatus(PaymentStatus.PENDING)
@@ -79,8 +81,7 @@ public class PaymentServiceImpl implements PaymentService{
     @Transactional
     public PaymentResponse confirmPayment(Long orderId, Long userId, PaymentStatus status) {
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
-        Payment payment = paymentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id:" + order.getId()));
+        Payment payment = getPayment(orderId, userId);
 
         if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
             throw new InvalidPaymentStateException("Only Pending payments can be confirmed");

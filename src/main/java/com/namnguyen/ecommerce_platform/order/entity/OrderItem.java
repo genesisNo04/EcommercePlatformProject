@@ -7,12 +7,19 @@ import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "order_items")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Table(
+        name = "order_items",
+        indexes = {
+                @Index(name = "idx_order_items_order", columnList = "order_id"),
+                @Index(name = "idx_order_items_product", columnList = "product_id"),
+                @Index(name = "idx_order_items_order_product", columnList = "order_id, product_id")
+        }
+)
 public class OrderItem {
 
     @Id

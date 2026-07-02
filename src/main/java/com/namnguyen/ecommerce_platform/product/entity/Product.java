@@ -1,22 +1,27 @@
 package com.namnguyen.ecommerce_platform.product.entity;
 
-import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "products")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Table(
+        name = "products",
+        indexes = {
+                @Index(name = "idx_products_name", columnList = "name"),
+                @Index(name = "idx_products_price", columnList = "price"),
+                @Index(name = "idx_products_created_at", columnList = "created_at"),
+                @Index(name = "idx_products_status", columnList = "status"),
+                @Index(name = "idx_products_status_price", columnList = "status,price")
+        }
+)
 public class Product {
 
     @Id
@@ -39,8 +44,10 @@ public class Product {
     @Column(nullable = false)
     private ProductStatus status;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @PrePersist

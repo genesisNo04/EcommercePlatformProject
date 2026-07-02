@@ -9,14 +9,24 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Entity
-@Table(name = "orders")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Table(
+        name = "orders",
+        indexes = {
+                @Index(name = "idx_orders_user", columnList = "user_id"),
+                @Index(name = "idx_orders_status", columnList = "status"),
+                @Index(name = "idx_orders_created_at", columnList = "created_at"),
+                @Index(name = "idx_orders_user_status", columnList = "user_id,status"),
+                @Index(name = "idx_orders_total", columnList = "total"),
+        }
+)
 public class Order {
 
     @Id
@@ -30,10 +40,10 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus status;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)

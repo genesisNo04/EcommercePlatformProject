@@ -5,18 +5,24 @@ import com.namnguyen.ecommerce_platform.payment.enums.PaymentMethod;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
 @Builder
+@Table(
+        name = "payments",
+        indexes = {
+                @Index(name = "idx_payments_payment_method", columnList = "payment_method"),
+                @Index(name = "idx_payments_payment_status", columnList = "payment_status"),
+                @Index(name = "idx_payments_created_at", columnList = "created_at")
+        }
+)
 public class Payment {
 
     @Id
@@ -24,11 +30,11 @@ public class Payment {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "payment_method", nullable = false)
     private PaymentMethod paymentMethod;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus;
 
     @OneToOne(fetch = FetchType.LAZY)
@@ -38,8 +44,10 @@ public class Payment {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @PrePersist

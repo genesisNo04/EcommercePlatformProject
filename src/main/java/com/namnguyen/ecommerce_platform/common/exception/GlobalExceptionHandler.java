@@ -9,7 +9,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.namnguyen.ecommerce_platform.common.response.ApiErrorResponse;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -88,6 +91,43 @@ public class GlobalExceptionHandler {
                         status.value(),
                         status.getReasonPhrase(),
                         ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidPaymentStateException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidPaymentStateException(InvalidPaymentStateException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        String message;
+
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+            message = "Invalid value '" + ex.getValue() +
+                    "' for parameter '" + ex.getName() + "'" +
+                    "'. Allowed values: " +
+                    Arrays.toString(ex.getRequiredType().getEnumConstants());
+        } else {
+            message = "Invalid parameter: " + ex.getName();
+        }
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        message,
                         request.getRequestURI()));
     }
 

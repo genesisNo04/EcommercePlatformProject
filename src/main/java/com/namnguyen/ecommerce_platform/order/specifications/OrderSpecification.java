@@ -50,20 +50,22 @@ public class OrderSpecification {
     }
 
     public static Specification<Order> createdAfter(LocalDateTime start) {
-        if (start == null) {
-            return null;
-        }
+        return (root, query, cb) -> {
+            if (start == null) {
+                return null;
+            }
 
-        return (root, query, cb) ->
-                cb.greaterThanOrEqualTo(root.get("createdAt"), start);
+            return cb.greaterThanOrEqualTo(root.get("createdAt"), start);
+        };
     }
 
     public static Specification<Order> createdBefore(LocalDateTime end) {
-        if (end == null) {
-            return null;
-        }
+        return (root, query, cb) -> {
+            if (end == null) {
+                return null;
+            }
 
-        return (root, query, cb) ->
-                cb.lessThanOrEqualTo(root.get("createdAt"), end);
+            return cb.lessThanOrEqualTo(root.get("createdAt"), end);
+        };
     }
 }
