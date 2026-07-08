@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.user.service;
 
+import com.namnguyen.ecommerce_platform.common.config.CacheNames;
 import com.namnguyen.ecommerce_platform.common.exception.*;
 import com.namnguyen.ecommerce_platform.user.specifications.UserSpecification;
 import com.namnguyen.ecommerce_platform.user.dto.*;
@@ -8,6 +9,10 @@ import com.namnguyen.ecommerce_platform.user.enums.Role;
 import com.namnguyen.ecommerce_platform.user.mapper.UserMapper;
 import com.namnguyen.ecommerce_platform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -69,25 +74,44 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @Caching(
+            evict = {
+                    @CacheEvict(value = CacheNames.USERS_PAGES, allEntries = true)
+            }
+    )
     public UserResponse createUser(UserCreateRequest request) {
         return createUserWithRole(request, Role.CUSTOMER);
     }
 
     @Override
     @Transactional
+    @Caching(
+            evict = {
+                    @CacheEvict(value = CacheNames.USERS_PAGES, allEntries = true)
+            }
+    )
     public UserResponse createAdminUser(UserCreateRequest request) {
         return createUserWithRole(request, Role.ADMIN);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public UserResponse getUserById(Long id) {
-        User user = getUserOrThrow(id);
+    @Cacheable(value = CacheNames.USERS, key = "#userId")
+    public UserResponse getUserById(Long userId) {
+        User user = getUserOrThrow(userId);
         return UserMapper.toResponse(user);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            value = CacheNames.USERS_PAGES,
+            key = "#request.email() + ':' + " +
+                    "#request.keyword() + ':' + " +
+                    "(#request.role() == null ? 'null' : #request.role().name()) + ':' + " +
+                    "#pageable.pageNumber + ':' + " +
+                    "#pageable.pageSize + ':' + " +
+                    "#pageable.sort.toString().replace(' ', '')")
     public Page<UserResponse> getAllUsers(UserFilterRequest request, Pageable pageable) {
         Specification<User> spec = Specification
                 .where(UserSpecification.nameContains(request.keyword()))
@@ -99,11 +123,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse putUser(Long id, UserPutRequest request) {
-        User user = getUserOrThrow(id);
+    @Caching(
+            put = {
+                    @CachePut(value = CacheNames.USERS, key = "#userId")
+            },
+            evict = {
+                    @CacheEvict(value = CacheNames.USERS_PAGES, allEntries = true)
+            }
+    )
+    public UserResponse putUser(Long userId, UserPutRequest request) {
+        User user = getUserOrThrow(userId);
 
-        validateEmailAvailableForUpdate(request.email(), id);
-        validatePhoneAvailableForUpdate(request.phoneNumber(), id);
+        validateEmailAvailableForUpdate(request.email(), userId);
+        validatePhoneAvailableForUpdate(request.phoneNumber(), userId);
 
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
@@ -116,11 +148,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse patchUser(Long id, UserPatchRequest request) {
-        User user = getUserOrThrow(id);
+    @Caching(
+            put = {
+                    @CachePut(value = CacheNames.USERS, key = "#userId")
+            },
+            evict = {
+                    @CacheEvict(value = CacheNames.USERS_PAGES, allEntries = true)
+            }
+    )
+    public UserResponse patchUser(Long userId, UserPatchRequest request) {
+        User user = getUserOrThrow(userId);
 
         if (request.email() != null) {
-            validateEmailAvailableForUpdate(request.email(), id);
+            validateEmailAvailableForUpdate(request.email(), userId);
             user.setEmail(request.email());
         }
 
@@ -137,7 +177,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (request.phoneNumber() != null) {
-            validatePhoneAvailableForUpdate(request.phoneNumber(), id);
+            validatePhoneAvailableForUpdate(request.phoneNumber(), userId);
             user.setPhoneNumber(request.phoneNumber());
         }
 
@@ -146,8 +186,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUser(Long id) {
-        User user = getUserOrThrow(id);
+    @Caching(
+            evict = {
+                    @CacheEvict(value = CacheNames.USERS, key = "#userId"),
+                    @CacheEvict(value = CacheNames.USERS_PAGES, allEntries = true)
+            }
+    )
+    public void deleteUser(Long userId) {
+        User user = getUserOrThrow(userId);
         userRepository.delete(user);
     }
 }

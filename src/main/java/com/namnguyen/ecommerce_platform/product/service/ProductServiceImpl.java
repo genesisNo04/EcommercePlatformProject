@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.product.service;
 
+import com.namnguyen.ecommerce_platform.common.config.CacheNames;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.product.specifications.ProductSpecification;
 import com.namnguyen.ecommerce_platform.product.dto.*;
@@ -7,6 +8,10 @@ import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.mapper.ProductMapper;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,6 +31,11 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @Caching(
+            evict = {
+                    @CacheEvict(value = CacheNames.PRODUCT_PAGES, allEntries = true)
+            }
+    )
     public ProductResponse createProduct(ProductCreateRequest request) {
         Product product = productRepository.save(ProductMapper.toEntity(request));
         return ProductMapper.toResponse(product);
@@ -33,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.PRODUCTS, key = "#productId")
     public ProductResponse getProductById(Long productId) {
         Product product = getProductOrThrow(productId);
         return ProductMapper.toResponse(product);
@@ -40,9 +51,20 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            value = CacheNames.PRODUCT_PAGES,
+            key= "(#request.status() == null ? 'null' : #request.status().name()) + ':' + " +
+                    "#request.keyword() + ':' + " +
+                    "#request.minPrice() + ':' + " +
+                    "#request.maxPrice() + ':' + " +
+                    "#pageable.pageNumber + ':' + " +
+                    "#pageable.pageSize + ':' + " +
+                    "#pageable.sort.toString().replace(' ', '')"
+    )
     public Page<ProductResponse> getAllProducts(
             ProductFilterRequest request,
             Pageable pageable) {
+        System.out.println("Get from database");
         Specification<Product> spec = Specification
                 .where(ProductSpecification.hasStatus(request.status()))
                 .and(ProductSpecification.nameContains(request.keyword()))
@@ -56,6 +78,14 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @Caching(
+            put = {
+                    @CachePut(value = CacheNames.PRODUCTS, key="#productId")
+            },
+            evict = {
+                    @CacheEvict(value = CacheNames.PRODUCT_PAGES, allEntries = true)
+            }
+    )
     public ProductResponse putProduct(Long productId, ProductPutRequest request) {
         Product product = getProductOrThrow(productId);
         product.setName(request.name());
@@ -68,6 +98,14 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @Caching(
+            put = {
+                    @CachePut(value = CacheNames.PRODUCTS, key="#productId")
+            },
+            evict = {
+                    @CacheEvict(value = CacheNames.PRODUCT_PAGES, allEntries = true)
+            }
+    )
     public ProductResponse patchProduct(Long productId, ProductPatchRequest request) {
         Product product = getProductOrThrow(productId);
 
@@ -93,6 +131,12 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @Caching(
+            evict = {
+                    @CacheEvict(value = CacheNames.PRODUCTS, key="#productId"),
+                    @CacheEvict(value = CacheNames.PRODUCT_PAGES, allEntries = true)
+            }
+    )
     public void deleteProduct(Long productId) {
         Product product = getProductOrThrow(productId);
         productRepository.delete(product);
