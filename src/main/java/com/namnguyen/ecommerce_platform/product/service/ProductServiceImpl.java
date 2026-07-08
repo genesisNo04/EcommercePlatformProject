@@ -1,6 +1,6 @@
 package com.namnguyen.ecommerce_platform.product.service;
 
-import com.namnguyen.ecommerce_platform.common.config.CacheNames;
+import com.namnguyen.ecommerce_platform.common.caching.CacheNames;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.product.specifications.ProductSpecification;
 import com.namnguyen.ecommerce_platform.product.dto.*;
