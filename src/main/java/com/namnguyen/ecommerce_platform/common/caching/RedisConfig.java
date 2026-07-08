@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.common.config;
+package com.namnguyen.ecommerce_platform.common.caching;
 
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;

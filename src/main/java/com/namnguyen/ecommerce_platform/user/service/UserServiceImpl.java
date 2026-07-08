@@ -1,6 +1,6 @@
 package com.namnguyen.ecommerce_platform.user.service;
 
-import com.namnguyen.ecommerce_platform.common.config.CacheNames;
+import com.namnguyen.ecommerce_platform.common.caching.CacheNames;
 import com.namnguyen.ecommerce_platform.common.exception.*;
 import com.namnguyen.ecommerce_platform.user.specifications.UserSpecification;
 import com.namnguyen.ecommerce_platform.user.dto.*;

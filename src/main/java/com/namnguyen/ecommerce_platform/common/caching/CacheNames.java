@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.common.config;
+package com.namnguyen.ecommerce_platform.common.caching;
 
 import lombok.NoArgsConstructor;
 
