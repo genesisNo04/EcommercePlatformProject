@@ -41,7 +41,7 @@ public class RateLimitService {
         }
 
         boolean allowed = toLong(result.get(0)) == 1L;
-        int remainingTokens = (int) toLong(result.get(0));
+        int remainingTokens = (int) toLong(result.get(1));
         long retryAfterMillis = toLong(result.get(2));
 
         long retryAfterSeconds = retryAfterMillis <= 0
