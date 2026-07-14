@@ -37,8 +37,10 @@ public class ProductServiceImpl implements ProductService {
             }
     )
     public ProductResponse createProduct(ProductCreateRequest request) {
-        Product product = productRepository.save(ProductMapper.toEntity(request));
-        return ProductMapper.toResponse(product);
+        Product product = ProductMapper.toEntity(request);
+        product.updateStatusBasedOnQuantity();
+        Product savedProduct = productRepository.save(product);
+        return ProductMapper.toResponse(savedProduct);
     }
 
     @Override
@@ -64,7 +66,6 @@ public class ProductServiceImpl implements ProductService {
     public Page<ProductResponse> getAllProducts(
             ProductFilterRequest request,
             Pageable pageable) {
-        System.out.println("Get from database");
         Specification<Product> spec = Specification
                 .where(ProductSpecification.hasStatus(request.status()))
                 .and(ProductSpecification.nameContains(request.keyword()))
