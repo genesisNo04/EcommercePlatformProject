@@ -161,6 +161,13 @@ public class UserServiceImpl implements UserService {
 
         if (request.email() != null) {
             validateEmailAvailableForUpdate(request.email(), userId);
+        }
+
+        if (request.phoneNumber() != null) {
+            validatePhoneAvailableForUpdate(request.phoneNumber(), userId);
+        }
+
+        if (request.email() != null) {
             user.setEmail(request.email());
         }
 
@@ -177,7 +184,6 @@ public class UserServiceImpl implements UserService {
         }
 
         if (request.phoneNumber() != null) {
-            validatePhoneAvailableForUpdate(request.phoneNumber(), userId);
             user.setPhoneNumber(request.phoneNumber());
         }
 

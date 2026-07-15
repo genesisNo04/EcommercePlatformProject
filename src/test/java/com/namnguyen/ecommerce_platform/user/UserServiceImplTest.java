@@ -1,10 +1,7 @@
 package com.namnguyen.ecommerce_platform.user;
 
-import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
-import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
-import com.namnguyen.ecommerce_platform.user.dto.UserCreateRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserFilterRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserResponse;
+import com.namnguyen.ecommerce_platform.common.exception.*;
+import com.namnguyen.ecommerce_platform.user.dto.*;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 import com.namnguyen.ecommerce_platform.user.repository.UserRepository;
@@ -18,10 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import java.util.List;
 import java.util.Optional;
 
@@ -179,7 +173,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    void createUser_whenRequestHasDuplicateEmail_returnsDuplicateResourceExceptionResponse() {
+    void createUser_whenEmailAlreadyExists_throwsDuplicateResourceException() {
         Long userId = 1L;
 
         UserCreateRequest request = new UserCreateRequest(
@@ -200,9 +194,11 @@ public class UserServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(DUPLICATION_RESOURCE_EXCEPTION_EMAIL_MESSAGE);
 
-
+        verify(userRepository).existsByEmail(request.email());
+        verify(userRepository, never()).existsByPhoneNumber(request.phoneNumber());
+        verify(userRepository, never()).save(any(User.class));
         verifyNoMoreInteractions(userRepository);
-        verifyNoMoreInteractions(passwordEncoder);
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
@@ -228,13 +224,15 @@ public class UserServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(DUPLICATION_RESOURCE_EXCEPTION_PHONE_NUMBER_MESSAGE);
 
-
+        verify(userRepository).existsByEmail(request.email());
+        verify(userRepository).existsByPhoneNumber(request.phoneNumber());
+        verify(userRepository, never()).save(any(User.class));
         verifyNoMoreInteractions(userRepository);
-        verifyNoMoreInteractions(passwordEncoder);
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
-    void getUserById_whenUsersExist_returnUserResponse() {
+    void getUserById_whenUserExists_returnsUserResponse() {
         Long userId = 1L;
         User user = createUser(
                 userId,
@@ -258,11 +256,13 @@ public class UserServiceImplTest {
         assertThat(response.lastName()).isEqualTo(user.getLastName());
         assertThat(response.role()).isEqualTo(user.getRole());
 
+        verify(userRepository).findById(userId);
         verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
-    void getUserById_whenUsersNotExist_returnNoResourceFoundException() {
+    void getUserById_whenUserDoesNotExist_throwsNoResourceFoundException() {
         Long userId = 999L;
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -275,7 +275,9 @@ public class UserServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(NO_RESOURCE_FOUND_EXCEPTION_MESSAGE + userId);
 
+        verify(userRepository).findById(userId);
         verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
@@ -293,12 +295,12 @@ public class UserServiceImplTest {
 
         Long userId1 = 2L;
         User user1 = createUser(
-                userId,
-                "test@gmail.com",
-                "test123",
-                "test",
-                "user",
-                "1234567890",
+                userId1,
+                "test1@gmail.com",
+                "test1234",
+                "test1",
+                "user1",
+                "1234567891",
                 Role.CUSTOMER
         );
 
@@ -319,5 +321,702 @@ public class UserServiceImplTest {
         assertThat(responsePage.getTotalPages()).isEqualTo(1);
         assertThat(responsePage.getSize()).isEqualTo(10);
         assertThat(responsePage.getNumber()).isEqualTo(0);
+
+        assertThat(responsePage.getContent()).hasSize(2);
+
+        UserResponse firstUser = responsePage.getContent().getFirst();
+        assertThat(firstUser.id()).isEqualTo(userId);
+        assertThat(firstUser.email()).isEqualTo(user.getEmail());
+        assertThat(firstUser.role()).isEqualTo(user.getRole());
+
+        UserResponse secondUser = responsePage.getContent().get(1);
+        assertThat(secondUser.id()).isEqualTo(userId1);
+        assertThat(secondUser.email()).isEqualTo(user1.getEmail());
+        assertThat(secondUser.role()).isEqualTo(user1.getRole());
+
+        verify(userRepository).findAll(any(Specification.class), eq(pageable));
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void getAllUsers_whenNoUsersExist_returnsPagedUserResponses() {
+        UserFilterRequest request = new UserFilterRequest(null, null, null);
+
+        List<User> users = List.of();
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<User> pageUsers = new PageImpl<>(users, pageable, 0);
+
+        when(userRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(pageUsers);
+
+        Page<UserResponse> responsePage = userService.getAllUsers(request, pageable);
+
+        assertThat(responsePage).isNotNull();
+        assertThat(responsePage.getTotalElements()).isEqualTo(0);
+        assertThat(responsePage.getNumberOfElements()).isEqualTo(0);
+        assertThat(responsePage.getTotalPages()).isEqualTo(0);
+        assertThat(responsePage.getSize()).isEqualTo(10);
+        assertThat(responsePage.getNumber()).isEqualTo(0);
+
+        verify(userRepository).findAll(any(Specification.class), eq(pageable));
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void putUser_whenRequestIsValid_savesCustomerAndReturnsUserResponse() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPutRequest request = new UserPutRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.empty());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(request.password())).thenReturn("encodedPasswordUpdate");
+
+        UserResponse response = userService.putUser(userId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo(request.email());
+        assertThat(response.firstName()).isEqualTo(request.firstName());
+        assertThat(response.lastName()).isEqualTo(request.lastName());
+        assertThat(response.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+        assertThat(user.getPasswordHash()).isEqualTo("encodedPasswordUpdate");
+        assertThat(user.getPasswordHash()).isNotEqualTo(request.password());
+
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verify(userRepository).findById(userId);
+        verifyNoMoreInteractions(userRepository);
+
+        verify(passwordEncoder).encode(request.password());
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void putUser_whenUserDoesNotExist_throwsNoResourceFoundException() {
+        Long userId = 999L;
+
+        UserPutRequest request = new UserPutRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        NoResourceFoundException ex = assertThrows(
+                NoResourceFoundException.class,
+                () -> userService.putUser(userId, request)
+        );
+
+        assertThat(ex.getMessage()).isEqualTo(NO_RESOURCE_FOUND_EXCEPTION_MESSAGE + userId);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(userRepository, never()).findByPhoneNumber(anyString());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void putUser_whenEmailIsDuplicated_throwDuplicateResourceException() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        Long userId2 = 2L;
+        User user1 = createUser(
+                userId2,
+                "testupdate@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPutRequest request = new UserPutRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user1));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        DuplicateResourceException ex = assertThrows(
+                DuplicateResourceException.class,
+                () -> userService.putUser(userId, request)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(DUPLICATION_RESOURCE_EXCEPTION_EMAIL_MESSAGE);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmail(request.email());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void putUser_whenPhoneNumberIsDuplicated_throwDuplicateResourceException() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        Long userId2 = 2L;
+        User user1 = createUser(
+                userId2,
+                "testupdate1@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567891",
+                Role.CUSTOMER
+        );
+
+        UserPutRequest request = new UserPutRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.of(user1));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        DuplicateResourceException ex = assertThrows(
+                DuplicateResourceException.class,
+                () -> userService.putUser(userId, request)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(DUPLICATION_RESOURCE_EXCEPTION_PHONE_NUMBER_MESSAGE);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void putUser_whenUserKeepSameEmail_savesCustomerAndReturnsUserResponse() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPutRequest request = new UserPutRequest(
+                "test@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(request.password())).thenReturn("encodedPasswordUpdate");
+
+        UserResponse response = userService.putUser(userId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo(request.email());
+        assertThat(response.firstName()).isEqualTo(request.firstName());
+        assertThat(response.lastName()).isEqualTo(request.lastName());
+        assertThat(response.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+        assertThat(user.getPasswordHash()).isEqualTo("encodedPasswordUpdate");
+        assertThat(user.getPasswordHash()).isNotEqualTo(request.password());
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verify(passwordEncoder).encode(request.password());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void putUser_whenUserKeepSamePhoneNumber_savesCustomerAndReturnsUserResponse() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPutRequest request = new UserPutRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567890"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(request.password())).thenReturn("encodedPasswordUpdate");
+
+        UserResponse response = userService.putUser(userId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo(request.email());
+        assertThat(response.firstName()).isEqualTo(request.firstName());
+        assertThat(response.lastName()).isEqualTo(request.lastName());
+        assertThat(response.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+        assertThat(user.getPasswordHash()).isEqualTo("encodedPasswordUpdate");
+        assertThat(user.getPasswordHash()).isNotEqualTo(request.password());
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verify(passwordEncoder).encode(request.password());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void patchUser_whenRequestIsValid_savesCustomerAndReturnsUserResponse() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPatchRequest request = new UserPatchRequest(
+                "testupdate@gmail.com",
+                "test123update",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.empty());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(request.password())).thenReturn("encodedPasswordUpdate");
+
+        UserResponse response = userService.patchUser(userId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo(request.email());
+        assertThat(response.firstName()).isEqualTo(request.firstName());
+        assertThat(response.lastName()).isEqualTo(request.lastName());
+        assertThat(response.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verify(userRepository).findById(userId);
+        verifyNoMoreInteractions(userRepository);
+
+        verify(passwordEncoder).encode(request.password());
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void patchUser_whenUserDoesNotExist_throwsNoResourceFoundException() {
+        Long userId = 999L;
+
+        UserPatchRequest request = new UserPatchRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        NoResourceFoundException ex = assertThrows(
+                NoResourceFoundException.class,
+                () -> userService.patchUser(userId, request)
+        );
+
+        assertThat(ex.getMessage()).isEqualTo(NO_RESOURCE_FOUND_EXCEPTION_MESSAGE + userId);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(userRepository, never()).findByPhoneNumber(anyString());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void patchUser_whenRequestIsValidPartiallyUpdate_savesCustomerAndReturnsUserResponse() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPatchRequest request = new UserPatchRequest(
+                "testupdate@gmail.com",
+                null,
+                null,
+                null,
+                "1234567891"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.empty());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        UserResponse response = userService.patchUser(userId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo(request.email());
+        assertThat(response.firstName()).isEqualTo("test");
+        assertThat(response.lastName()).isEqualTo("user");
+        assertThat(response.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verify(userRepository).findById(userId);
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void patchUser_whenAllFieldsAreNull_keepsExistingUserUnchanged() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPatchRequest request = new UserPatchRequest(
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        UserResponse response = userService.patchUser(userId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo(user.getEmail());
+        assertThat(response.firstName()).isEqualTo(user.getFirstName());
+        assertThat(response.lastName()).isEqualTo(user.getLastName());
+        assertThat(response.phoneNumber()).isEqualTo(user.getPhoneNumber());
+        assertThat(response.role()).isEqualTo(user.getRole());
+
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).findByEmail(any());
+        verify(userRepository, never()).findByPhoneNumber(any());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void patchUser_whenEmailIsDuplicated_throwDuplicateResourceException() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        Long userId2 = 2L;
+        User user1 = createUser(
+                userId2,
+                "testupdate@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPatchRequest request = new UserPatchRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user1));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        DuplicateResourceException ex = assertThrows(
+                DuplicateResourceException.class,
+                () -> userService.patchUser(userId, request)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(DUPLICATION_RESOURCE_EXCEPTION_EMAIL_MESSAGE);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmail(request.email());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void patchUser_whenPhoneNumberIsDuplicated_throwDuplicateResourceException() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        Long userId2 = 2L;
+        User user1 = createUser(
+                userId2,
+                "testupdate1@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567891",
+                Role.CUSTOMER
+        );
+
+        UserPatchRequest request = new UserPatchRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.of(user1));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        DuplicateResourceException ex = assertThrows(
+                DuplicateResourceException.class,
+                () -> userService.patchUser(userId, request)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(DUPLICATION_RESOURCE_EXCEPTION_PHONE_NUMBER_MESSAGE);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void patchUser_whenUserKeepSameEmail_savesCustomerAndReturnsUserResponse() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPatchRequest request = new UserPatchRequest(
+                "test@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567891"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.empty());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(request.password())).thenReturn("encodedPasswordUpdate");
+
+        UserResponse response = userService.patchUser(userId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo(request.email());
+        assertThat(response.firstName()).isEqualTo(request.firstName());
+        assertThat(response.lastName()).isEqualTo(request.lastName());
+        assertThat(response.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+        assertThat(user.getPasswordHash()).isEqualTo("encodedPasswordUpdate");
+        assertThat(user.getPasswordHash()).isNotEqualTo(request.password());
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verify(passwordEncoder).encode(request.password());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void patchUser_whenUserKeepSamePhoneNumber_savesCustomerAndReturnsUserResponse() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        UserPatchRequest request = new UserPatchRequest(
+                "testupdate@gmail.com",
+                "test123",
+                "testupdate",
+                "userupdate",
+                "1234567890"
+        );
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByPhoneNumber(request.phoneNumber())).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(request.password())).thenReturn("encodedPasswordUpdate");
+
+        UserResponse response = userService.patchUser(userId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo(request.email());
+        assertThat(response.firstName()).isEqualTo(request.firstName());
+        assertThat(response.lastName()).isEqualTo(request.lastName());
+        assertThat(response.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+        assertThat(user.getPasswordHash()).isEqualTo("encodedPasswordUpdate");
+        assertThat(user.getPasswordHash()).isNotEqualTo(request.password());
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmail(request.email());
+        verify(userRepository).findByPhoneNumber(request.phoneNumber());
+        verify(passwordEncoder).encode(request.password());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(passwordEncoder);
+    }
+
+    @Test
+    void deleteUser_whenUserExists_deletesUser() {
+        Long userId = 1L;
+        User user = createUser(
+                userId,
+                "test@gmail.com",
+                "test123",
+                "test",
+                "user",
+                "1234567890",
+                Role.CUSTOMER
+        );
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        userService.deleteUser(userId);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).delete(user);
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void deleteUser_whenUserDoesNotExist_throwsNoResourceFoundException() {
+        Long userId = 999L;
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        NoResourceFoundException ex = assertThrows(
+                NoResourceFoundException.class,
+                () -> userService.deleteUser(userId)
+        );
+
+        assertThat(ex.getMessage()).isEqualTo(NO_RESOURCE_FOUND_EXCEPTION_MESSAGE + userId);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).delete(any(User.class));
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
     }
 }
