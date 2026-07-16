@@ -34,5 +34,17 @@ public class Cart {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+
+    @Builder.Default
     private List<CartItem> items = new ArrayList<>();
+
+    public void addItem(CartItem item) {
+        items.add(item);
+        item.setCart(this);
+    }
+
+    public void removeItem(CartItem item) {
+        items.remove(item);
+        item.setCart(null);
+    }
 }
