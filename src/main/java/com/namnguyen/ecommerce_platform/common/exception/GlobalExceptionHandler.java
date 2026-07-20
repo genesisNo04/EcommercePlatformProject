@@ -94,6 +94,19 @@ public class GlobalExceptionHandler {
                         request.getRequestURI()));
     }
 
+    @ExceptionHandler(InvalidOrderException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidOrderException(InvalidOrderException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
     @ExceptionHandler(InvalidPaymentStateException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidPaymentStateException(InvalidPaymentStateException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;

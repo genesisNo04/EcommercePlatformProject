@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -34,8 +35,6 @@ public class ProductServiceImplTest {
 
     @InjectMocks
     private ProductServiceImpl productService;
-
-    private static final String NO_RESOURCE_FOUND_EXCEPTION_MESSAGE = "Product not found with id: ";
 
     private Product createProduct(
             Long id,
@@ -173,7 +172,7 @@ public class ProductServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(NO_RESOURCE_FOUND_EXCEPTION_MESSAGE + productId);
+        assertThat(ex.getMessage()).isEqualTo(productNotFound(productId));
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
@@ -353,7 +352,7 @@ public class ProductServiceImplTest {
                 NoResourceFoundException.class,
                 () -> productService.putProduct(productId, request));
 
-        assertThat(ex.getMessage()).isEqualTo(NO_RESOURCE_FOUND_EXCEPTION_MESSAGE + productId);
+        assertThat(ex.getMessage()).isEqualTo(productNotFound(productId));
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
@@ -478,7 +477,7 @@ public class ProductServiceImplTest {
                 NoResourceFoundException.class,
                 () -> productService.patchProduct(productId, request));
 
-        assertThat(ex.getMessage()).isEqualTo(NO_RESOURCE_FOUND_EXCEPTION_MESSAGE + productId);
+        assertThat(ex.getMessage()).isEqualTo(productNotFound(productId));
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
@@ -517,7 +516,7 @@ public class ProductServiceImplTest {
                 () -> productService.deleteProduct(productId)
         );
 
-        assertThat(ex.getMessage()).isEqualTo(NO_RESOURCE_FOUND_EXCEPTION_MESSAGE + productId);
+        assertThat(ex.getMessage()).isEqualTo(productNotFound(productId));
 
         verify(productRepository).findById(productId);
         verify(productRepository, never()).delete(any(Product.class));

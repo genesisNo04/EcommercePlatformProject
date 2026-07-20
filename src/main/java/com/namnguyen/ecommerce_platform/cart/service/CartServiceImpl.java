@@ -57,7 +57,7 @@ public class CartServiceImpl implements CartService {
 
     private void stockCheck(Product product, int quantity) {
         if (quantity > product.getQuantity()) {
-            throw new InsufficientStockException("Not enough stock for: " + product.getName());
+            throw new InsufficientStockException("Not enough stock for product: " + product.getName());
         }
     }
 
