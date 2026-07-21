@@ -55,6 +55,7 @@ public class Order {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
     @PrePersist
@@ -67,5 +68,15 @@ public class Order {
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public void addOrderItem(OrderItem item) {
+        this.getOrderItems().add(item);
+        item.setOrder(this);
+    }
+
+    public void removeOrderItem(OrderItem item) {
+        this.getOrderItems().remove(item);
+        item.setOrder(null);
     }
 }

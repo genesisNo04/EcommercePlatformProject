@@ -33,7 +33,14 @@ public class OrderServiceImpl implements OrderService {
     private final CartLookupService cartLookupService;
     private final ProductLookupService productLookupService;
 
+    private void validateOrderItemQuantity(int quantity) {
+        if (quantity <= 0) {
+            throw new InvalidOrderException("Order item quantity must be greater than zero");
+        }
+    }
+
     private OrderItem createOrderItem(CreateOrderItemRequest request, Order order) {
+        validateOrderItemQuantity(request.quantity());
         Product product = productLookupService.getProductById(request.productId());
         return createOrderItem(product, request.quantity(), order);
     }
@@ -44,9 +51,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderItem createOrderItem(Product product, int quantity, Order order) {
-        if (quantity <= 0) {
-            throw new InvalidOrderException("Order item quantity must be greater than zero");
-        }
         if (product.getQuantity() < quantity) {
             throw new InsufficientStockException("Not enough stock for product: " + product.getName());
         }

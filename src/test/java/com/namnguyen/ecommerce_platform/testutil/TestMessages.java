@@ -6,11 +6,14 @@ public final class TestMessages {
     private static final String NO_RESOURCE_FOUND_EXCEPTION_CART_MESSAGE = "Cart not found for user id: ";
     private static final String NO_RESOURCE_FOUND_EXCEPTION_PRODUCT_MESSAGE = "Product not found with id: ";
     private static final String NO_RESOURCE_FOUND_EXCEPTION_ITEM_MESSAGE = "No item found with product id: ";
+    private static final String NO_RESOURCE_FOUND_EXCEPTION_ORDER_MESSAGE = "No order with id: %s found for this user id: %s";
     private static final String INSUFFICIENT_STOCK_EXCEPTION_MESSAGE = "Not enough stock for product: ";
     private static final String DUPLICATE_RESOURCE_EXCEPTION_EMAIL_MESSAGE = "Email already exists";
     private static final String DUPLICATE_RESOURCE_EXCEPTION_PHONE_NUMBER_MESSAGE = "Phone number already exists";
     private static final String ORDER_ITEM_QUANTITY_LARGER_THAN_ZERO_MESSAGE = "Order item quantity must be greater than zero";
     private static final String INVALID_ORDER_NO_ITEM_MESSAGE = "Order must contain at least one item";
+    private static final String INVALID_ORDER_STATE_DELIVERED_ORDER_MESSAGE = "Delivered order cannot be cancelled";
+    private static final String INVALID_ORDER_STATE_CANCELLED_MESSAGE = "Order is already cancelled";
 
     private TestMessages() {}
 
@@ -50,4 +53,15 @@ public final class TestMessages {
         return INVALID_ORDER_NO_ITEM_MESSAGE;
     }
 
+    public static String orderNotFound(Long orderId, Long userId) {
+        return String.format(NO_RESOURCE_FOUND_EXCEPTION_ORDER_MESSAGE, orderId, userId);
+    }
+
+    public static String cannotCancelDeliveredOrder() {
+        return INVALID_ORDER_STATE_DELIVERED_ORDER_MESSAGE;
+    }
+
+    public static String orderAlreadyCancelled() {
+        return INVALID_ORDER_STATE_CANCELLED_MESSAGE;
+    }
 }

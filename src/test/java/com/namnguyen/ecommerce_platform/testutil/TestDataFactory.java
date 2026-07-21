@@ -2,12 +2,16 @@ package com.namnguyen.ecommerce_platform.testutil;
 
 import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
+import com.namnguyen.ecommerce_platform.order.entity.Order;
+import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
+import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TestDataFactory {
 
@@ -82,5 +86,35 @@ public class TestDataFactory {
         cart.addItem(item);
 
         return cart;
+    }
+
+    public static Order createOrder(
+            Long orderId,
+            BigDecimal total,
+            OrderStatus status,
+            User user
+    ) {
+        return Order.builder()
+                .id(orderId)
+                .total(total)
+                .status(status)
+                .user(user)
+                .build();
+    }
+
+    public static OrderItem createOrderItem(
+            Long orderItemId,
+            Order order,
+            Product product,
+            Integer quantity,
+            BigDecimal price
+    ) {
+        return OrderItem.builder()
+                .id(orderItemId)
+                .order(order)
+                .product(product)
+                .quantity(quantity)
+                .price(price)
+                .build();
     }
 }
