@@ -51,6 +51,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderItem createOrderItem(Product product, int quantity, Order order) {
+        validateOrderItemQuantity(quantity);
+
         if (product.getQuantity() < quantity) {
             throw new InsufficientStockException("Not enough stock for product: " + product.getName());
         }
@@ -180,7 +182,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        cart.getItems().clear();
+        cart.clearItems();
 
         return OrderMapper.toResponse(savedOrder);
     }

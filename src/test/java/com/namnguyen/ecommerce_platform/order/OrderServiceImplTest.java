@@ -244,7 +244,7 @@ public class OrderServiceImplTest {
         assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
 
         verify(userLookupService).getUserById(userId);
-        verifyNoInteractions(userLookupService);
+        verifyNoMoreInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
     }
@@ -720,6 +720,58 @@ public class OrderServiceImplTest {
     }
 
     @Test
+    void cancelOrder_whenProductOutOfStockGotCancel_productUpdateToActive() {
+        Long userId = 1L;
+        Long orderId = 2L;
+        Long productId1 = 3L;
+        Long orderItemId1 = 5L;
+        int initialQuantity1 = 0;
+        int quantity1 = 2;
+
+        Product product1 = createProduct(
+                productId1,
+                "PS5",
+                BigDecimal.valueOf(499.99),
+                initialQuantity1
+        );
+
+        product1.updateStatusBasedOnQuantity();
+
+        assertThat(product1.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
+
+        User user = createUser(userId);
+        BigDecimal total = product1.getPrice().multiply(BigDecimal.valueOf(quantity1));
+
+        Order order = createOrder(
+                orderId,
+                total,
+                OrderStatus.PENDING_PAYMENT,
+                user
+        );
+
+        OrderItem item1 = createOrderItem(
+                orderItemId1,
+                order,
+                product1,
+                quantity1,
+                product1.getPrice()
+        );
+
+        order.addOrderItem(item1);
+
+        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
+
+        orderService.cancelOrder(orderId, userId);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(product1.getQuantity()).isEqualTo(initialQuantity1 + quantity1);
+        assertThat(product1.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+
+        verify(orderRepository).findByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderRepository);
+    }
+
+    @Test
     void cancelOrder_whenOrderOrUserNotExists_throwNoResourceFoundException() {
         Long userId = 1L;
         Long orderId = 2L;
@@ -783,6 +835,8 @@ public class OrderServiceImplTest {
 
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(cannotCancelDeliveredOrder());
+        assertThat(product1.getQuantity()).isEqualTo(initialQuantity1);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderRepository);
@@ -833,6 +887,8 @@ public class OrderServiceImplTest {
 
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(orderAlreadyCancelled());
+        assertThat(product1.getQuantity()).isEqualTo(initialQuantity1);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderRepository);
@@ -888,6 +944,8 @@ public class OrderServiceImplTest {
         assertThat(product.getQuantity()).isEqualTo(initialQuantity - quantity);
         assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
+        assertThat(item.getCart()).isNull();
+
         OrderItemResponse itemResponse1 = response.items().getFirst();
         assertThat(itemResponse1.productId()).isEqualTo(productId);
         assertThat(itemResponse1.productName()).isEqualTo(product.getName());
@@ -904,12 +962,192 @@ public class OrderServiceImplTest {
         assertThat(savedOrder.getTotal()).isEqualByComparingTo(total);
         assertThat(savedOrder.getOrderItems()).hasSize(1);
         assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+        assertThat(savedOrder.getTotal()).isEqualTo(total);
+        assertThat(cart.getItems()).isEmpty();
 
         OrderItem savedOrderItem1 = savedOrder.getOrderItems().getFirst();
         assertThat(savedOrderItem1.getOrder()).isEqualTo(savedOrder);
         assertThat(savedOrderItem1.getProduct()).isEqualTo(product);
         assertThat(savedOrderItem1.getQuantity()).isEqualTo(quantity);
         assertThat(savedOrderItem1.getPrice()).isEqualByComparingTo(product.getPrice());
+
+        verify(cartLookupService).getCartByUserId(userId);
+        verifyNoMoreInteractions(cartLookupService);
+        verifyNoMoreInteractions(orderRepository);
+    }
+
+    @Test
+    void checkoutCart_whenCartOrUserNotFound_throwNoResourceFoundException() {
+        Long userId = 999L;
+
+        when(cartLookupService.getCartByUserId(userId))
+                .thenThrow(new NoResourceFoundException(cartNotFound(userId)));
+
+        NoResourceFoundException ex = assertThrows(
+                NoResourceFoundException.class,
+                () -> orderService.checkoutCart(userId)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(cartNotFound(userId));
+
+        verify(cartLookupService).getCartByUserId(userId);
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    void checkoutCart_whenCartEmpty_throwInvalidOrderStateException() {
+        Long userId = 1L;
+        Long cartId = 2L;
+
+        User user = createUser(userId);
+        Cart cart = createCart(cartId, user);
+
+        when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
+
+        InvalidOrderStateException ex = assertThrows(
+                InvalidOrderStateException.class,
+                () -> orderService.checkoutCart(userId)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(emptyCart());
+
+        verify(cartLookupService).getCartByUserId(userId);
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    void checkoutCart_whenQuantityExceedStocks_throwInsufficientStockException() {
+        Long userId = 1L;
+        Long cartId = 2L;
+        Long productId = 3L;
+        Long cartItemId = 4L;
+        int quantity = 11;
+        int initialQuantity = 10;
+
+        User user = createUser(userId);
+        Product product = createProduct(
+                productId,
+                "PS5",
+                BigDecimal.valueOf(499.99),
+                initialQuantity
+        );
+
+        Cart cart = createCart(cartId, user);
+
+        CartItem item = createCartItem(
+                cartItemId,
+                cart,
+                product,
+                quantity
+        );
+
+        cart.addItem(item);
+
+        when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
+
+        InsufficientStockException ex = assertThrows(
+                InsufficientStockException.class,
+                () -> orderService.checkoutCart(userId)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(insufficientStock(product.getName()));
+        assertThat(product.getQuantity()).isEqualTo(initialQuantity);
+        assertThat(cart.getItems()).hasSize(1);
+
+        verify(cartLookupService).getCartByUserId(userId);
+        verify(orderRepository, never()).save(any(Order.class));
+        verifyNoMoreInteractions(cartLookupService);
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    void checkoutCart_whenQuantityIsNegative_throwInsufficientStockException() {
+        Long userId = 1L;
+        Long cartId = 2L;
+        Long productId = 3L;
+        Long cartItemId = 4L;
+        int quantity = -1;
+        int initialQuantity = 10;
+
+        User user = createUser(userId);
+        Product product = createProduct(
+                productId,
+                "PS5",
+                BigDecimal.valueOf(499.99),
+                initialQuantity
+        );
+
+        Cart cart = createCart(cartId, user);
+
+        CartItem item = createCartItem(
+                cartItemId,
+                cart,
+                product,
+                quantity
+        );
+
+        cart.addItem(item);
+
+        when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
+
+        InvalidOrderException ex = assertThrows(
+                InvalidOrderException.class,
+                () -> orderService.checkoutCart(userId)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(orderItemGreaterThanZero());
+
+        verify(cartLookupService).getCartByUserId(userId);
+        verifyNoMoreInteractions(cartLookupService);
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    void checkoutCart_whenProductQuantityBecomesZero_marksProductOutOfStock() {
+        Long userId = 1L;
+        Long cartId = 2L;
+        Long productId = 3L;
+        Long cartItemId = 4L;
+        Long orderId = 5L;
+        int quantity = 10;
+        int initialQuantity = 10;
+
+        User user = createUser(userId);
+        Product product = createProduct(
+                productId,
+                "PS5",
+                BigDecimal.valueOf(499.99),
+                initialQuantity
+        );
+
+        Cart cart = createCart(cartId, user);
+
+        CartItem item = createCartItem(
+                cartItemId,
+                cart,
+                product,
+                quantity
+        );
+
+        cart.addItem(item);
+
+        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+
+        when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
+            Order order = inv.getArgument(0);
+            order.setId(orderId);
+            return order;
+        });
+
+        OrderResponse response = orderService.checkoutCart(userId);
+
+        assertThat(product.getQuantity()).isEqualTo(0);
+        assertThat(product.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         verify(cartLookupService).getCartByUserId(userId);
         verify(orderRepository).save(any(Order.class));

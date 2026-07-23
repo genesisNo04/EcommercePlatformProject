@@ -14,6 +14,7 @@ public final class TestMessages {
     private static final String INVALID_ORDER_NO_ITEM_MESSAGE = "Order must contain at least one item";
     private static final String INVALID_ORDER_STATE_DELIVERED_ORDER_MESSAGE = "Delivered order cannot be cancelled";
     private static final String INVALID_ORDER_STATE_CANCELLED_MESSAGE = "Order is already cancelled";
+    private static final String INVALID_ORDER_STATE_EMPTY_CART_MESSAGE = "Cannot checkout an empty cart";
 
     private TestMessages() {}
 
@@ -63,5 +64,9 @@ public final class TestMessages {
 
     public static String orderAlreadyCancelled() {
         return INVALID_ORDER_STATE_CANCELLED_MESSAGE;
+    }
+
+    public static String emptyCart() {
+        return INVALID_ORDER_STATE_EMPTY_CART_MESSAGE;
     }
 }

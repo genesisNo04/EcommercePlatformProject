@@ -46,4 +46,9 @@ public class Cart {
         items.remove(item);
         item.setCart(null);
     }
+
+    public void clearItems() {
+        items.forEach(item -> item.setCart(null));
+        items.clear();
+    }
 }
