@@ -7,14 +7,18 @@ public final class TestMessages {
     private static final String NO_RESOURCE_FOUND_EXCEPTION_PRODUCT_MESSAGE = "Product not found with id: ";
     private static final String NO_RESOURCE_FOUND_EXCEPTION_ITEM_MESSAGE = "No item found with product id: ";
     private static final String NO_RESOURCE_FOUND_EXCEPTION_ORDER_MESSAGE = "No order with id: %s found for this user id: %s";
+    private static final String NO_RESOURCE_FOUND_EXCEPTION_PAYMENT_MESSAGE = "No payment found for order with id: %s";
     private static final String INSUFFICIENT_STOCK_EXCEPTION_MESSAGE = "Not enough stock for product: ";
     private static final String DUPLICATE_RESOURCE_EXCEPTION_EMAIL_MESSAGE = "Email already exists";
     private static final String DUPLICATE_RESOURCE_EXCEPTION_PHONE_NUMBER_MESSAGE = "Phone number already exists";
+    private static final String DUPLICATE_RESOURCE_EXCEPTION_PAYMENT_EXISTS_MESSAGE = "This order already has a payment";
     private static final String ORDER_ITEM_QUANTITY_LARGER_THAN_ZERO_MESSAGE = "Order item quantity must be greater than zero";
     private static final String INVALID_ORDER_NO_ITEM_MESSAGE = "Order must contain at least one item";
     private static final String INVALID_ORDER_STATE_DELIVERED_ORDER_MESSAGE = "Delivered order cannot be cancelled";
     private static final String INVALID_ORDER_STATE_CANCELLED_MESSAGE = "Order is already cancelled";
     private static final String INVALID_ORDER_STATE_EMPTY_CART_MESSAGE = "Cannot checkout an empty cart";
+    private static final String INVALID_ORDER_STATE_NOT_PENDING_PAYMENT_MESSAGE = "Order is not pending payment";
+
 
     private TestMessages() {}
 
@@ -58,6 +62,10 @@ public final class TestMessages {
         return String.format(NO_RESOURCE_FOUND_EXCEPTION_ORDER_MESSAGE, orderId, userId);
     }
 
+    public static String paymentNotFound(Long orderId) {
+        return String.format(NO_RESOURCE_FOUND_EXCEPTION_PAYMENT_MESSAGE, orderId);
+    }
+
     public static String cannotCancelDeliveredOrder() {
         return INVALID_ORDER_STATE_DELIVERED_ORDER_MESSAGE;
     }
@@ -69,4 +77,8 @@ public final class TestMessages {
     public static String emptyCart() {
         return INVALID_ORDER_STATE_EMPTY_CART_MESSAGE;
     }
+
+    public static String notPendingPayment() { return INVALID_ORDER_STATE_NOT_PENDING_PAYMENT_MESSAGE; }
+
+    public static String paymentDuplicate() {return DUPLICATE_RESOURCE_EXCEPTION_PAYMENT_EXISTS_MESSAGE; }
 }

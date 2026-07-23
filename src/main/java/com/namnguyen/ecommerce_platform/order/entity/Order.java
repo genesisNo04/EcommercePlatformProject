@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.order.entity;
 
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
+import com.namnguyen.ecommerce_platform.payment.entity.Payment;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -57,6 +58,9 @@ public class Order {
     )
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
+
+    @OneToOne(mappedBy = "order")
+    private Payment payment;
 
     @PrePersist
     public void prePersist() {

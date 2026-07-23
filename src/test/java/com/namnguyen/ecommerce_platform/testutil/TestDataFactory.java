@@ -6,9 +6,13 @@ import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
 import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
+import com.namnguyen.ecommerce_platform.payment.entity.Payment;
+import com.namnguyen.ecommerce_platform.payment.enums.PaymentMethod;
+import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
+import org.aspectj.weaver.ast.Or;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -120,6 +124,22 @@ public class TestDataFactory {
                 .product(product)
                 .quantity(quantity)
                 .price(price)
+                .build();
+    }
+
+    public static Payment createPayment(
+            Long paymentId,
+            PaymentMethod method,
+            PaymentStatus status,
+            Order order,
+            BigDecimal amount
+    ) {
+        return Payment.builder()
+                .id(paymentId)
+                .paymentMethod(method)
+                .paymentStatus(status)
+                .order(order)
+                .amount(amount)
                 .build();
     }
 }

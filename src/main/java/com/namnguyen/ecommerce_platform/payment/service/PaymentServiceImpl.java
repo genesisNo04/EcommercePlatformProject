@@ -33,7 +33,7 @@ public class PaymentServiceImpl implements PaymentService{
     private Payment getPayment(Long orderId, Long userId) {
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
         return paymentRepository.findByOrderId(order.getId())
-                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id:" + order.getId()));
+                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id: " + order.getId()));
     }
 
     @Override
