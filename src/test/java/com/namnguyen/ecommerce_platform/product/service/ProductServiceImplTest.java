@@ -1,11 +1,10 @@
-package com.namnguyen.ecommerce_platform.product;
+package com.namnguyen.ecommerce_platform.product.service;
 
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
-import com.namnguyen.ecommerce_platform.product.service.ProductServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

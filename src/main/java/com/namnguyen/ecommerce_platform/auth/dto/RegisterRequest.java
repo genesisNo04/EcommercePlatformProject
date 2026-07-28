@@ -21,7 +21,7 @@ public record RegisterRequest(
         String lastName,
 
         @NotBlank(message = "Phone Number cannot be empty")
-        @Pattern(regexp = "^\\+?[0-9]{10,15}$")
+        @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Phone number must be from 10 to 15 digits")
         String phoneNumber
 )
 {}

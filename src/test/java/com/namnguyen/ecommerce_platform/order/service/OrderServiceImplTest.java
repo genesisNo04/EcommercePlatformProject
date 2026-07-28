@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.order;
+package com.namnguyen.ecommerce_platform.order.service;
 
 import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
@@ -12,7 +12,6 @@ import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
-import com.namnguyen.ecommerce_platform.order.service.OrderServiceImpl;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.service.ProductLookupService;

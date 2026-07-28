@@ -18,7 +18,12 @@ public final class TestMessages {
     private static final String INVALID_ORDER_STATE_CANCELLED_MESSAGE = "Order is already cancelled";
     private static final String INVALID_ORDER_STATE_EMPTY_CART_MESSAGE = "Cannot checkout an empty cart";
     private static final String INVALID_ORDER_STATE_NOT_PENDING_PAYMENT_MESSAGE = "Order is not pending payment";
-
+    private static final String INVALID_PAYMENT_STATE_NOT_PENDING_PAYMENT_MESSAGE = "Only pending payments can be updated";
+    private static final String INVALID_PAYMENT_STATE_NOT_PENDING_PAYMENT_CONFIRM_MESSAGE = "Only pending payments can be confirmed";
+    private static final String INVALID_PAYMENT_STATUS_CONFIRM_MESSAGE = "Payment can only be confirmed as SUCCESS OR FAILED";
+    private static final String VALIDATION_FAILED_MESSAGE = "Validation failed";
+    private static final String BAD_CREDENTIAL_MESSAGE = "Bad credentials";
+    private static final String PHONE_NUMBER_FORMAT_MESSAGE = "Phone number must be from 10 to 15 digits";
 
     private TestMessages() {}
 
@@ -78,7 +83,20 @@ public final class TestMessages {
         return INVALID_ORDER_STATE_EMPTY_CART_MESSAGE;
     }
 
-    public static String notPendingPayment() { return INVALID_ORDER_STATE_NOT_PENDING_PAYMENT_MESSAGE; }
+    public static String orderNotInPendingPayment() { return INVALID_ORDER_STATE_NOT_PENDING_PAYMENT_MESSAGE; }
 
-    public static String paymentDuplicate() {return DUPLICATE_RESOURCE_EXCEPTION_PAYMENT_EXISTS_MESSAGE; }
+    public static String paymentDuplicate() { return DUPLICATE_RESOURCE_EXCEPTION_PAYMENT_EXISTS_MESSAGE; }
+
+    public static String paymentNotPending() { return INVALID_PAYMENT_STATE_NOT_PENDING_PAYMENT_MESSAGE; }
+
+    public static String paymentCannotConfirmed() { return INVALID_PAYMENT_STATE_NOT_PENDING_PAYMENT_CONFIRM_MESSAGE; }
+
+    public static String invalidStatusConfirmed() { return INVALID_PAYMENT_STATUS_CONFIRM_MESSAGE; }
+
+    public static String validationFailed() { return VALIDATION_FAILED_MESSAGE; }
+
+    public static String badCredentials() { return BAD_CREDENTIAL_MESSAGE; }
+
+    public static String phoneNumberFormat() { return PHONE_NUMBER_FORMAT_MESSAGE; }
+
 }

@@ -1,9 +1,8 @@
-package com.namnguyen.ecommerce_platform.auth;
+package com.namnguyen.ecommerce_platform.auth.service;
 
 import com.namnguyen.ecommerce_platform.auth.dto.AuthResponse;
 import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
-import com.namnguyen.ecommerce_platform.auth.service.AuthServiceImpl;
 import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;

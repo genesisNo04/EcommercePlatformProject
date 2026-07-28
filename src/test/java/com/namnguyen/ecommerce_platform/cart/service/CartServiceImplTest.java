@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.cart;
+package com.namnguyen.ecommerce_platform.cart.service;
 
 import com.namnguyen.ecommerce_platform.cart.dto.CartItemRequest;
 import com.namnguyen.ecommerce_platform.cart.dto.CartItemResponse;
@@ -7,7 +7,6 @@ import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
 import com.namnguyen.ecommerce_platform.cart.repository.CartItemRepository;
 import com.namnguyen.ecommerce_platform.cart.repository.CartRepository;
-import com.namnguyen.ecommerce_platform.cart.service.CartServiceImpl;
 import com.namnguyen.ecommerce_platform.common.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.product.entity.Product;

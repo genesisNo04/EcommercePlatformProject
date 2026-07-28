@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.jwt;
+package com.namnguyen.ecommerce_platform.jwt.service;
 
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import io.jsonwebtoken.Claims;
