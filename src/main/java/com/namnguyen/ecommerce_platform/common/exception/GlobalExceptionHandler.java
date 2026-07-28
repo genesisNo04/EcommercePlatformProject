@@ -14,6 +14,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -63,13 +64,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ValidationErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
-        Map<String, String> fieldErrors = ex.getBindingResult()
+        Map<String, List<String>> fieldErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .collect(Collectors.toMap(
+                .collect(Collectors.groupingBy(
                         FieldError::getField,
-                        FieldError::getDefaultMessage,
-                        (firstMessage, secondMessage) -> firstMessage
+                        Collectors.mapping(FieldError::getDefaultMessage,
+                                Collectors.toList())
                 ));
 
         return ResponseEntity.status(status)

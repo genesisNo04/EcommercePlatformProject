@@ -23,7 +23,14 @@ public final class TestMessages {
     private static final String INVALID_PAYMENT_STATUS_CONFIRM_MESSAGE = "Payment can only be confirmed as SUCCESS OR FAILED";
     private static final String VALIDATION_FAILED_MESSAGE = "Validation failed";
     private static final String BAD_CREDENTIAL_MESSAGE = "Bad credentials";
-    private static final String PHONE_NUMBER_FORMAT_MESSAGE = "Phone number must be from 10 to 15 digits";
+    private static final String EMAIL_IS_REQUIRED_MESSAGE = "Email is required";
+    private static final String EMAIL_INVALID_MESSAGE = "Invalid Email format";
+    private static final String PASSWORD_IS_REQUIRED_MESSAGE = "Password is required";
+    private static final String PASSWORD_LENGTH_MESSAGE = "Password has to be from 8 to 50 chars";
+    private static final String FIRST_NAME_IS_REQUIRED_MESSAGE = "First Name is required";
+    private static final String LAST_NAME_IS_REQUIRED_MESSAGE = "Last Name is required";
+    private static final String PHONE_NUMBER_IS_REQUIRED_MESSAGE = "Phone Number is required";
+    private static final String PHONE_NUMBER_INVALID_MESSAGE = "Phone number must be from 10 to 15 digits (with or without +)";
 
     private TestMessages() {}
 
@@ -97,6 +104,35 @@ public final class TestMessages {
 
     public static String badCredentials() { return BAD_CREDENTIAL_MESSAGE; }
 
-    public static String phoneNumberFormat() { return PHONE_NUMBER_FORMAT_MESSAGE; }
+    public static String emailIsRequired() {
+        return EMAIL_IS_REQUIRED_MESSAGE;
+    }
 
+    public static String emailIsInvalid() {
+        return EMAIL_INVALID_MESSAGE;
+    }
+
+    public static String passwordIsRequired() {
+        return PASSWORD_IS_REQUIRED_MESSAGE;
+    }
+
+    public static String passwordIsInvalid() {
+        return PASSWORD_LENGTH_MESSAGE;
+    }
+
+    public static String firstNameIsRequired() {
+        return FIRST_NAME_IS_REQUIRED_MESSAGE;
+    }
+
+    public static String lastNameIsRequired() {
+        return LAST_NAME_IS_REQUIRED_MESSAGE;
+    }
+
+    public static String phoneNumberIsRequired() {
+        return PHONE_NUMBER_IS_REQUIRED_MESSAGE;
+    }
+
+    public static String phoneNumberIsInvalid() {
+        return PHONE_NUMBER_INVALID_MESSAGE;
+    }
 }

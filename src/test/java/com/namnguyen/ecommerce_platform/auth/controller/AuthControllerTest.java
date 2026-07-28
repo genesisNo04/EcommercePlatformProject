@@ -15,17 +15,15 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import tools.jackson.databind.ObjectMapper;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 
 @WebMvcTest(AuthController.class)
@@ -49,12 +47,18 @@ public class AuthControllerTest {
 
     private final static String LOGIN_URI = "/api/auth/login";
     private final static String REGISTER_URI = "/api/auth/register";
+    private final static String VALID_EMAIL = "test@gmail.com";
+    private final static String INVALID_EMAIL = "testgmail.com";
+    private final static String VALID_PASSWORD = "test1237";
+    private final static String VALID_FIRST_NAME = "test";
+    private final static String VALID_LAST_NAME = "user";
+    private final static String VALID_PHONE_NUMBER = "1234567891";
 
     @Test
     void login_whenValidRequest_returnsAuthResponse() throws Exception{
         LoginRequest request = new LoginRequest(
-                "test@gmail.com",
-                "test1237"
+                VALID_EMAIL,
+                VALID_PASSWORD
         );
 
         AuthResponse response = new AuthResponse("fake-jwt-token");
@@ -80,9 +84,9 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_whenInvalidCredentials_throwsBadCredentialsException() throws Exception {
+    void login_whenInvalidCredentials_returnsUnauthorized() throws Exception {
         LoginRequest request = new LoginRequest(
-                "test@gmail.com",
+                VALID_EMAIL,
                 "wrongpassword"
         );
 
@@ -93,10 +97,11 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.message").value(badCredentials()))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
-                .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()));
+                .andExpect(jsonPath("$.message").value(badCredentials()))
+                .andExpect(jsonPath("$.uri").value(LOGIN_URI));
 
         ArgumentCaptor<LoginRequest> captor = ArgumentCaptor.forClass(LoginRequest.class);
         verify(authService).login(captor.capture());
@@ -110,47 +115,72 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_whenInvalidEmail_throwsMethodArgumentNotValidException() throws Exception {
+    void login_whenInvalidEmail_returnsBadRequest() throws Exception {
         LoginRequest request = new LoginRequest(
-                "testgmail.com",
-                "test123"
+                INVALID_EMAIL,
+                VALID_PASSWORD
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsInvalid())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void login_whenEmailIsBlank_throwsMethodArgumentNotValidException() throws Exception {
+    void login_whenEmailIsBlank_returnsBadRequest() throws Exception {
         LoginRequest request = new LoginRequest(
                 "",
-                "test123"
+                VALID_PASSWORD
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void login_whenEmailIsNull_throwsMethodArgumentNotValidException() throws Exception {
+    void login_whenEmailIsNull_returnsBadRequest() throws Exception {
         LoginRequest request = new LoginRequest(
                 null,
+                VALID_PASSWORD
+        );
+
+        mockMvc.perform(post(LOGIN_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
+
+        verifyNoInteractions(authService);
+    }
+
+    @Test
+    void login_whenPasswordIsLessThan8_returnsBadRequest() throws Exception {
+        LoginRequest request = new LoginRequest(
+                VALID_EMAIL,
                 "test123"
         );
 
@@ -158,37 +188,21 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
+
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void login_whenPasswordIsLessThan8_throwsMethodArgumentNotValidException() throws Exception {
+    void login_whenPasswordIsMoreThan50_returnsBadRequest() throws Exception {
         LoginRequest request = new LoginRequest(
-                "testgmail.com",
-                "test123"
-        );
-
-        mockMvc.perform(post(LOGIN_URI)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
-
-        verifyNoInteractions(authService);
-    }
-
-    @Test
-    void login_whenPasswordIsMoreThan50_throwsMethodArgumentNotValidException() throws Exception {
-        LoginRequest request = new LoginRequest(
-                "testgmail.com",
+                VALID_EMAIL,
                 "test1235645646467879461313131313456464as1d313a1sd31"
         );
 
@@ -196,18 +210,20 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void login_whenPasswordIsBlank_throwsMethodArgumentNotValidException() throws Exception {
+    void login_whenPasswordIsBlank_returnsBadRequest() throws Exception {
         LoginRequest request = new LoginRequest(
-                "testgmail.com",
+                VALID_EMAIL,
                 ""
         );
 
@@ -215,18 +231,23 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
+                .andExpect(jsonPath("$.fieldErrors.password").isArray())
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(
+                        passwordIsInvalid(),
+                        passwordIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void login_whenPasswordIsNull_throwsMethodArgumentNotValidException() throws Exception {
+    void login_whenPasswordIsNull_returnsBadRequest() throws Exception {
         LoginRequest request = new LoginRequest(
-                "testgmail.com",
+                VALID_EMAIL,
                 null
         );
 
@@ -234,22 +255,24 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenValidRequest_returnAuthResponse() throws Exception{
+    void register_whenValidRequest_returnsAuthResponse() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "test@gmail.com",
-                "test1234",
-                "test",
-                "user",
-                "1234567891"
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         AuthResponse response = new AuthResponse("fake-jwt-token");
@@ -260,6 +283,7 @@ public class AuthControllerTest {
         mockMvc.perform(post(REGISTER_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").value("fake-jwt-token"));
 
         ArgumentCaptor<RegisterRequest> captor = ArgumentCaptor.forClass(RegisterRequest.class);
@@ -277,331 +301,424 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenEmailIsNull_returnAuthResponse() throws Exception{
+    void register_whenPhoneNumberHasPlus_returnsAuthResponse() throws Exception{
+        RegisterRequest request = new RegisterRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "+1234567891"
+        );
+
+        AuthResponse response = new AuthResponse("fake-jwt-token");
+
+        when(authService.register(any(RegisterRequest.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(post(REGISTER_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.token").value("fake-jwt-token"));
+
+        ArgumentCaptor<RegisterRequest> captor = ArgumentCaptor.forClass(RegisterRequest.class);
+        verify(authService).register(captor.capture());
+
+        RegisterRequest captorRequest = captor.getValue();
+
+        assertThat(captorRequest.email()).isEqualTo(request.email());
+        assertThat(captorRequest.password()).isEqualTo(request.password());
+        assertThat(captorRequest.firstName()).isEqualTo(request.firstName());
+        assertThat(captorRequest.lastName()).isEqualTo(request.lastName());
+        assertThat(captorRequest.phoneNumber()).isEqualTo(request.phoneNumber());
+
+        verifyNoMoreInteractions(authService);
+    }
+
+    @Test
+    void register_whenEmailIsNull_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
                 null,
-                "test1234",
-                "test",
-                "user",
-                "1234567891"
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenEmailIsBlank_returnAuthResponse() throws Exception{
+    void register_whenEmailIsBlank_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
                 "",
-                "test1234",
-                "test",
-                "user",
-                "1234567891"
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenEmailIsInvalid_returnAuthResponse() throws Exception{
+    void register_whenEmailIsInvalid_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
-                "test",
-                "user",
-                "1234567891"
+                INVALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsInvalid())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenPasswordIsNull_returnAuthResponse() throws Exception{
+    void register_whenPasswordIsNull_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
+                VALID_EMAIL,
                 null,
-                "test",
-                "user",
-                "1234567891"
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenPasswordIsBlank_returnAuthResponse() throws Exception{
+    void register_whenPasswordIsBlank_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
+                VALID_EMAIL,
                 "",
-                "test",
-                "user",
-                "1234567891"
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(
+                        passwordIsRequired(),
+                        passwordIsInvalid())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenPasswordIsLessThan8_returnAuthResponse() throws Exception{
+    void register_whenPasswordIsLessThan8_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
+                VALID_EMAIL,
                 "test123",
-                "test",
-                "user",
-                "1234567891"
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenPasswordIsMoreThan50_returnAuthResponse() throws Exception{
+    void register_whenPasswordIsMoreThan50_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
+                VALID_EMAIL,
                 "test1235645646467879461313131313456464as1d313a1sd31",
-                "test",
-                "user",
-                "1234567891"
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenFirstNameIsBlank_returnAuthResponse() throws Exception{
+    void register_whenFirstNameIsBlank_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
+                VALID_EMAIL,
+                VALID_PASSWORD,
                 "",
-                "user",
-                "1234567891"
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(firstNameIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenFirstNameIsNull_returnAuthResponse() throws Exception{
+    void register_whenFirstNameIsNull_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
+                VALID_EMAIL,
+                VALID_PASSWORD,
                 null,
-                "user",
-                "1234567891"
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(firstNameIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenLastNameIsBlank_returnAuthResponse() throws Exception{
+    void register_whenLastNameIsBlank_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
-                "test",
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
                 "",
-                "1234567891"
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(lastNameIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenLastNameIsNull_returnAuthResponse() throws Exception{
+    void register_whenLastNameIsNull_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
-                "test",
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
                 null,
-                "1234567891"
+                VALID_PHONE_NUMBER
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(lastNameIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenPhoneNumberIsBlank_returnAuthResponse() throws Exception{
+    void register_whenPhoneNumberIsBlank_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
-                "test",
-                "user",
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
                 ""
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(
+                        phoneNumberIsRequired(),
+                        phoneNumberIsInvalid())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenPhoneNumberIsNull_returnAuthResponse() throws Exception{
+    void register_whenPhoneNumberIsNull_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
-                "test",
-                "user",
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
                 null
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsRequired())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenPhoneNumberHasLessThan10_returnAuthResponse() throws Exception{
+    void register_whenPhoneNumberHasLessThan10_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
-                "test",
-                "user",
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
                 "123456789"
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
 
         verifyNoInteractions(authService);
     }
 
     @Test
-    void register_whenPhoneNumberHasMoreThan15_returnAuthResponse() throws Exception{
+    void register_whenPhoneNumberHasMoreThan15_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
-                "testgmail.com",
-                "test1234",
-                "test",
-                "user",
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
                 "1234567891234567"
         );
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("fieldErrors.phoneNumber").value(phoneNumberFormat()));
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
+
+        verifyNoInteractions(authService);
+    }
+
+    @Test
+    void register_whenPhoneNumberHasInvalidSymbol_returnsBadRequest() throws Exception{
+        RegisterRequest request = new RegisterRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "-1234567891"
+        );
+
+        mockMvc.perform(post(REGISTER_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
 
         verifyNoInteractions(authService);
     }
