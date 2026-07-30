@@ -163,6 +163,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleException(Exception ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
+        ex.printStackTrace();
+
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
                         LocalDateTime.now(),
