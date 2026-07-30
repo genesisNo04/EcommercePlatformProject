@@ -4,6 +4,7 @@ import com.namnguyen.ecommerce_platform.auth.dto.AuthResponse;
 import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
 import com.namnguyen.ecommerce_platform.auth.service.AuthService;
+import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
 import org.junit.jupiter.api.Test;
@@ -721,5 +722,59 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
 
         verifyNoInteractions(authService);
+    }
+
+    @Test
+    void register_whenEmailAlreadyExists_returnsConflict() throws Exception{
+        RegisterRequest request = new RegisterRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
+        );
+
+        when(authService.register(any(RegisterRequest.class)))
+                .thenThrow(new DuplicateResourceException(emailDuplicate()));
+
+        mockMvc.perform(post(REGISTER_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(emailDuplicate()))
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+
+        verify(authService).register(any(RegisterRequest.class));
+        verifyNoMoreInteractions(authService);
+    }
+
+    @Test
+    void register_whenPhoneNumberAlreadyExists_returnsConflict() throws Exception{
+        RegisterRequest request = new RegisterRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
+        );
+
+        when(authService.register(any(RegisterRequest.class)))
+                .thenThrow(new DuplicateResourceException(phoneDuplicate()));
+
+        mockMvc.perform(post(REGISTER_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(phoneDuplicate()))
+                .andExpect(jsonPath("$.uri").value(REGISTER_URI));
+
+        verify(authService).register(any(RegisterRequest.class));
+        verifyNoMoreInteractions(authService);
     }
 }

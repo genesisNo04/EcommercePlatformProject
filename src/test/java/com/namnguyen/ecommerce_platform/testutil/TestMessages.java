@@ -31,6 +31,9 @@ public final class TestMessages {
     private static final String LAST_NAME_IS_REQUIRED_MESSAGE = "Last Name is required";
     private static final String PHONE_NUMBER_IS_REQUIRED_MESSAGE = "Phone Number is required";
     private static final String PHONE_NUMBER_INVALID_MESSAGE = "Phone number must be from 10 to 15 digits (with or without +)";
+    private static final String EMAIL_DUPLICATE_MESSAGE = "Email already exists";
+    private static final String PHONE_DUPLICATE_MESSAGE = "Phone number already exists";
+
 
     private TestMessages() {}
 
@@ -134,5 +137,13 @@ public final class TestMessages {
 
     public static String phoneNumberIsInvalid() {
         return PHONE_NUMBER_INVALID_MESSAGE;
+    }
+
+    public static String emailDuplicate() {
+        return EMAIL_DUPLICATE_MESSAGE;
+    }
+
+    public static String phoneDuplicate() {
+        return PHONE_DUPLICATE_MESSAGE;
     }
 }
