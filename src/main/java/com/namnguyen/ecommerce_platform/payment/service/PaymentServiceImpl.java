@@ -30,23 +30,28 @@ public class PaymentServiceImpl implements PaymentService{
         }
     }
 
-    private Payment getPayment(Long orderId, Long userId) {
-        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+    private Order getOrder(Long orderId, Long userId) {
+        return orderLookupService.getOrderByIdAndUserId(orderId, userId);
+    }
+
+    private Payment getPayment(Order order) {
         return paymentRepository.findByOrderId(order.getId())
-                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id:" + order.getId()));
+                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id: " + order.getId()));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaymentResponse getPaymentByOrderId(Long orderId, Long userId) {
-        Payment payment = getPayment(orderId, userId);
+        Order order = getOrder(orderId, userId);
+        Payment payment = getPayment(order);
         return PaymentMapper.toResponse(payment);
     }
 
     @Override
     @Transactional
     public PaymentResponse updatePayment(Long orderId, Long userId, PaymentRequest request) {
-        Payment payment = getPayment(orderId, userId);
+        Order order = getOrder(orderId, userId);
+        Payment payment = getPayment(order);
 
         if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
             throw new InvalidPaymentStateException("Only pending payments can be updated");
@@ -80,15 +85,15 @@ public class PaymentServiceImpl implements PaymentService{
     @Override
     @Transactional
     public PaymentResponse confirmPayment(Long orderId, Long userId, PaymentStatus status) {
-        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
-        Payment payment = getPayment(orderId, userId);
-
-        if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
-            throw new InvalidPaymentStateException("Only Pending payments can be confirmed");
-        }
+        Order order = getOrder(orderId, userId);
+        Payment payment = getPayment(order);
 
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
-            throw new InvalidOrderStateException("Order is not in pending payment");
+            throw new InvalidOrderStateException("Order is not pending payment");
+        }
+
+        if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
+            throw new InvalidPaymentStateException("Only pending payments can be confirmed");
         }
 
         if (status == PaymentStatus.SUCCESS) {

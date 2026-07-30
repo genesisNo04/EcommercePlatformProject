@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.security.jwt;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -59,8 +60,12 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        return extractUsername(token).equals(userDetails.getUsername())
-                && !isTokenExpired(token);
+        try {
+            return extractUsername(token).equals(userDetails.getUsername())
+                    && !isTokenExpired(token);
+        } catch (JwtException | IllegalAccessError ex) {
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {

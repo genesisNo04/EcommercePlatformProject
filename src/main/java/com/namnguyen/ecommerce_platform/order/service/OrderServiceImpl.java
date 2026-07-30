@@ -11,6 +11,7 @@ import com.namnguyen.ecommerce_platform.order.mapper.OrderMapper;
 import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
+import com.namnguyen.ecommerce_platform.product.service.ProductLookupService;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.service.UserLookupService;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +30,18 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final UserLookupService userLookupService;
-    private final ProductRepository productRepository;
     private final CartLookupService cartLookupService;
+    private final ProductLookupService productLookupService;
+
+    private void validateOrderItemQuantity(int quantity) {
+        if (quantity <= 0) {
+            throw new InvalidOrderException("Order item quantity must be greater than zero");
+        }
+    }
 
     private OrderItem createOrderItem(CreateOrderItemRequest request, Order order) {
-
-        Product product = productRepository.findById(request.productId())
-                .orElseThrow(() -> new NoResourceFoundException("No product found with id: " + request.productId()));
-
+        validateOrderItemQuantity(request.quantity());
+        Product product = productLookupService.getProductById(request.productId());
         return createOrderItem(product, request.quantity(), order);
     }
 
@@ -46,6 +51,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderItem createOrderItem(Product product, int quantity, Order order) {
+        validateOrderItemQuantity(quantity);
+
         if (product.getQuantity() < quantity) {
             throw new InsufficientStockException("Not enough stock for product: " + product.getName());
         }
@@ -86,9 +93,17 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    private void validateCreateOrderRequests(CreateOrderRequest request) {
+        if (request == null || request.items() == null || request.items().isEmpty()) {
+            throw new InvalidOrderException("Order must contain at least one item");
+        }
+    }
+
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request, Long userId) {
+        validateCreateOrderRequests(request);
+
         User user = userLookupService.getUserById(userId);
 
         Order order = new Order();
@@ -167,7 +182,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        cart.getItems().clear();
+        cart.clearItems();
 
         return OrderMapper.toResponse(savedOrder);
     }

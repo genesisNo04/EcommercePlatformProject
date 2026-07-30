@@ -19,6 +19,4 @@ public interface CartService {
     CartResponse removeItem(Long userId, Long productId);
 
     CartResponse clearCart(Long userId);
-
-    Cart createCartForUser(User user);
 }

@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.order.entity;
 
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
+import com.namnguyen.ecommerce_platform.payment.entity.Payment;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -55,7 +56,11 @@ public class Order {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
+
+    @OneToOne(mappedBy = "order")
+    private Payment payment;
 
     @PrePersist
     public void prePersist() {
@@ -67,5 +72,15 @@ public class Order {
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public void addOrderItem(OrderItem item) {
+        this.getOrderItems().add(item);
+        item.setOrder(this);
+    }
+
+    public void removeOrderItem(OrderItem item) {
+        this.getOrderItems().remove(item);
+        item.setOrder(null);
     }
 }

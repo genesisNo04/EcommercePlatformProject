@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.common.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 public record ValidationErrorResponse(
@@ -9,5 +10,5 @@ public record ValidationErrorResponse(
         String error,
         String message,
         String uri,
-        Map<String, String> fieldErrors
+        Map<String, List<String>> fieldErrors
 ) {}
