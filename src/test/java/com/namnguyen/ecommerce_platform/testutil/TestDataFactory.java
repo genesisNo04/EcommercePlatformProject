@@ -24,6 +24,23 @@ import java.util.List;
 
 public class TestDataFactory {
 
+    public final static String LOGIN_URI = "/api/auth/login";
+    public final static String REGISTER_URI = "/api/auth/register";
+    public final static String USER_URI = "/api/users";
+    public final static String VALID_EMAIL = "test@gmail.com";
+    public final static String INVALID_EMAIL = "testgmail.com";
+    public final static String VALID_PASSWORD = "test1237";
+    public final static String INVALID_PASSWORD_LESS_THAN_EIGHT = "test1237";
+    public final static String INVALID_PASSWORD_MORE_THAN_FIFTY = "test1235645646467879461313131313456464as1d313a1sd31";
+    public final static String VALID_FIRST_NAME = "test";
+    public final static String VALID_LAST_NAME = "user";
+    public final static String VALID_PHONE_NUMBER = "1234567891";
+    public final static String VALID_PHONE_NUMBER_WITH_PLUS = "1234567891";
+    public final static String INVALID_PHONE_NUMBER_LESS_THAN_TEN = "123456789";
+    public final static String INVALID_PHONE_NUMBER_MORE_THAN_FIFTEEN = "123456789";
+    public final static String INVALID_PHONE_NUMBER_WITH_MINUS = "-1234567891";
+    public final static Role ROLE = Role.CUSTOMER;
+
     private TestDataFactory(){
     }
 

@@ -33,6 +33,7 @@ public final class TestMessages {
     private static final String PHONE_NUMBER_INVALID_MESSAGE = "Phone number must be from 10 to 15 digits (with or without +)";
     private static final String EMAIL_DUPLICATE_MESSAGE = "Email already exists";
     private static final String PHONE_DUPLICATE_MESSAGE = "Phone number already exists";
+    private static final String INVALID_PARAMETER = "Invalid parameter: %s";
 
 
     private TestMessages() {}
@@ -145,5 +146,9 @@ public final class TestMessages {
 
     public static String phoneDuplicate() {
         return PHONE_DUPLICATE_MESSAGE;
+    }
+
+    public static String invalidParameter(String paramName) {
+        return String.format(INVALID_PARAMETER, paramName);
     }
 }
