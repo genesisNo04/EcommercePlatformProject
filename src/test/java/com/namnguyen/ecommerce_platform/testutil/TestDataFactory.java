@@ -30,7 +30,7 @@ public class TestDataFactory {
     public final static String VALID_EMAIL = "test@gmail.com";
     public final static String INVALID_EMAIL = "testgmail.com";
     public final static String VALID_PASSWORD = "test1237";
-    public final static String INVALID_PASSWORD_LESS_THAN_EIGHT = "test1237";
+    public final static String INVALID_PASSWORD_LESS_THAN_EIGHT = "test123";
     public final static String INVALID_PASSWORD_MORE_THAN_FIFTY = "test1235645646467879461313131313456464as1d313a1sd31";
     public final static String VALID_FIRST_NAME = "test";
     public final static String VALID_LAST_NAME = "user";

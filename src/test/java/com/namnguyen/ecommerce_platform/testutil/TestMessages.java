@@ -28,7 +28,9 @@ public final class TestMessages {
     private static final String PASSWORD_IS_REQUIRED_MESSAGE = "Password is required";
     private static final String PASSWORD_LENGTH_MESSAGE = "Password has to be from 8 to 50 chars";
     private static final String FIRST_NAME_IS_REQUIRED_MESSAGE = "First Name is required";
+    private static final String FIRST_NAME_IS_EMPTY_MESSAGE = "First Name cannot be empty";
     private static final String LAST_NAME_IS_REQUIRED_MESSAGE = "Last Name is required";
+    private static final String LAST_NAME_IS_EMPTY_MESSAGE = "Last Name cannot be empty";
     private static final String PHONE_NUMBER_IS_REQUIRED_MESSAGE = "Phone Number is required";
     private static final String PHONE_NUMBER_INVALID_MESSAGE = "Phone number must be from 10 to 15 digits (with or without +)";
     private static final String EMAIL_DUPLICATE_MESSAGE = "Email already exists";
@@ -124,12 +126,16 @@ public final class TestMessages {
         return PASSWORD_LENGTH_MESSAGE;
     }
 
-    public static String firstNameIsRequired() {
-        return FIRST_NAME_IS_REQUIRED_MESSAGE;
-    }
+    public static String firstNameIsRequired() { return FIRST_NAME_IS_REQUIRED_MESSAGE; }
 
     public static String lastNameIsRequired() {
         return LAST_NAME_IS_REQUIRED_MESSAGE;
+    }
+
+    public static String firstNameIsEmpty() { return FIRST_NAME_IS_EMPTY_MESSAGE; }
+
+    public static String lastNameIsEmpty() {
+        return LAST_NAME_IS_EMPTY_MESSAGE;
     }
 
     public static String phoneNumberIsRequired() {

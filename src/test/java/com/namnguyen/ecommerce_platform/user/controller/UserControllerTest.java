@@ -288,7 +288,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenUserNotExists_returnUserResponse() throws Exception {
+    void  putUser_whenUserNotExists_returnNotFound() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -313,6 +313,434 @@ public class UserControllerTest {
 
         verify(userService).putUser(userId, request);
         verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenUserIdInvalid_returnBadRequest() throws Exception {
+        String userId = "test";
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(invalidParameter("id")))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenEmailIsEmpty_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                "",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenEmailIsNull_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                null,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenEmailIsInvalid_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                INVALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsInvalid())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPasswordIsLessThanEight_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                INVALID_PASSWORD_LESS_THAN_EIGHT,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPasswordIsMoreThanFifty_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                INVALID_PASSWORD_MORE_THAN_FIFTY,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPasswordIsEmpty_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                "",
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(
+                        passwordIsInvalid(),
+                        passwordIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPasswordIsNull_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                null,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenFirstNameIsEmpty_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                "",
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(firstNameIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenFirstNameIsNull_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                null,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(firstNameIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenLastNameIsEmpty_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                "",
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(lastNameIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenLastNameIsNull_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                null,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(lastNameIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPhoneNumberIsEmpty_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "");
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(
+                        phoneNumberIsRequired(),
+                        phoneNumberIsInvalid())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPhoneNumberIsNull_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                null);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsRequired())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPhoneNumberIsLessThan10Digits_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                INVALID_PHONE_NUMBER_LESS_THAN_TEN);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPhoneNumberIsMoreThan15Digits_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                INVALID_PHONE_NUMBER_MORE_THAN_FIFTEEN);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  putUser_whenPhoneNumberHasInvalidSymbol_returnBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPutRequest request = new UserPutRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                INVALID_PHONE_NUMBER_WITH_MINUS);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
+
+        verifyNoInteractions(userService);
     }
 
     @Test
@@ -489,7 +917,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
-                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(firstNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(firstNameIsEmpty())));
 
         verifyNoInteractions(userService);
     }
@@ -514,7 +942,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
-                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(lastNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(lastNameIsEmpty())));
 
         verifyNoInteractions(userService);
     }
@@ -697,5 +1125,20 @@ public class UserControllerTest {
 
         verify(userService).deleteUser(userId);
         verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    void deleteUser_whenUserIdIsInvalid_returnNoContent() throws Exception {
+        String userId = "test";
+
+        mockMvc.perform(delete(USER_URI + "/" + userId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(invalidParameter("id")))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId));
+
+        verifyNoInteractions(userService);
     }
 }
