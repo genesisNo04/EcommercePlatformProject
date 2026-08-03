@@ -55,7 +55,7 @@ public class UserControllerTest {
     private CustomUserDetailsService customUserDetailsService;
 
     @Test
-    void getUserById_validUserId_returnUserResponse() throws Exception {
+    void getUserById_validUserId_returnsUserResponse() throws Exception {
         Long userId = 1L;
 
         UserResponse response = new UserResponse(
@@ -87,7 +87,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void getUserById_userNotFound_returnNotFound() throws Exception {
+    void getUserById_userNotFound_returnsNotFound() throws Exception {
         Long userId = 1L;
 
         when(userService.getUserById(userId))
@@ -106,7 +106,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void getUserById_invalidUserId_returnNotFound() throws Exception {
+    void getUserById_invalidUserId_returnsBadRequest() throws Exception {
         String userId = "testing";
 
         mockMvc.perform(get(USER_URI + "/" + userId))
@@ -121,7 +121,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void getAllUsers_listOfUsersExists_returnPageUserResponse() throws Exception {
+    void getAllUsers_listOfUsersExists_returnsPageUserResponse() throws Exception {
         Long userId = 1L;
         Long userId1 = 2L;
 
@@ -200,7 +200,89 @@ public class UserControllerTest {
     }
 
     @Test
-    void getAllUsers_listOfUsersEmpty_returnPageUserResponse() throws Exception {
+    void getAllUsers_listOfUsersExistsWithFilter_returnsPageUserResponse() throws Exception {
+        Long userId = 1L;
+        Long userId1 = 2L;
+
+        UserResponse response = new UserResponse(
+                userId,
+                VALID_EMAIL,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER,
+                ROLE,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        UserResponse response1 = new UserResponse(
+                userId1,
+                "test1@gmail.com",
+                VALID_FIRST_NAME + "1",
+                VALID_LAST_NAME + "1",
+                "1234567892",
+                ROLE,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        List<UserResponse> listResponse = List.of(response, response1);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<UserResponse> responses = new PageImpl<>(listResponse, pageable, listResponse.size());
+
+        when(userService.getAllUsers(any(UserFilterRequest.class), any(Pageable.class))).thenReturn(responses);
+
+        mockMvc.perform(get(USER_URI)
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("email", VALID_EMAIL)
+                        .param("keyword", VALID_FIRST_NAME)
+                        .param("role", ROLE.name())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id").value(userId))
+                .andExpect(jsonPath("$.content[0].email").value(VALID_EMAIL))
+                .andExpect(jsonPath("$.content[0].firstName").value(VALID_FIRST_NAME))
+                .andExpect(jsonPath("$.content[0].lastName").value(VALID_LAST_NAME))
+                .andExpect(jsonPath("$.content[0].phoneNumber").value(VALID_PHONE_NUMBER))
+                .andExpect(jsonPath("$.content[0].role").value(ROLE.name()))
+                .andExpect(jsonPath("$.content[0].createdAt").exists())
+                .andExpect(jsonPath("$.content[0].updatedAt").exists())
+                .andExpect(jsonPath("$.content[1].id").value(userId1))
+                .andExpect(jsonPath("$.content[1].email").value(response1.email()))
+                .andExpect(jsonPath("$.content[1].firstName").value(response1.firstName()))
+                .andExpect(jsonPath("$.content[1].lastName").value(response1.lastName()))
+                .andExpect(jsonPath("$.content[1].phoneNumber").value(response1.phoneNumber()))
+                .andExpect(jsonPath("$.content[1].role").value(response1.role().name()))
+                .andExpect(jsonPath("$.content[1].createdAt").exists())
+                .andExpect(jsonPath("$.content[1].updatedAt").exists())
+                .andExpect(jsonPath("$.numberOfElements").value(2))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+        ArgumentCaptor<UserFilterRequest> captorFilter = ArgumentCaptor.forClass(UserFilterRequest.class);
+        ArgumentCaptor<Pageable> captorPageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(userService).getAllUsers(captorFilter.capture(), captorPageable.capture());
+
+
+        UserFilterRequest requestCapture = captorFilter.getValue();
+        Pageable pageableCapture = captorPageable.getValue();
+
+        assertThat(requestCapture.email()).isEqualTo(VALID_EMAIL);
+        assertThat(requestCapture.keyword()).isEqualTo(VALID_FIRST_NAME);
+        assertThat(requestCapture.role()).isEqualTo(ROLE);
+
+        assertThat(pageableCapture.getPageNumber()).isEqualTo(0);
+        assertThat(pageableCapture.getPageSize()).isEqualTo(10);
+
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    void getAllUsers_listOfUsersEmpty_returnsPageUserResponse() throws Exception {
         List<UserResponse> listResponse = List.of();
         Pageable pageable = PageRequest.of(0, 10);
         Page<UserResponse> responses = new PageImpl<>(listResponse, pageable, listResponse.size());
@@ -237,7 +319,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenUserExists_returnUserResponse() throws Exception {
+    void  putUser_whenUserExists_returnsUserResponse() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -288,7 +370,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenUserNotExists_returnNotFound() throws Exception {
+    void  putUser_whenUserNotExists_returnsNotFound() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -316,7 +398,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenUserIdInvalid_returnBadRequest() throws Exception {
+    void  putUser_whenUserIdInvalid_returnsBadRequest() throws Exception {
         String userId = "test";
 
         UserPutRequest request = new UserPutRequest(
@@ -340,7 +422,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenEmailIsEmpty_returnBadRequest() throws Exception {
+    void  putUser_whenEmailIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -365,7 +447,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenEmailIsNull_returnBadRequest() throws Exception {
+    void  putUser_whenEmailIsNull_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -390,7 +472,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenEmailIsInvalid_returnBadRequest() throws Exception {
+    void  putUser_whenEmailIsInvalid_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -415,7 +497,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPasswordIsLessThanEight_returnBadRequest() throws Exception {
+    void  putUser_whenPasswordIsLessThanEight_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -440,7 +522,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPasswordIsMoreThanFifty_returnBadRequest() throws Exception {
+    void  putUser_whenPasswordIsMoreThanFifty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -465,7 +547,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPasswordIsEmpty_returnBadRequest() throws Exception {
+    void  putUser_whenPasswordIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -492,7 +574,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPasswordIsNull_returnBadRequest() throws Exception {
+    void  putUser_whenPasswordIsNull_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -517,7 +599,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenFirstNameIsEmpty_returnBadRequest() throws Exception {
+    void  putUser_whenFirstNameIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -542,7 +624,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenFirstNameIsNull_returnBadRequest() throws Exception {
+    void  putUser_whenFirstNameIsNull_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -567,7 +649,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenLastNameIsEmpty_returnBadRequest() throws Exception {
+    void  putUser_whenLastNameIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -592,7 +674,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenLastNameIsNull_returnBadRequest() throws Exception {
+    void  putUser_whenLastNameIsNull_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -617,7 +699,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPhoneNumberIsEmpty_returnBadRequest() throws Exception {
+    void  putUser_whenPhoneNumberIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -644,7 +726,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPhoneNumberIsNull_returnBadRequest() throws Exception {
+    void  putUser_whenPhoneNumberIsNull_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -669,7 +751,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPhoneNumberIsLessThan10Digits_returnBadRequest() throws Exception {
+    void  putUser_whenPhoneNumberIsLessThan10Digits_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -694,7 +776,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPhoneNumberIsMoreThan15Digits_returnBadRequest() throws Exception {
+    void  putUser_whenPhoneNumberIsMoreThan15Digits_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -719,7 +801,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenPhoneNumberHasInvalidSymbol_returnBadRequest() throws Exception {
+    void  putUser_whenPhoneNumberHasInvalidSymbol_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPutRequest request = new UserPutRequest(
@@ -744,7 +826,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenUserExists_returnUserResponse() throws Exception {
+    void  patchUser_whenUserExists_returnsUserResponse() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
@@ -795,7 +877,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenUserNotExists_returnUserResponse() throws Exception {
+    void  patchUser_whenUserNotExists_returnsNotFound() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
@@ -823,7 +905,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenEmailIsInvalid_returnBadRequest() throws Exception {
+    void  patchUser_whenEmailIsInvalid_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
@@ -848,11 +930,36 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenPasswordLessThan8Chars_returnBadRequest() throws Exception {
+    void  patchUser_whenEmailIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
-                INVALID_EMAIL,
+                "",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(patch(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsEmpty())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  patchUser_whenPasswordLessThan8Chars_returnsBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPatchRequest request = new UserPatchRequest(
+                VALID_EMAIL,
                 INVALID_PASSWORD_LESS_THAN_EIGHT,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
@@ -873,7 +980,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenPasswordMoreThan50Chars_returnBadRequest() throws Exception {
+    void  patchUser_whenPasswordMoreThan50Chars_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
@@ -898,7 +1005,34 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenFirstNameIsEmpty_returnBadRequest() throws Exception {
+    void  patchUser_whenPasswordIsEmpty_returnsBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPatchRequest request = new UserPatchRequest(
+                VALID_EMAIL,
+                "",
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER);
+
+        mockMvc.perform(patch(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(
+                        passwordIsEmpty(),
+                        passwordIsInvalid())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  patchUser_whenFirstNameIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
@@ -923,12 +1057,12 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenLastNameIsEmpty_returnBadRequest() throws Exception {
+    void  patchUser_whenLastNameIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
-                INVALID_EMAIL,
-                INVALID_PASSWORD_MORE_THAN_FIFTY,
+                VALID_EMAIL,
+                VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 "",
                 VALID_PHONE_NUMBER);
@@ -948,12 +1082,12 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenPhoneNumberIsLessThan9digits_returnBadRequest() throws Exception {
+    void  patchUser_whenPhoneNumberIsLessThan10Digits_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
-                INVALID_EMAIL,
-                INVALID_PASSWORD_MORE_THAN_FIFTY,
+                VALID_EMAIL,
+                VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 INVALID_PHONE_NUMBER_LESS_THAN_TEN);
@@ -973,12 +1107,12 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenPhoneNumberMoreThan15_returnBadRequest() throws Exception {
+    void  patchUser_whenPhoneNumberMoreThan15_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
-                INVALID_EMAIL,
-                INVALID_PASSWORD_MORE_THAN_FIFTY,
+                VALID_EMAIL,
+                VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 INVALID_PHONE_NUMBER_MORE_THAN_FIFTEEN);
@@ -998,12 +1132,37 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenPhoneNumberHasInvalidSymbol_returnBadRequest() throws Exception {
+    void  patchUser_whenPhoneNumberIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
-                INVALID_EMAIL,
-                INVALID_PASSWORD_MORE_THAN_FIFTY,
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "");
+
+        mockMvc.perform(patch(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI + "/" + userId))
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void  patchUser_whenPhoneNumberHasInvalidSymbol_returnsBadRequest() throws Exception {
+        Long userId = 1L;
+
+        UserPatchRequest request = new UserPatchRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 INVALID_PHONE_NUMBER_WITH_MINUS);
@@ -1023,7 +1182,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenInvalidUserId_returnBadRequest() throws Exception {
+    void  patchUser_whenInvalidUserId_returnsBadRequest() throws Exception {
         String userId = "testing";
 
         UserPatchRequest request = new UserPatchRequest(
@@ -1047,7 +1206,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  patchUser_whenUserExists_partiallyPatch_returnUserResponse() throws Exception {
+    void  patchUser_whenUserExists_partiallyPatch_returnsUserResponse() throws Exception {
         Long userId = 1L;
 
         UserPatchRequest request = new UserPatchRequest(
@@ -1098,7 +1257,58 @@ public class UserControllerTest {
     }
 
     @Test
-    void deleteUser_whenUserExists_returnNoContent() throws Exception {
+    void  patchUser_whenAllFieldsAreNull_returnsUserResponse() throws Exception {
+        Long userId = 1L;
+
+        UserPatchRequest request = new UserPatchRequest(
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        UserResponse response = new UserResponse(
+                userId,
+                VALID_EMAIL,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER,
+                ROLE,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        when(userService.patchUser(userId, request)).thenReturn(response);
+
+        mockMvc.perform(patch(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId))
+                .andExpect(jsonPath("$.email").value(VALID_EMAIL))
+                .andExpect(jsonPath("$.firstName").value(VALID_FIRST_NAME))
+                .andExpect(jsonPath("$.lastName").value(VALID_LAST_NAME))
+                .andExpect(jsonPath("$.phoneNumber").value(VALID_PHONE_NUMBER))
+                .andExpect(jsonPath("$.role").value(ROLE.name()))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        ArgumentCaptor<UserPatchRequest> captor = ArgumentCaptor.forClass(UserPatchRequest.class);
+        verify(userService).patchUser(eq(userId), captor.capture());
+
+        UserPatchRequest userPatchRequest = captor.getValue();
+
+        assertThat(userPatchRequest.email()).isNull();
+        assertThat(userPatchRequest.password()).isNull();
+        assertThat(userPatchRequest.firstName()).isNull();
+        assertThat(userPatchRequest.lastName()).isNull();
+        assertThat(userPatchRequest.phoneNumber()).isNull();
+
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    void deleteUser_whenUserExists_returnsNoContent() throws Exception {
         Long userId = 1L;
 
         mockMvc.perform(delete(USER_URI + "/" + userId))
@@ -1109,7 +1319,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void deleteUser_whenUserNotExists_returnNoContent() throws Exception {
+    void deleteUser_whenUserNotExists_returnsNotFound() throws Exception {
         Long userId = 1L;
 
         doThrow(new NoResourceFoundException(userNotFound(userId)))
@@ -1128,7 +1338,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void deleteUser_whenUserIdIsInvalid_returnNoContent() throws Exception {
+    void deleteUser_whenUserIdIsInvalid_returnsBadRequest() throws Exception {
         String userId = "test";
 
         mockMvc.perform(delete(USER_URI + "/" + userId))

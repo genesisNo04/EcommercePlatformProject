@@ -24,8 +24,10 @@ public final class TestMessages {
     private static final String VALIDATION_FAILED_MESSAGE = "Validation failed";
     private static final String BAD_CREDENTIAL_MESSAGE = "Bad credentials";
     private static final String EMAIL_IS_REQUIRED_MESSAGE = "Email is required";
+    private static final String EMAIL_IS_EMPTY_MESSAGE = "Email cannot be empty";
     private static final String EMAIL_INVALID_MESSAGE = "Invalid Email format";
     private static final String PASSWORD_IS_REQUIRED_MESSAGE = "Password is required";
+    private static final String PASSWORD_IS_EMPTY_MESSAGE = "Password cannot be empty";
     private static final String PASSWORD_LENGTH_MESSAGE = "Password has to be from 8 to 50 chars";
     private static final String FIRST_NAME_IS_REQUIRED_MESSAGE = "First Name is required";
     private static final String FIRST_NAME_IS_EMPTY_MESSAGE = "First Name cannot be empty";
@@ -118,12 +120,20 @@ public final class TestMessages {
         return EMAIL_INVALID_MESSAGE;
     }
 
+    public static String emailIsEmpty() {
+        return EMAIL_IS_EMPTY_MESSAGE;
+    }
+
     public static String passwordIsRequired() {
         return PASSWORD_IS_REQUIRED_MESSAGE;
     }
 
     public static String passwordIsInvalid() {
         return PASSWORD_LENGTH_MESSAGE;
+    }
+
+    public static String passwordIsEmpty() {
+        return PASSWORD_IS_EMPTY_MESSAGE;
     }
 
     public static String firstNameIsRequired() { return FIRST_NAME_IS_REQUIRED_MESSAGE; }

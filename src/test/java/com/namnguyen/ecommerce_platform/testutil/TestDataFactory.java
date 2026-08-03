@@ -10,6 +10,7 @@ import com.namnguyen.ecommerce_platform.payment.entity.Payment;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentMethod;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
+import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 import org.aspectj.weaver.ast.Or;
@@ -26,6 +27,7 @@ public class TestDataFactory {
 
     public final static String LOGIN_URI = "/api/auth/login";
     public final static String REGISTER_URI = "/api/auth/register";
+    public final static String PRODUCT_URI = "/api/products";
     public final static String USER_URI = "/api/users";
     public final static String VALID_EMAIL = "test@gmail.com";
     public final static String INVALID_EMAIL = "testgmail.com";
@@ -35,11 +37,17 @@ public class TestDataFactory {
     public final static String VALID_FIRST_NAME = "test";
     public final static String VALID_LAST_NAME = "user";
     public final static String VALID_PHONE_NUMBER = "1234567891";
-    public final static String VALID_PHONE_NUMBER_WITH_PLUS = "1234567891";
+    public final static String VALID_PHONE_NUMBER_WITH_PLUS = "+1234567891";
     public final static String INVALID_PHONE_NUMBER_LESS_THAN_TEN = "123456789";
     public final static String INVALID_PHONE_NUMBER_MORE_THAN_FIFTEEN = "123456789";
     public final static String INVALID_PHONE_NUMBER_WITH_MINUS = "-1234567891";
     public final static Role ROLE = Role.CUSTOMER;
+    public final static String PRODUCT_NAME = "Test Product";
+    public final static String PRODUCT_DESCRIPTION = "Test Product Description";
+    public final static BigDecimal PRODUCT_PRICE = BigDecimal.valueOf(10.99);
+    public final static Integer PRODUCT_QUANTITY = 50;
+    public final static ProductStatus PRODUCT_STATUS = ProductStatus.ACTIVE;
+
 
     private TestDataFactory(){
     }
