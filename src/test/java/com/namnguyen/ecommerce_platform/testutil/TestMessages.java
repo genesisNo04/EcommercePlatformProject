@@ -38,6 +38,14 @@ public final class TestMessages {
     private static final String EMAIL_DUPLICATE_MESSAGE = "Email already exists";
     private static final String PHONE_DUPLICATE_MESSAGE = "Phone number already exists";
     private static final String INVALID_PARAMETER = "Invalid parameter: %s";
+    private static final String PRODUCT_NAME_IS_REQUIRED_MESSAGE = "Product Name is required";
+    private static final String PRODUCT_DESCRIPTION_IS_REQUIRED_MESSAGE = "Product Description is required";
+    private static final String PRODUCT_PRICE_IS_REQUIRED_MESSAGE = "Product Price is required";
+    private static final String PRODUCT_QUANTITY_IS_REQUIRED_MESSAGE = "Product Quantity is required";
+    private static final String PRODUCT_NAME_IS_MORE_THAN_100_CHARS_MESSAGE = "Product Name cannot exceed 100 characters";
+    private static final String PRODUCT_DESCRIPTION_LENGTH_LIMIT_MESSAGE = "Description has to be from 5 to 1000 chars";
+    private static final String INVALID_PRODUCT_PRICE_MESSAGE = "Price must be greater than 0";
+    private static final String PRODUCT_NEGATIVE_QUANTITY_MESSAGE = "Quantity cannot be negative";
 
 
     private TestMessages() {}
@@ -167,4 +175,20 @@ public final class TestMessages {
     public static String invalidParameter(String paramName) {
         return String.format(INVALID_PARAMETER, paramName);
     }
+
+    public static String productNameIsRequired() { return PRODUCT_NAME_IS_REQUIRED_MESSAGE; }
+
+    public static String productDescriptionIsRequired() { return PRODUCT_DESCRIPTION_IS_REQUIRED_MESSAGE; }
+
+    public static String productPriceIsRequired() { return PRODUCT_PRICE_IS_REQUIRED_MESSAGE; }
+
+    public static String productQuantityIsRequired() { return PRODUCT_QUANTITY_IS_REQUIRED_MESSAGE; }
+
+    public static String productNameLength() { return PRODUCT_NAME_IS_MORE_THAN_100_CHARS_MESSAGE; }
+
+    public static String productDescriptionLength() { return PRODUCT_DESCRIPTION_LENGTH_LIMIT_MESSAGE; }
+
+    public static String productPriceZero() { return INVALID_PRODUCT_PRICE_MESSAGE; }
+
+    public static String productNegativeQuantity() { return PRODUCT_NEGATIVE_QUANTITY_MESSAGE; }
 }
