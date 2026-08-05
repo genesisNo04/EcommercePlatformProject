@@ -20,6 +20,8 @@ public class TestDataFactory {
 
     public static final String INVALID_ID = "test";
     public final static String LOGIN_URI = "/api/auth/login";
+    public final static String CART_URI = "/api/cart";
+    public final static String CART_ITEM_URI = "/api/cart/items";
     public final static String REGISTER_URI = "/api/auth/register";
     public final static String PRODUCT_URI = "/api/products";
     public final static String USER_URI = "/api/users";
@@ -44,8 +46,8 @@ public class TestDataFactory {
     public final static String INVALID_PRODUCT_NAME_MORE_THAN_LIMIT = "ibrwaeapeeezjuueygyqakycukbvdpjydtyyipmwuairzqndtgwraymiccxzpvhazaechphrjmfmbxedzhiiuznbtdmiyqktadhzi";
     public final static String INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT = "ndneyybzzbpctyxfhgpzcfifjqkgzezwjvrwedkydbvqjhyxejwnjtinndtqvvmmutvknjgpynjaupuqevnnyjzctjuxkukipdmrpupwquddrphzuzeqvgcbbhbchhbkkfkzktnxhgvgcmwbiivppinhwpjaczqdtmtyapfrfttdqkmdjtzdfqypbwwhgmthwchkjqybetkkkcpcktcgkpydqqakpqytpxwdaqfrdnnidkywdftjkzcwujpjwgxxyjgtgnvwamapvgbpadjjtfkuzmtfqkdmmiciuvcgjfqgwkkirtzgnkqzqijtcibajdyugwibnuwnwzxmhuknzyxfvfuudfprgghgbzejnvizkbgtbemqtzpkqkddaupcuynirhezjtwaizkcxtitvtwrfnpnzqdbipiradmjfweggwddymeydhpippdpcrgtdfxryhqnacpjuvfjdjxxnqnttjrqrinkdviquwvjtyvhaxqpapuakdwfhtdcredxhrnahigfnyqcdjzvvcjvxcukierkgmxfchzeetrwbxrivkydcjdtptybgjgfryafyncztzdnbzpxupffvxudtmtjuqbdnxacxuudhkqitnaumkttcqehdxwxtqwkaihbywqxttmcgpnrejkhuckhkfbaxpnnfrazathcauzbbprtweggdqhtjhgnwachzdvbbdafjquqiqnifkzzwzfhzmnkqxncxdgheuyrpzbudfjdtruzwkptuxqifncppavenkmurwadhmdhkiehbmwngrdmuqpicrkqiwfueimwhbhumgewmazdfjpfgctbcmbxfdbxvxhhpnbuqywnnxkmiknzykrwjfayghtqkxbxpcbunwfeifehzgthgyrxyjwtavvzzpcnzqdhgpkgjrkdfjyfggjqcbcgtunzzhtgfxukydjtabdarvtwwuyvwrfnmuafmwhbhxfupjbewmvjraqhjqrzngquvvwbwadic";
     public final static String INVALID_PRODUCT_DESCRIPTION_LESS_THAN_LIMIT = "test";
-    public final static BigDecimal INVALID_PRODUCT_PRICE = BigDecimal.valueOf(0.0);
-    public final static Integer INVALID_PRODUCT_QUANTITY = -1;
+    public final static BigDecimal INVALID_PRODUCT_PRICE_ZERO = BigDecimal.valueOf(0.0);
+    public final static Integer INVALID_PRODUCT_NEGATIVE_QUANTITY = -1;
 
 
 

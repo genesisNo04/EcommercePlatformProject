@@ -13,10 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -121,7 +118,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void getAllUsers_listOfUsersExists_returnsPageUserResponse() throws Exception {
+    void getAllUsers_whenUsersExist_returnsPageUserResponse() throws Exception {
         Long userId = 1L;
         Long userId1 = 2L;
 
@@ -155,8 +152,7 @@ public class UserControllerTest {
 
         mockMvc.perform(get(USER_URI)
                         .param("page", "0")
-                        .param("size", "10")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(2)))
@@ -192,6 +188,7 @@ public class UserControllerTest {
         assertThat(requestCapture.email()).isNull();
         assertThat(requestCapture.keyword()).isNull();
         assertThat(requestCapture.role()).isNull();
+        assertThat(pageableCapture.getSort()).contains(Sort.Order.asc("id"));
 
         assertThat(pageableCapture.getPageNumber()).isEqualTo(0);
         assertThat(pageableCapture.getPageSize()).isEqualTo(10);
@@ -200,7 +197,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void getAllUsers_listOfUsersExistsWithFilter_returnsPageUserResponse() throws Exception {
+    void getAllUsers_whenUsersExistWithFilter_returnsPageUserResponse() throws Exception {
         Long userId = 1L;
         Long userId1 = 2L;
 
@@ -237,8 +234,7 @@ public class UserControllerTest {
                         .param("size", "10")
                         .param("email", VALID_EMAIL)
                         .param("keyword", VALID_FIRST_NAME)
-                        .param("role", ROLE.name())
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .param("role", ROLE.name()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(2)))
@@ -277,8 +273,28 @@ public class UserControllerTest {
 
         assertThat(pageableCapture.getPageNumber()).isEqualTo(0);
         assertThat(pageableCapture.getPageSize()).isEqualTo(10);
+        assertThat(pageableCapture.getSort()).contains(Sort.Order.asc("id"));
 
         verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    void getAllUsers_whenFilterRoleIsInvalid_returnsBadRequest() throws Exception {
+        mockMvc.perform(get(USER_URI)
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("email", VALID_EMAIL)
+                        .param("keyword", VALID_FIRST_NAME)
+                        .param("role", "BAD_ROLE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(USER_URI))
+                .andExpect(jsonPath("$.fieldErrors.role", containsInAnyOrder(invalidParameter("role"))));
+
+        verifyNoInteractions(userService);
     }
 
     @Test
@@ -291,8 +307,7 @@ public class UserControllerTest {
 
         mockMvc.perform(get(USER_URI)
                         .param("page", "0")
-                        .param("size", "10")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty())
@@ -314,6 +329,7 @@ public class UserControllerTest {
 
         assertThat(pageableCapture.getPageNumber()).isEqualTo(0);
         assertThat(pageableCapture.getPageSize()).isEqualTo(10);
+        assertThat(pageableCapture.getSort()).contains(Sort.Order.asc("id"));
 
         verifyNoMoreInteractions(userService);
     }
@@ -398,7 +414,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void  putUser_whenUserIdInvalid_returnsBadRequest() throws Exception {
+    void  putUser_whenUserIdIsInvalid_returnsBadRequest() throws Exception {
         String userId = "test";
 
         UserPutRequest request = new UserPutRequest(

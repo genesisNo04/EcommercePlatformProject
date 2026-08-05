@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 public record ProductPutRequest(
 
         @NotBlank(message = "Product Name is required")
-        @Size(max = 100, message = "Product Name cannot exceed 100 characters")
+        @Size(min = 1, max = 100, message = "Product Name cannot exceed 100 characters")
         String name,
 
         @NotBlank(message = "Product Description is required")

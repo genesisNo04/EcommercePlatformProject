@@ -46,6 +46,8 @@ public final class TestMessages {
     private static final String PRODUCT_DESCRIPTION_LENGTH_LIMIT_MESSAGE = "Description has to be from 5 to 1000 chars";
     private static final String INVALID_PRODUCT_PRICE_MESSAGE = "Price must be greater than 0";
     private static final String PRODUCT_NEGATIVE_QUANTITY_MESSAGE = "Quantity cannot be negative";
+    private static final String PRODUCT_NAME_EMPTY_MESSAGE = "Product Name cannot be empty";
+    private static final String PRODUCT_DESCRIPTION_EMPTY_MESSAGE = "Product Description cannot be empty";
 
 
     private TestMessages() {}
@@ -191,4 +193,8 @@ public final class TestMessages {
     public static String productPriceZero() { return INVALID_PRODUCT_PRICE_MESSAGE; }
 
     public static String productNegativeQuantity() { return PRODUCT_NEGATIVE_QUANTITY_MESSAGE; }
+
+    public static String productNameIsEmpty() { return PRODUCT_NAME_EMPTY_MESSAGE; }
+
+    public static String productDescriptionIsEmpty() { return PRODUCT_DESCRIPTION_EMPTY_MESSAGE; }
 }

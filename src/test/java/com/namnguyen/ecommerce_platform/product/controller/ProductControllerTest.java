@@ -1,10 +1,8 @@
 package com.namnguyen.ecommerce_platform.product.controller;
 
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
-import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
-import com.namnguyen.ecommerce_platform.product.dto.ProductFilterRequest;
-import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
-import com.namnguyen.ecommerce_platform.product.dto.ProductResponse;
+import com.namnguyen.ecommerce_platform.product.dto.*;
+import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.service.ProductService;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
@@ -270,7 +268,7 @@ public class ProductControllerTest {
     void createProduct_whenPriceIsNull_returnsBadRequest() throws Exception {
         ProductCreateRequest request = new ProductCreateRequest(
                 VALID_PRODUCT_NAME,
-                INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT,
+                VALID_PRODUCT_DESCRIPTION,
                 null,
                 VALID_PRODUCT_QUANTITY
         );
@@ -293,8 +291,8 @@ public class ProductControllerTest {
     void createProduct_whenPriceIsZero_returnsBadRequest() throws Exception {
         ProductCreateRequest request = new ProductCreateRequest(
                 VALID_PRODUCT_NAME,
-                INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT,
-                INVALID_PRODUCT_PRICE,
+                VALID_PRODUCT_DESCRIPTION,
+                INVALID_PRODUCT_PRICE_ZERO,
                 VALID_PRODUCT_QUANTITY
         );
 
@@ -316,8 +314,8 @@ public class ProductControllerTest {
     void createProduct_whenQuantityIsNull_returnsBadRequest() throws Exception {
         ProductCreateRequest request = new ProductCreateRequest(
                 VALID_PRODUCT_NAME,
-                INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT,
-                INVALID_PRODUCT_PRICE,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
                 null
         );
 
@@ -339,9 +337,9 @@ public class ProductControllerTest {
     void createProduct_whenQuantityIsNegative_returnsBadRequest() throws Exception {
         ProductCreateRequest request = new ProductCreateRequest(
                 VALID_PRODUCT_NAME,
-                INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT,
-                INVALID_PRODUCT_PRICE,
-                INVALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                INVALID_PRODUCT_NEGATIVE_QUANTITY
         );
 
         mockMvc.perform(post(PRODUCT_URI)
@@ -426,7 +424,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void getAllProducts_whenProductsExists_returnPageOfProducts() throws Exception {
+    void getAllProducts_whenProductsExist_returnsPageOfProducts() throws Exception {
         Long productId = 1L;
         Long productId1 = 2L;
 
@@ -497,12 +495,13 @@ public class ProductControllerTest {
         assertThat(capturedFilter.maxPrice()).isNull();
         assertThat(pageableCaptor.getPageSize()).isEqualTo(10);
         assertThat(pageableCaptor.getPageNumber()).isEqualTo(0);
+        assertThat(pageableCaptor.getSort()).contains(Sort.Order.asc("id"));
 
         verifyNoMoreInteractions(productService);
     }
 
     @Test
-    void getAllProducts_whenFilterAvailable_returnPageOfProducts() throws Exception {
+    void getAllProducts_whenFilterAvailable_returnsPageOfProducts() throws Exception {
         Long productId = 1L;
         Long productId1 = 2L;
 
@@ -577,16 +576,73 @@ public class ProductControllerTest {
         assertThat(capturedFilter.maxPrice()).isEqualByComparingTo(BigDecimal.valueOf(20.0));
         assertThat(pageableCaptor.getPageSize()).isEqualTo(10);
         assertThat(pageableCaptor.getPageNumber()).isEqualTo(0);
+        assertThat(pageableCaptor.getSort()).contains(Sort.Order.asc("id"));
 
         verifyNoMoreInteractions(productService);
     }
 
     @Test
-    void getAllProducts_whenThereIsNoProduct_returnPageOfProducts() throws Exception {
+    void getAllProducts_whenStatusFilterIsInvalid_returnsBadRequest() throws Exception {
+        mockMvc.perform(get(PRODUCT_URI)
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("status", "BAD_STATUS")
+                        .param("keyword", "Test")
+                        .param("minPrice", "0.0")
+                        .param("maxPrice", "20.0" ))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
+                .andExpect(jsonPath("$.fieldErrors.status", containsInAnyOrder(invalidParameter("status"))));
 
-        ProductFilterRequest request = new ProductFilterRequest(
-                null, null, null, null);
+        verifyNoInteractions(productService);
+    }
 
+    @Test
+    void getAllProducts_whenMinPriceIsInvalid_returnsBadRequest() throws Exception {
+        mockMvc.perform(get(PRODUCT_URI)
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("status", VALID_PRODUCT_STATUS.name())
+                        .param("keyword", "Test")
+                        .param("minPrice", "abc")
+                        .param("maxPrice", "20.0" ))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
+                .andExpect(jsonPath("$.fieldErrors.minPrice", containsInAnyOrder(invalidParameter("minPrice"))));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void getAllProducts_whenMaxPriceIsInvalid_returnsBadRequest() throws Exception {
+        mockMvc.perform(get(PRODUCT_URI)
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("status", VALID_PRODUCT_STATUS.name())
+                        .param("keyword", "Test")
+                        .param("minPrice", "0.0")
+                        .param("maxPrice", "abc" ))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
+                .andExpect(jsonPath("$.fieldErrors.maxPrice", containsInAnyOrder(invalidParameter("maxPrice"))));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void getAllProducts_whenNoProductsExist_returnsEmptyPage() throws Exception {
         List<ProductResponse> responses = List.of();
         Pageable pageable = PageRequest.of(0, 10);
         Page<ProductResponse> pageResponse = new PageImpl<>(responses, pageable, responses.size());
@@ -657,6 +713,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.description").value(updateDescription))
                 .andExpect(jsonPath("$.quantity").value(updateQuantity))
                 .andExpect(jsonPath("$.status").value(VALID_PRODUCT_STATUS.name()))
+                .andExpect(jsonPath("$.price").value(VALID_PRODUCT_PRICE))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
@@ -674,7 +731,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenProductIdIsInvalid_returnsProductResponse() throws Exception {
+    void putProduct_whenProductIdIsInvalid_returnsBadRequest() throws Exception {
         String productId = INVALID_ID;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -698,7 +755,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenProductNameIsBlank_returnsProductResponse() throws Exception {
+    void putProduct_whenProductNameIsBlank_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -717,13 +774,15 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(productNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(
+                        productNameIsRequired(),
+                        productNameLength())));
 
         verifyNoInteractions(productService);
     }
 
     @Test
-    void putProduct_whenProductNameIsNull_returnsProductResponse() throws Exception {
+    void putProduct_whenProductNameIsNull_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -748,7 +807,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenProductNameIsMoreThan100Chars_returnsProductResponse() throws Exception {
+    void putProduct_whenProductNameIsMoreThan100Chars_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -773,7 +832,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenDescriptionIsBlank_returnsProductResponse() throws Exception {
+    void putProduct_whenDescriptionIsBlank_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -800,7 +859,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenDescriptionIsNull_returnsProductResponse() throws Exception {
+    void putProduct_whenDescriptionIsNull_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -825,7 +884,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenDescriptionLengthIsLessThan5_returnsProductResponse() throws Exception {
+    void putProduct_whenDescriptionLengthIsLessThan5_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -850,7 +909,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenDescriptionLengthIsMoreThan1000_returnsProductResponse() throws Exception {
+    void putProduct_whenDescriptionLengthIsMoreThan1000_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -875,7 +934,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenPriceIsNull_returnsProductResponse() throws Exception {
+    void putProduct_whenPriceIsNull_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -900,7 +959,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenPriceIsZero_returnsProductResponse() throws Exception {
+    void putProduct_whenPriceIsZero_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -925,7 +984,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenQuantityIsNull_returnsProductResponse() throws Exception {
+    void putProduct_whenQuantityIsNull_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -950,7 +1009,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    void putProduct_whenQuantityIsNegative_returnsProductResponse() throws Exception {
+    void putProduct_whenQuantityIsNegative_returnsBadRequest() throws Exception {
         Long productId = 1L;
 
         ProductPutRequest request = new ProductPutRequest(
@@ -972,5 +1031,472 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(productNegativeQuantity())));
 
         verifyNoInteractions(productService);
+    }
+
+    @Test
+    void putProduct_whenProductNotFound_returnsNotFound() throws Exception {
+        Long productId = 1L;
+
+        ProductPutRequest request = new ProductPutRequest(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        doThrow(new NoResourceFoundException(productNotFound(productId)))
+                .when(productService).putProduct(productId, request);
+
+        mockMvc.perform(put(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
+
+        verify(productService).putProduct(productId, request);
+        verifyNoMoreInteractions(productService);
+    }
+
+
+    @Test
+    void patchProduct_whenRequestValid_returnsProductResponse() throws Exception {
+        Long productId = 1L;
+
+        ProductResponse productResponse = new ProductResponse(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY,
+                VALID_PRODUCT_STATUS,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        when(productService.patchProduct(productId, request)).thenReturn(productResponse);
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(productId))
+                .andExpect(jsonPath("$.name").value(request.name()))
+                .andExpect(jsonPath("$.description").value(request.description()))
+                .andExpect(jsonPath("$.price").value(request.price()))
+                .andExpect(jsonPath("$.status").value(VALID_PRODUCT_STATUS.name()))
+                .andExpect(jsonPath("$.quantity").value(request.quantity()))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        ArgumentCaptor<ProductPatchRequest> captor = ArgumentCaptor.forClass(ProductPatchRequest.class);
+        verify(productService).patchProduct(eq(productId), captor.capture());
+
+        ProductPatchRequest capturedRequest = captor.getValue();
+
+        assertThat(capturedRequest.name()).isEqualTo(request.name());
+        assertThat(capturedRequest.description()).isEqualTo(request.description());
+        assertThat(capturedRequest.price()).isEqualByComparingTo(request.price());
+        assertThat(capturedRequest.quantity()).isEqualTo(request.quantity());
+
+        verifyNoMoreInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenRequestHasAllFieldsNull_returnsProductResponse() throws Exception {
+        Long productId = 1L;
+
+        ProductResponse productResponse = new ProductResponse(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY,
+                VALID_PRODUCT_STATUS,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                null,
+                null,
+                null,
+                null
+        );
+
+        when(productService.patchProduct(productId, request)).thenReturn(productResponse);
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(productId))
+                .andExpect(jsonPath("$.name").value(VALID_PRODUCT_NAME))
+                .andExpect(jsonPath("$.description").value(VALID_PRODUCT_DESCRIPTION))
+                .andExpect(jsonPath("$.price").value(VALID_PRODUCT_PRICE))
+                .andExpect(jsonPath("$.status").value(ProductStatus.ACTIVE.name()))
+                .andExpect(jsonPath("$.quantity").value(VALID_PRODUCT_QUANTITY))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        ArgumentCaptor<ProductPatchRequest> captor = ArgumentCaptor.forClass(ProductPatchRequest.class);
+        verify(productService).patchProduct(eq(productId), captor.capture());
+
+        ProductPatchRequest capturedRequest = captor.getValue();
+
+        assertThat(capturedRequest.name()).isNull();
+        assertThat(capturedRequest.description()).isNull();
+        assertThat(capturedRequest.price()).isNull();
+        assertThat(capturedRequest.quantity()).isNull();
+
+        verifyNoMoreInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenRequestHasPartialFields_returnsProductResponse() throws Exception {
+        Long productId = 1L;
+
+        ProductResponse productResponse = new ProductResponse(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY,
+                VALID_PRODUCT_STATUS,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                null,
+                VALID_PRODUCT_PRICE,
+                null
+        );
+
+        when(productService.patchProduct(productId, request)).thenReturn(productResponse);
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(productId))
+                .andExpect(jsonPath("$.name").value(VALID_PRODUCT_NAME))
+                .andExpect(jsonPath("$.description").value(VALID_PRODUCT_DESCRIPTION))
+                .andExpect(jsonPath("$.price").value(VALID_PRODUCT_PRICE))
+                .andExpect(jsonPath("$.status").value(ProductStatus.ACTIVE.name()))
+                .andExpect(jsonPath("$.quantity").value(VALID_PRODUCT_QUANTITY))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        ArgumentCaptor<ProductPatchRequest> captor = ArgumentCaptor.forClass(ProductPatchRequest.class);
+        verify(productService).patchProduct(eq(productId), captor.capture());
+
+        ProductPatchRequest capturedRequest = captor.getValue();
+
+        assertThat(capturedRequest.name()).isEqualTo(VALID_PRODUCT_NAME);
+        assertThat(capturedRequest.description()).isNull();
+        assertThat(capturedRequest.price()).isEqualByComparingTo(VALID_PRODUCT_PRICE);
+        assertThat(capturedRequest.quantity()).isNull();
+
+        verifyNoMoreInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenInvalidId_returnsBadRequest() throws Exception {
+        String productId = INVALID_ID;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(invalidParameter("id")))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenProductNameIsBlank_returnsBadRequest() throws Exception {
+        Long productId = 1L;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                "",
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
+                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(
+                        productNameLength(),
+                        productNameIsEmpty()
+                )));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenProductNameIsMoreThan100Chars_returnsBadRequest() throws Exception {
+        Long productId = 1L;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                INVALID_PRODUCT_NAME_MORE_THAN_LIMIT,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
+                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(
+                        productNameLength()
+                )));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenDescriptionIsEmpty_returnsBadRequest() throws Exception {
+        Long productId = 1L;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                "",
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(
+                        productDescriptionLength(),
+                        productDescriptionIsEmpty()
+                )));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenDescriptionIsLessThan5Chars_returnsBadRequest() throws Exception {
+        Long productId = 1L;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                INVALID_PRODUCT_DESCRIPTION_LESS_THAN_LIMIT,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(
+                        productDescriptionLength()
+                )));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenDescriptionIsMoreThan1000Chars_returnsBadRequest() throws Exception {
+        Long productId = 1L;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(
+                        productDescriptionLength()
+                )));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenPriceIsZero_returnsBadRequest() throws Exception {
+        Long productId = 1L;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                BigDecimal.ZERO,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
+                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(
+                        productPriceZero()
+                )));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenQuantityIsNegative_returnsBadRequest() throws Exception {
+        Long productId = 1L;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                INVALID_PRODUCT_NEGATIVE_QUANTITY
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
+                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(
+                        productNegativeQuantity()
+                )));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void patchProduct_whenProductNotFound_returnsNotFound() throws Exception {
+        Long productId = 1L;
+
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+
+        doThrow(new NoResourceFoundException(productNotFound(productId)))
+                .when(productService).patchProduct(productId, request);
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
+
+        verify(productService).patchProduct(productId, request);
+        verifyNoMoreInteractions(productService);
+    }
+
+    @Test
+    void deleteProduct_whenProductIdIsValid_returnsNoContent() throws Exception {
+        Long productId = 1L;
+
+        mockMvc.perform(delete(PRODUCT_URI + "/" + productId))
+                .andExpect(status().isNoContent());
+
+        verify(productService).deleteProduct(productId);
+        verifyNoMoreInteractions(productService);
+    }
+
+    @Test
+    void deleteProduct_whenProductIdIsInvalid_returnsBadRequest() throws Exception {
+        String productId = INVALID_ID;
+
+        mockMvc.perform(delete(PRODUCT_URI + "/" + productId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(invalidParameter("id")))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void deleteProduct_whenProductIdIsNotFound_returnsNotFound() throws Exception {
+        Long productId = 1L;
+
+        doThrow(new NoResourceFoundException(productNotFound(productId)))
+                .when(productService).deleteProduct(productId);
+
+        mockMvc.perform(delete(PRODUCT_URI + "/" + productId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
+
+        verify(productService).deleteProduct(productId);
+        verifyNoMoreInteractions(productService);
     }
 }

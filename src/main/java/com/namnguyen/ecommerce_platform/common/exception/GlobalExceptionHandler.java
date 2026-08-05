@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,6 +21,40 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private String resolveFieldErrorMessage(FieldError fieldError) {
+        if ("typeMismatch".equals(fieldError.getCode())) {
+            return String.format("Invalid parameter: %s", fieldError.getField());
+        }
+
+        return fieldError.getDefaultMessage();
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ValidationErrorResponse> handleBindException(
+            BindException ex,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        Map<String, List<String>> fieldsErrors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.groupingBy(
+                        FieldError::getField,
+                        Collectors.mapping(this::resolveFieldErrorMessage, Collectors.toList())
+                ));
+
+        return ResponseEntity.status(status)
+                .body(new ValidationErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Validation failed",
+                        request.getRequestURI(),
+                        fieldsErrors
+                ));
+    }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleBadCredentialsException(BadCredentialsException ex, HttpServletRequest request) {
@@ -69,7 +104,7 @@ public class GlobalExceptionHandler {
                 .stream()
                 .collect(Collectors.groupingBy(
                         FieldError::getField,
-                        Collectors.mapping(FieldError::getDefaultMessage,
+                        Collectors.mapping(this::resolveFieldErrorMessage,
                                 Collectors.toList())
                 ));
 
