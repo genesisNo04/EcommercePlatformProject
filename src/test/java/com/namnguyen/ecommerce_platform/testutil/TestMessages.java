@@ -48,6 +48,10 @@ public final class TestMessages {
     private static final String PRODUCT_NEGATIVE_QUANTITY_MESSAGE = "Quantity cannot be negative";
     private static final String PRODUCT_NAME_EMPTY_MESSAGE = "Product Name cannot be empty";
     private static final String PRODUCT_DESCRIPTION_EMPTY_MESSAGE = "Product Description cannot be empty";
+    private static final String AUTHENTICATION_IS_REQUIRED_MESSAGE = "Authentication is required";
+    private static final String PRODUCT_ID_IS_REQUIRED_MESSAGE = "Product Id is required";
+    private static final String QUANTITY_IS_REQUIRED_MESSAGE = "Quantity is required";
+    private static final String QUANTITY_IS_ZERO_MESSAGE = "Quantity need to be at least 1";
 
 
     private TestMessages() {}
@@ -166,9 +170,7 @@ public final class TestMessages {
         return PHONE_NUMBER_INVALID_MESSAGE;
     }
 
-    public static String emailDuplicate() {
-        return EMAIL_DUPLICATE_MESSAGE;
-    }
+    public static String emailDuplicate() { return EMAIL_DUPLICATE_MESSAGE; }
 
     public static String phoneDuplicate() {
         return PHONE_DUPLICATE_MESSAGE;
@@ -197,4 +199,12 @@ public final class TestMessages {
     public static String productNameIsEmpty() { return PRODUCT_NAME_EMPTY_MESSAGE; }
 
     public static String productDescriptionIsEmpty() { return PRODUCT_DESCRIPTION_EMPTY_MESSAGE; }
+
+    public static String authenticationRequired() { return AUTHENTICATION_IS_REQUIRED_MESSAGE; }
+
+    public static String productIdIsRequired() { return PRODUCT_ID_IS_REQUIRED_MESSAGE; }
+
+    public static String quantityIsRequired() { return QUANTITY_IS_REQUIRED_MESSAGE; }
+
+    public static String quantityIsZero() { return QUANTITY_IS_ZERO_MESSAGE; }
 }

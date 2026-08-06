@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.namnguyen.ecommerce_platform.common.response.ApiErrorResponse;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
@@ -117,6 +118,33 @@ public class GlobalExceptionHandler {
                         request.getRequestURI(),
                         fieldErrors));
     }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ValidationErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        Map<String, List<String>> fieldErrors = ex.getParameterValidationResults()
+                .stream()
+                .collect(Collectors.toMap(
+                        result -> result.getMethodParameter().getParameterName(),
+                        result -> result.getResolvableErrors()
+                                .stream()
+                                .map(error -> String.format("Invalid parameter: %s", result.getMethodParameter().getParameterName()))
+                                .toList(),
+                        (existing, replacement) -> existing
+                ));
+
+        return ResponseEntity.status(status)
+                .body(new ValidationErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Validation failed",
+                        request.getRequestURI(),
+                        fieldErrors));
+    }
+
+
 
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ApiErrorResponse> handleInsufficientStockException(InsufficientStockException ex, HttpServletRequest request) {
