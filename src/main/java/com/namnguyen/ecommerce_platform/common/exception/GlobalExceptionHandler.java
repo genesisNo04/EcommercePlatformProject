@@ -8,6 +8,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.namnguyen.ecommerce_platform.common.response.ApiErrorResponse;
@@ -220,6 +221,25 @@ public class GlobalExceptionHandler {
                         status.getReasonPhrase(),
                         message,
                         request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ValidationErrorResponse> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        Map<String, List<String>> fieldErrors = Map.of(
+          ex.getParameterName(),
+          List.of(String.format("Invalid parameter: %s", ex.getParameterName()))
+        );
+
+        return ResponseEntity.status(status)
+                .body(new ValidationErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Validation failed",
+                        request.getRequestURI(),
+                        fieldErrors));
     }
 
     @ExceptionHandler(Exception.class)

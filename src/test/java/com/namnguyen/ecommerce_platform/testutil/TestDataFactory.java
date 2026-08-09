@@ -22,6 +22,7 @@ public class TestDataFactory {
     public final static String LOGIN_URI = "/api/auth/login";
     public final static String CART_URI = "/api/cart";
     public final static String CART_ITEM_URI = "/api/cart/items";
+    public final static String ORDER_URI = "/api/orders";
     public final static String REGISTER_URI = "/api/auth/register";
     public final static String PRODUCT_URI = "/api/products";
     public final static String USER_URI = "/api/users";
