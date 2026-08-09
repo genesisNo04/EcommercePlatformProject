@@ -4,6 +4,7 @@ import com.namnguyen.ecommerce_platform.cart.dto.CartItemRequest;
 import com.namnguyen.ecommerce_platform.cart.dto.CartItemResponse;
 import com.namnguyen.ecommerce_platform.cart.dto.CartResponse;
 import com.namnguyen.ecommerce_platform.cart.service.CartService;
+import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
 import org.junit.jupiter.api.AfterEach;
@@ -373,6 +374,29 @@ public class CartControllerTest {
                 .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId));
 
         verifyNoInteractions(cartService);
+    }
+
+    @Test
+    void deleteCart_whenProductNotFound_returnsBadRequest() throws Exception {
+        Long userId = 1L;
+        Long productId = 1L;
+
+        when(cartService.removeItem(userId, productId))
+                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+
+        authenticateUser(userId);
+
+        mockMvc.perform(delete(CART_ITEM_URI + "/" + productId)
+                        .param("productId", String.valueOf(productId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId));
+
+        verify(cartService).removeItem(userId, productId);
+        verifyNoMoreInteractions(cartService);
     }
 
     @Test
