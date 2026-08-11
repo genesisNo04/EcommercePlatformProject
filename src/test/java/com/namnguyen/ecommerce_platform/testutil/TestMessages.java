@@ -52,6 +52,9 @@ public final class TestMessages {
     private static final String PRODUCT_ID_IS_REQUIRED_MESSAGE = "Product Id is required";
     private static final String QUANTITY_IS_REQUIRED_MESSAGE = "Quantity is required";
     private static final String QUANTITY_IS_ZERO_MESSAGE = "Quantity need to be at least 1";
+    private static final String PAYMENT_METHOD_IS_REQUIRED_MESSAGE = "Payment method is required";
+    private static final String PAYMENT_STATUS_ALLOWED_MESSAGE = "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [PENDING, SUCCESS, FAILED]";
+    private static final String PAYMENT_METHOD_ALLOWED_MESSAGE = "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [CARD, PAYPAL, BANK_TRANSFER]";
 
     private TestMessages() {}
 
@@ -206,4 +209,10 @@ public final class TestMessages {
     public static String quantityIsRequired() { return QUANTITY_IS_REQUIRED_MESSAGE; }
 
     public static String invalidQuantity() { return QUANTITY_IS_ZERO_MESSAGE; }
+
+    public static String paymentMethodRequired() { return PAYMENT_METHOD_IS_REQUIRED_MESSAGE; }
+
+    public static String paymentStatusInvalid() { return PAYMENT_STATUS_ALLOWED_MESSAGE; }
+
+    public static String paymentMethodInvalid() { return PAYMENT_METHOD_ALLOWED_MESSAGE; }
 }

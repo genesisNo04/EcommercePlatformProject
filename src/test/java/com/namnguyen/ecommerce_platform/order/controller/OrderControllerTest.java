@@ -28,6 +28,8 @@ import java.util.List;
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.TestMessages.invalidQuantity;
+import static com.namnguyen.ecommerce_platform.testutil.TestMessages.quantityIsRequired;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -168,10 +170,11 @@ public class OrderControllerTest {
     @Test
     void createOrder_whenQuantityIsNegative_returnsBadRequest() throws Exception {
         Long userId = 1L;
+        Long productId = 2L;
         int quantity = -1;
 
         CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
-                null,
+                productId,
                 quantity
         );
 
@@ -188,7 +191,8 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
-                .andExpect(jsonPath("$.fieldErrors['items[0].quantity']", containsInAnyOrder(invalidQuantity())));
+                .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
+                        containsInAnyOrder(invalidQuantity())));
 
         verifyNoInteractions(orderService);
     }
@@ -248,7 +252,8 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
-                .andExpect(jsonPath("$.fieldErrors['items[0].quantity']").value(quantityIsRequired()));
+                .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
+                        containsInAnyOrder(quantityIsRequired())));
 
         verifyNoInteractions(orderService);
     }
@@ -277,7 +282,8 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
-                .andExpect(jsonPath("$.fieldErrors['items[0].quantity']").value(invalidQuantity()));
+                .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
+                        containsInAnyOrder(invalidQuantity())));
 
         verifyNoInteractions(orderService);
     }
@@ -411,7 +417,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.content[1].items[0].quantity").value(quantity2))
                 .andExpect(jsonPath("$.content[1].items[0].price").value(price2.doubleValue()))
 
-                .andExpect(jsonPath("$.content[0].total").value(total1))
+                .andExpect(jsonPath("$.content[0].total").value(total1.doubleValue()))
                 .andExpect(jsonPath("$.content[0].status").value(OrderStatus.PENDING_PAYMENT.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").exists())
                 .andExpect(jsonPath("$.content[0].updatedAt").exists())
@@ -643,8 +649,8 @@ public class OrderControllerTest {
 
         OrderFilterRequest requestFilter = filterCaptor.getValue();
         assertThat(requestFilter.status().name()).isEqualTo(OrderStatus.PENDING_PAYMENT.name());
-        assertThat(requestFilter.minTotal()).isEqualTo("0.0");
-        assertThat(requestFilter.maxTotal()).isEqualTo("100.0");
+        assertThat(requestFilter.minTotal()).isEqualByComparingTo("0.0");
+        assertThat(requestFilter.maxTotal()).isEqualByComparingTo("100.0");
         assertThat(requestFilter.createdAfter()).isEqualTo(futureDate);
         assertThat(requestFilter.createdBefore()).isEqualTo(pastDate);
 
@@ -706,7 +712,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.items[1].productName").value(VALID_PRODUCT_NAME))
                 .andExpect(jsonPath("$.items[1].quantity").value(quantity2))
                 .andExpect(jsonPath("$.items[1].price").value(price2.doubleValue()))
-                .andExpect(jsonPath("$.total").value(total))
+                .andExpect(jsonPath("$.total").value(total.doubleValue()))
                 .andExpect(jsonPath("$.status").value(OrderStatus.PENDING_PAYMENT.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
@@ -815,7 +821,7 @@ public class OrderControllerTest {
     }
 
     @Test
-    void cancelById_whenOrderIsDelivered_returnsBadRequest() throws Exception {
+    void cancelOrder_whenOrderIsDelivered_returnsBadRequest() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
 
@@ -838,7 +844,7 @@ public class OrderControllerTest {
     }
 
     @Test
-    void cancelById_whenOrderIsCancelled_returnsBadRequest() throws Exception {
+    void cancelOrder_whenOrderIsCancelled_returnsBadRequest() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
 
@@ -915,7 +921,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.items[1].productName").value(VALID_PRODUCT_NAME))
                 .andExpect(jsonPath("$.items[1].quantity").value(quantity2))
                 .andExpect(jsonPath("$.items[1].price").value(price2.doubleValue()))
-                .andExpect(jsonPath("$.total").value(total))
+                .andExpect(jsonPath("$.total").value(total.doubleValue()))
                 .andExpect(jsonPath("$.status").value(OrderStatus.PENDING_PAYMENT.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());

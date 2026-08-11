@@ -4,6 +4,7 @@ import com.namnguyen.ecommerce_platform.common.response.ValidationErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -240,6 +241,31 @@ public class GlobalExceptionHandler {
                         "Validation failed",
                         request.getRequestURI(),
                         fieldErrors));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ValidationErrorResponse> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        String fieldName = resolveInvalidJsonFieldName(ex);
+
+        Map<String, List<String>> fieldErrors = Map.of(
+                fieldName,
+                List.of(resolveInvalidJsonFieldMessage(fieldName))
+        );
+
+        return ResponseEntity.status(status)
+                .body(new ValidationErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Validation failed",
+                        request.getRequestURI(),
+                        fieldErrors
+                ));
     }
 
     @ExceptionHandler(Exception.class)
