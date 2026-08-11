@@ -53,7 +53,6 @@ public final class TestMessages {
     private static final String QUANTITY_IS_REQUIRED_MESSAGE = "Quantity is required";
     private static final String QUANTITY_IS_ZERO_MESSAGE = "Quantity need to be at least 1";
 
-
     private TestMessages() {}
 
     public static String userNotFound(Long userId) {
@@ -206,5 +205,5 @@ public final class TestMessages {
 
     public static String quantityIsRequired() { return QUANTITY_IS_REQUIRED_MESSAGE; }
 
-    public static String quantityIsZero() { return QUANTITY_IS_ZERO_MESSAGE; }
+    public static String invalidQuantity() { return QUANTITY_IS_ZERO_MESSAGE; }
 }

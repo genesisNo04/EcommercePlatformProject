@@ -188,8 +188,8 @@ public class UserControllerTest {
         assertThat(requestCapture.email()).isNull();
         assertThat(requestCapture.keyword()).isNull();
         assertThat(requestCapture.role()).isNull();
-        assertThat(pageableCapture.getSort()).contains(Sort.Order.asc("id"));
 
+        assertThat(pageableCapture.getSort()).contains(Sort.Order.asc("id"));
         assertThat(pageableCapture.getPageNumber()).isEqualTo(0);
         assertThat(pageableCapture.getPageSize()).isEqualTo(10);
 

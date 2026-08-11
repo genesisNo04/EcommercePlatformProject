@@ -248,7 +248,7 @@ public class CartControllerTest {
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(CART_ITEM_URI))
-                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(quantityIsZero())));
+                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(invalidQuantity())));
 
         verifyNoInteractions(cartService);
     }
