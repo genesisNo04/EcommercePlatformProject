@@ -5,12 +5,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.namnguyen.ecommerce_platform.common.response.ApiErrorResponse;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -20,6 +25,64 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private String resolveFieldErrorMessage(FieldError fieldError) {
+        if ("typeMismatch".equals(fieldError.getCode())) {
+            return String.format("Invalid parameter: %s", fieldError.getField());
+        }
+
+        return fieldError.getDefaultMessage();
+    }
+
+    private String resolveInvalidJsonFieldName(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+
+        if (cause instanceof InvalidFormatException invalidFormatException
+                && !invalidFormatException.getPath().isEmpty()) {
+            var path = invalidFormatException.getPath();
+            var fieldReference = path.get(path.size() - 1);
+
+            if (fieldReference.getPropertyName() != null) {
+                return fieldReference.getPropertyName();
+            }
+        }
+
+        return "requestBody";
+    }
+
+    private String resolveInvalidJsonFieldMessage(String fieldName) {
+        if ("paymentMethod".equals(fieldName)) {
+            return "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [CARD, PAYPAL, BANK_TRANSFER]";
+        }
+
+        return String.format("Invalid parameter: %s", fieldName);
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ValidationErrorResponse> handleBindException(
+            BindException ex,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        Map<String, List<String>> fieldsErrors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.groupingBy(
+                        FieldError::getField,
+                        Collectors.mapping(this::resolveFieldErrorMessage, Collectors.toList())
+                ));
+
+        return ResponseEntity.status(status)
+                .body(new ValidationErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Validation failed",
+                        request.getRequestURI(),
+                        fieldsErrors
+                ));
+    }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleBadCredentialsException(BadCredentialsException ex, HttpServletRequest request) {
@@ -69,7 +132,7 @@ public class GlobalExceptionHandler {
                 .stream()
                 .collect(Collectors.groupingBy(
                         FieldError::getField,
-                        Collectors.mapping(FieldError::getDefaultMessage,
+                        Collectors.mapping(this::resolveFieldErrorMessage,
                                 Collectors.toList())
                 ));
 
@@ -82,6 +145,33 @@ public class GlobalExceptionHandler {
                         request.getRequestURI(),
                         fieldErrors));
     }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ValidationErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        Map<String, List<String>> fieldErrors = ex.getParameterValidationResults()
+                .stream()
+                .collect(Collectors.toMap(
+                        result -> result.getMethodParameter().getParameterName(),
+                        result -> result.getResolvableErrors()
+                                .stream()
+                                .map(error -> String.format("Invalid parameter: %s", result.getMethodParameter().getParameterName()))
+                                .toList(),
+                        (existing, replacement) -> existing
+                ));
+
+        return ResponseEntity.status(status)
+                .body(new ValidationErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Validation failed",
+                        request.getRequestURI(),
+                        fieldErrors));
+    }
+
+
 
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ApiErrorResponse> handleInsufficientStockException(InsufficientStockException ex, HttpServletRequest request) {
@@ -159,9 +249,55 @@ public class GlobalExceptionHandler {
                         request.getRequestURI()));
     }
 
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ValidationErrorResponse> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        Map<String, List<String>> fieldErrors = Map.of(
+          ex.getParameterName(),
+          List.of(String.format("Invalid parameter: %s", ex.getParameterName()))
+        );
+
+        return ResponseEntity.status(status)
+                .body(new ValidationErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Validation failed",
+                        request.getRequestURI(),
+                        fieldErrors));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ValidationErrorResponse> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        String fieldName = resolveInvalidJsonFieldName(ex);
+
+        Map<String, List<String>> fieldErrors = Map.of(
+                fieldName,
+                List.of(resolveInvalidJsonFieldMessage(fieldName))
+        );
+
+        return ResponseEntity.status(status)
+                .body(new ValidationErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Validation failed",
+                        request.getRequestURI(),
+                        fieldErrors
+                ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleException(Exception ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        ex.printStackTrace();
 
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(

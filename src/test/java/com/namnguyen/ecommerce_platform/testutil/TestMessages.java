@@ -24,16 +24,37 @@ public final class TestMessages {
     private static final String VALIDATION_FAILED_MESSAGE = "Validation failed";
     private static final String BAD_CREDENTIAL_MESSAGE = "Bad credentials";
     private static final String EMAIL_IS_REQUIRED_MESSAGE = "Email is required";
+    private static final String EMAIL_IS_EMPTY_MESSAGE = "Email cannot be empty";
     private static final String EMAIL_INVALID_MESSAGE = "Invalid Email format";
     private static final String PASSWORD_IS_REQUIRED_MESSAGE = "Password is required";
+    private static final String PASSWORD_IS_EMPTY_MESSAGE = "Password cannot be empty";
     private static final String PASSWORD_LENGTH_MESSAGE = "Password has to be from 8 to 50 chars";
     private static final String FIRST_NAME_IS_REQUIRED_MESSAGE = "First Name is required";
+    private static final String FIRST_NAME_IS_EMPTY_MESSAGE = "First Name cannot be empty";
     private static final String LAST_NAME_IS_REQUIRED_MESSAGE = "Last Name is required";
+    private static final String LAST_NAME_IS_EMPTY_MESSAGE = "Last Name cannot be empty";
     private static final String PHONE_NUMBER_IS_REQUIRED_MESSAGE = "Phone Number is required";
     private static final String PHONE_NUMBER_INVALID_MESSAGE = "Phone number must be from 10 to 15 digits (with or without +)";
     private static final String EMAIL_DUPLICATE_MESSAGE = "Email already exists";
     private static final String PHONE_DUPLICATE_MESSAGE = "Phone number already exists";
-
+    private static final String INVALID_PARAMETER = "Invalid parameter: %s";
+    private static final String PRODUCT_NAME_IS_REQUIRED_MESSAGE = "Product Name is required";
+    private static final String PRODUCT_DESCRIPTION_IS_REQUIRED_MESSAGE = "Product Description is required";
+    private static final String PRODUCT_PRICE_IS_REQUIRED_MESSAGE = "Product Price is required";
+    private static final String PRODUCT_QUANTITY_IS_REQUIRED_MESSAGE = "Product Quantity is required";
+    private static final String PRODUCT_NAME_IS_MORE_THAN_100_CHARS_MESSAGE = "Product Name cannot exceed 100 characters";
+    private static final String PRODUCT_DESCRIPTION_LENGTH_LIMIT_MESSAGE = "Description has to be from 5 to 1000 chars";
+    private static final String INVALID_PRODUCT_PRICE_MESSAGE = "Price must be greater than 0";
+    private static final String PRODUCT_NEGATIVE_QUANTITY_MESSAGE = "Quantity cannot be negative";
+    private static final String PRODUCT_NAME_EMPTY_MESSAGE = "Product Name cannot be empty";
+    private static final String PRODUCT_DESCRIPTION_EMPTY_MESSAGE = "Product Description cannot be empty";
+    private static final String AUTHENTICATION_IS_REQUIRED_MESSAGE = "Authentication is required";
+    private static final String PRODUCT_ID_IS_REQUIRED_MESSAGE = "Product Id is required";
+    private static final String QUANTITY_IS_REQUIRED_MESSAGE = "Quantity is required";
+    private static final String QUANTITY_IS_ZERO_MESSAGE = "Quantity need to be at least 1";
+    private static final String PAYMENT_METHOD_IS_REQUIRED_MESSAGE = "Payment method is required";
+    private static final String PAYMENT_STATUS_ALLOWED_MESSAGE = "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [PENDING, SUCCESS, FAILED]";
+    private static final String PAYMENT_METHOD_ALLOWED_MESSAGE = "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [CARD, PAYPAL, BANK_TRANSFER]";
 
     private TestMessages() {}
 
@@ -115,6 +136,10 @@ public final class TestMessages {
         return EMAIL_INVALID_MESSAGE;
     }
 
+    public static String emailIsEmpty() {
+        return EMAIL_IS_EMPTY_MESSAGE;
+    }
+
     public static String passwordIsRequired() {
         return PASSWORD_IS_REQUIRED_MESSAGE;
     }
@@ -123,12 +148,20 @@ public final class TestMessages {
         return PASSWORD_LENGTH_MESSAGE;
     }
 
-    public static String firstNameIsRequired() {
-        return FIRST_NAME_IS_REQUIRED_MESSAGE;
+    public static String passwordIsEmpty() {
+        return PASSWORD_IS_EMPTY_MESSAGE;
     }
+
+    public static String firstNameIsRequired() { return FIRST_NAME_IS_REQUIRED_MESSAGE; }
 
     public static String lastNameIsRequired() {
         return LAST_NAME_IS_REQUIRED_MESSAGE;
+    }
+
+    public static String firstNameIsEmpty() { return FIRST_NAME_IS_EMPTY_MESSAGE; }
+
+    public static String lastNameIsEmpty() {
+        return LAST_NAME_IS_EMPTY_MESSAGE;
     }
 
     public static String phoneNumberIsRequired() {
@@ -139,11 +172,47 @@ public final class TestMessages {
         return PHONE_NUMBER_INVALID_MESSAGE;
     }
 
-    public static String emailDuplicate() {
-        return EMAIL_DUPLICATE_MESSAGE;
-    }
+    public static String emailDuplicate() { return EMAIL_DUPLICATE_MESSAGE; }
 
     public static String phoneDuplicate() {
         return PHONE_DUPLICATE_MESSAGE;
     }
+
+    public static String invalidParameter(String paramName) {
+        return String.format(INVALID_PARAMETER, paramName);
+    }
+
+    public static String productNameIsRequired() { return PRODUCT_NAME_IS_REQUIRED_MESSAGE; }
+
+    public static String productDescriptionIsRequired() { return PRODUCT_DESCRIPTION_IS_REQUIRED_MESSAGE; }
+
+    public static String productPriceIsRequired() { return PRODUCT_PRICE_IS_REQUIRED_MESSAGE; }
+
+    public static String productQuantityIsRequired() { return PRODUCT_QUANTITY_IS_REQUIRED_MESSAGE; }
+
+    public static String productNameLength() { return PRODUCT_NAME_IS_MORE_THAN_100_CHARS_MESSAGE; }
+
+    public static String productDescriptionLength() { return PRODUCT_DESCRIPTION_LENGTH_LIMIT_MESSAGE; }
+
+    public static String productPriceZero() { return INVALID_PRODUCT_PRICE_MESSAGE; }
+
+    public static String productNegativeQuantity() { return PRODUCT_NEGATIVE_QUANTITY_MESSAGE; }
+
+    public static String productNameIsEmpty() { return PRODUCT_NAME_EMPTY_MESSAGE; }
+
+    public static String productDescriptionIsEmpty() { return PRODUCT_DESCRIPTION_EMPTY_MESSAGE; }
+
+    public static String authenticationRequired() { return AUTHENTICATION_IS_REQUIRED_MESSAGE; }
+
+    public static String productIdIsRequired() { return PRODUCT_ID_IS_REQUIRED_MESSAGE; }
+
+    public static String quantityIsRequired() { return QUANTITY_IS_REQUIRED_MESSAGE; }
+
+    public static String invalidQuantity() { return QUANTITY_IS_ZERO_MESSAGE; }
+
+    public static String paymentMethodRequired() { return PAYMENT_METHOD_IS_REQUIRED_MESSAGE; }
+
+    public static String paymentStatusInvalid() { return PAYMENT_STATUS_ALLOWED_MESSAGE; }
+
+    public static String paymentMethodInvalid() { return PAYMENT_METHOD_ALLOWED_MESSAGE; }
 }

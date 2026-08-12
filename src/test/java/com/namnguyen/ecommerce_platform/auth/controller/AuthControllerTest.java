@@ -18,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
+import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
@@ -46,14 +47,6 @@ public class AuthControllerTest {
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
 
-    private final static String LOGIN_URI = "/api/auth/login";
-    private final static String REGISTER_URI = "/api/auth/register";
-    private final static String VALID_EMAIL = "test@gmail.com";
-    private final static String INVALID_EMAIL = "testgmail.com";
-    private final static String VALID_PASSWORD = "test1237";
-    private final static String VALID_FIRST_NAME = "test";
-    private final static String VALID_LAST_NAME = "user";
-    private final static String VALID_PHONE_NUMBER = "1234567891";
 
     @Test
     void login_whenValidRequest_returnsAuthResponse() throws Exception{

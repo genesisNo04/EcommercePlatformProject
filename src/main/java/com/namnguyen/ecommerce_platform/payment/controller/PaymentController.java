@@ -52,8 +52,7 @@ public class PaymentController {
     public ResponseEntity<PaymentResponse> confirmPayment(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long orderId,
-            @RequestParam PaymentStatus paymentStatus
-            ) {
+            @RequestParam PaymentStatus paymentStatus) {
         return ResponseEntity.ok(paymentService.confirmPayment(orderId, userDetails.getUserId(), paymentStatus));
     }
 }
