@@ -4,7 +4,6 @@ import com.namnguyen.ecommerce_platform.common.response.ValidationErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -15,6 +14,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.namnguyen.ecommerce_platform.common.response.ApiErrorResponse;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -31,6 +32,30 @@ public class GlobalExceptionHandler {
         }
 
         return fieldError.getDefaultMessage();
+    }
+
+    private String resolveInvalidJsonFieldName(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+
+        if (cause instanceof InvalidFormatException invalidFormatException
+                && !invalidFormatException.getPath().isEmpty()) {
+            var path = invalidFormatException.getPath();
+            var fieldReference = path.get(path.size() - 1);
+
+            if (fieldReference.getPropertyName() != null) {
+                return fieldReference.getPropertyName();
+            }
+        }
+
+        return "requestBody";
+    }
+
+    private String resolveInvalidJsonFieldMessage(String fieldName) {
+        if ("paymentMethod".equals(fieldName)) {
+            return "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [CARD, PAYPAL, BANK_TRANSFER]";
+        }
+
+        return String.format("Invalid parameter: %s", fieldName);
     }
 
     @ExceptionHandler(BindException.class)
