@@ -68,7 +68,7 @@ public class ProductServiceImpl implements ProductService {
             Pageable pageable) {
         Specification<Product> spec = Specification
                 .where(ProductSpecification.hasStatus(request.status()))
-                .and(ProductSpecification.nameContains(request.keyword()))
+                .and(ProductSpecification.keywordContains(request.keyword()))
                 .and(ProductSpecification.priceGreaterThanOrEqual(request.minPrice()))
                 .and(ProductSpecification.priceLessThanOrEqual(request.maxPrice()));
 
