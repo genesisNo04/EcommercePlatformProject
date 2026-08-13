@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.payment.controller;
 
 import com.namnguyen.ecommerce_platform.common.exception.*;
+import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.payment.dto.*;
 import com.namnguyen.ecommerce_platform.payment.enums.*;
 import com.namnguyen.ecommerce_platform.payment.service.PaymentService;
@@ -49,6 +50,9 @@ public class PaymentControllerTest {
 
     @MockitoBean
     CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitService rateLimitService;
 
     @AfterEach
     void clearContext() {

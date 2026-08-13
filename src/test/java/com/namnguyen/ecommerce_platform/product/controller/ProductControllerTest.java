@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.product.controller;
 
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
+import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.service.ProductService;
@@ -49,6 +50,9 @@ public class ProductControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitService rateLimitService;
 
 
     @Test

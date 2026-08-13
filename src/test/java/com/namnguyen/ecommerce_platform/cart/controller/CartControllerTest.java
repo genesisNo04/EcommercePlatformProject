@@ -5,6 +5,7 @@ import com.namnguyen.ecommerce_platform.cart.dto.CartItemResponse;
 import com.namnguyen.ecommerce_platform.cart.dto.CartResponse;
 import com.namnguyen.ecommerce_platform.cart.service.CartService;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
+import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
 import org.junit.jupiter.api.AfterEach;
@@ -51,6 +52,9 @@ public class CartControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitService rateLimitService;
 
     @AfterEach
     public void clearContext() {

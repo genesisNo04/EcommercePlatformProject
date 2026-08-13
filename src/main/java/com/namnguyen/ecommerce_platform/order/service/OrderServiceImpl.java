@@ -102,6 +102,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request, Long userId) {
+        validateCreateOrderRequests(request);
+
         User user = userLookupService.getUserById(userId);
 
         Order order = new Order();

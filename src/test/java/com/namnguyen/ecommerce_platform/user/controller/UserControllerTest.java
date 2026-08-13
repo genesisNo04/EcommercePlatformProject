@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.user.controller;
 
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
+import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
 import com.namnguyen.ecommerce_platform.user.dto.UserFilterRequest;
@@ -50,6 +51,9 @@ public class UserControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitService rateLimitService;
 
     @Test
     void getUserById_validUserId_returnsUserResponse() throws Exception {

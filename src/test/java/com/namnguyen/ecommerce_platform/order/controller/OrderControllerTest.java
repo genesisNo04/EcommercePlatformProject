@@ -2,6 +2,7 @@ package com.namnguyen.ecommerce_platform.order.controller;
 
 import com.namnguyen.ecommerce_platform.common.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
+import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.order.dto.*;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.order.service.OrderService;
@@ -55,6 +56,9 @@ public class OrderControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitService rateLimitService;
 
     @AfterEach
     void clearContext() {
