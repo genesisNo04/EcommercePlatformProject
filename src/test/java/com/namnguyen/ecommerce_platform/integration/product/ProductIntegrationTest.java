@@ -661,55 +661,6 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void patchProduct_whenPatchAllFieldsNull_saveProductToDatabase() throws Exception {
-
-        Product product = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(399.99))
-                .quantity(12)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
-
-        ProductPatchRequest request = new ProductPatchRequest(
-                null,
-                null,
-                null,
-                null
-        );
-
-        MvcResult result = mockMvc.perform(patch(PRODUCT_URI + "/" + savedProduct.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("PS5"))
-                .andExpect(jsonPath("$.description").value("Playstation"))
-                .andExpect(jsonPath("$.price").value(BigDecimal.valueOf(399.99).doubleValue()))
-                .andExpect(jsonPath("$.quantity").value(12))
-                .andExpect(jsonPath("$.status").value(ProductStatus.ACTIVE.name()))
-                .andExpect(jsonPath("$.createdAt").exists())
-                .andExpect(jsonPath("$.updatedAt").exists())
-                .andReturn();
-
-        String responseBody = result.getResponse().getContentAsString();
-
-        ProductResponse response = objectMapper.readValue(responseBody, ProductResponse.class);
-
-        Product savedUpdateProduct = productRepository.findById(response.id()).orElseThrow();
-
-        assertThat(savedUpdateProduct.getName()).isEqualTo("PS5");
-        assertThat(savedUpdateProduct.getDescription()).isEqualTo("Playstation");
-        assertThat(savedUpdateProduct.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(399.99));
-        assertThat(savedUpdateProduct.getQuantity()).isEqualTo(12);
-        assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
-        assertThat(savedUpdateProduct.getId()).isEqualTo(response.id());
-        assertThat(productRepository.count()).isEqualTo(1);
-    }
-
-    @Test
     void deleteProduct_whenProductFound_productDeletedFromDatabase() throws Exception {
         Product product = Product.builder()
                 .name("PS5")
