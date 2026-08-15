@@ -31,15 +31,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getProductById_whenProductExists_returnsProductFromDataBase() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
+        Product savedProduct = createDefaultProduct();
 
         mockMvc.perform(get(PRODUCT_URI + "/" + savedProduct.getId()))
                 .andExpect(status().isOk())
@@ -66,33 +58,22 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenProductsExistsWithDefaultPagination_returnsListOfProductsFromDatabase() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct = createDefaultProduct();
 
-        Product product1 = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(12)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct1 = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                12,
+                ProductStatus.ACTIVE);
 
-        Product product2 = Product.builder()
-                .name("XBOX")
-                .description("XBox")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(11)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
-        Product savedProduct1 = productRepository.save(product1);
-        Product savedProduct2 = productRepository.save(product2);
+        Product savedProduct2 =
+                createProduct(
+                        "XBOX",
+                        "XBox",
+                        BigDecimal.valueOf(499.99),
+                        11,
+                        ProductStatus.ACTIVE);
 
         mockMvc.perform(get(PRODUCT_URI))
                 .andExpect(status().isOk())
@@ -133,33 +114,22 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenProductsExistsWithCustomPaginationGetSecondPage_returnsListOfProductsFromDatabase() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct = createDefaultProduct();
 
-        Product product1 = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(12)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct1 = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                12,
+                ProductStatus.ACTIVE);
 
-        Product product2 = Product.builder()
-                .name("XBOX")
-                .description("XBox")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(11)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
-        Product savedProduct1 = productRepository.save(product1);
-        Product savedProduct2 = productRepository.save(product2);
+        Product savedProduct2 =
+                createProduct(
+                        "XBOX",
+                        "XBox",
+                        BigDecimal.valueOf(499.99),
+                        11,
+                        ProductStatus.ACTIVE);
 
         mockMvc.perform(get(PRODUCT_URI)
                         .param("page", "1")
@@ -184,33 +154,22 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenStatusFilterProvided_returnsOnlyThatStatus() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct = createDefaultProduct();
 
-        Product product1 = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(0)
-                .status(ProductStatus.INACTIVE)
-                .build();
+        Product savedProduct1 = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                0,
+                ProductStatus.INACTIVE);
 
-        Product product2 = Product.builder()
-                .name("XBOX")
-                .description("XBox")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(11)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
-        Product savedProduct1 = productRepository.save(product1);
-        Product savedProduct2 = productRepository.save(product2);
+        Product savedProduct2 =
+                createProduct(
+                        "XBOX",
+                        "XBox",
+                        BigDecimal.valueOf(499.99),
+                        11,
+                        ProductStatus.ACTIVE);
 
         mockMvc.perform(get(PRODUCT_URI)
                         .param("status", ProductStatus.ACTIVE.name()))
@@ -243,33 +202,22 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenKeywordMatchesName_returnsMatchingProducts() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct = createDefaultProduct();
 
-        Product product1 = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(0)
-                .status(ProductStatus.INACTIVE)
-                .build();
+        Product savedProduct1 = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                0,
+                ProductStatus.OUT_OF_STOCK);
 
-        Product product2 = Product.builder()
-                .name("XBOX")
-                .description("XBox")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(11)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        productRepository.save(product);
-        productRepository.save(product2);
-        Product savedProduct1 = productRepository.save(product1);
+        Product savedProduct2 =
+                createProduct(
+                        "XBOX",
+                        "XBox",
+                        BigDecimal.valueOf(499.99),
+                        11,
+                        ProductStatus.ACTIVE);
 
         mockMvc.perform(get(PRODUCT_URI)
                         .param("keyword", "PS5"))
@@ -293,36 +241,25 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenKeywordMatchesDescription_returnsMatchingProducts() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct = createDefaultProduct();
 
-        Product product1 = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(0)
-                .status(ProductStatus.INACTIVE)
-                .build();
+        Product savedProduct1 = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                0,
+                ProductStatus.OUT_OF_STOCK);
 
-        Product product2 = Product.builder()
-                .name("console")
-                .description("XBox gaming console")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(11)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        productRepository.save(product);
-        productRepository.save(product1);
-        Product savedProduct2 = productRepository.save(product2);
+        Product savedProduct2 =
+                createProduct(
+                        "console",
+                        "XBox gaming console",
+                        BigDecimal.valueOf(499.99),
+                        11,
+                        ProductStatus.ACTIVE);
 
         mockMvc.perform(get(PRODUCT_URI)
-                        .param("keyword", "xBox"))
+                        .param("keyword", "XBox gaming console"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(1)))
@@ -343,33 +280,22 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenPriceRangeProvided_returnsProductsInsideRange() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct = createDefaultProduct();
 
-        Product product1 = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(399.99))
-                .quantity(3)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct1 = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                3,
+                ProductStatus.ACTIVE);
 
-        Product product2 = Product.builder()
-                .name("XBOX")
-                .description("XBox")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(11)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        productRepository.save(product);
-        Product savedProduct1 =productRepository.save(product1);
-        Product savedProduct2 = productRepository.save(product2);
+        Product savedProduct2 =
+                createProduct(
+                        "XBOX",
+                        "XBox",
+                        BigDecimal.valueOf(499.99),
+                        11,
+                        ProductStatus.ACTIVE);
 
         mockMvc.perform(get(PRODUCT_URI)
                         .param("minPrice", String.valueOf(BigDecimal.valueOf(300.00)))
@@ -403,33 +329,22 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenProductsExistsWithSortDesc_returnsListOfProductsFromDatabase() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct = createDefaultProduct();
 
-        Product product1 = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(12)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct1 = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                12,
+                ProductStatus.ACTIVE);
 
-        Product product2 = Product.builder()
-                .name("XBOX")
-                .description("XBox")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(11)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
-        Product savedProduct1 = productRepository.save(product1);
-        Product savedProduct2 = productRepository.save(product2);
+        Product savedProduct2 =
+                createProduct(
+                        "XBOX",
+                        "XBox",
+                        BigDecimal.valueOf(499.99),
+                        11,
+                        ProductStatus.ACTIVE);
 
         mockMvc.perform(get(PRODUCT_URI)
                         .param("sort", "id,DESC"))
@@ -471,33 +386,21 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenMultipleFiltersProvided_returnsListOfProductsFromDatabase() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct = createDefaultProduct();
 
-        Product product1 = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(399.99))
-                .quantity(12)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product savedProduct1 = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                12,
+                ProductStatus.ACTIVE);
 
-        Product product2 = Product.builder()
-                .name("XBOX")
-                .description("XBox")
-                .price(BigDecimal.valueOf(499.99))
-                .quantity(11)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        productRepository.save(product);
-        productRepository.save(product2);
-        Product savedProduct1 = productRepository.save(product1);
+        Product savedProduct2 = createProduct(
+                        "XBOX",
+                        "XBox",
+                        BigDecimal.valueOf(499.99),
+                        11,
+                        ProductStatus.ACTIVE);
 
         mockMvc.perform(get(PRODUCT_URI)
                         .param("sort", "id,DESC")
@@ -526,12 +429,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
     @Test
     void createProduct_whenCreateRequestIsValid_saveProductToDatabase() throws Exception {
 
-        ProductCreateRequest request = new ProductCreateRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
+        ProductCreateRequest request = createDefaultProductCreateRequest();
 
         MvcResult result = mockMvc.perform(post(PRODUCT_URI)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -564,23 +462,14 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void putProduct_whenPutRequestIsValid_saveProductToDatabase() throws Exception {
-
-        Product product = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(399.99))
-                .quantity(12)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
-
-        ProductPutRequest request = new ProductPutRequest(
-                "PS5 update",
-                "Playstation update",
+        Product savedProduct = createProduct(
+                "PS5",
+                "Playstation",
                 BigDecimal.valueOf(499.99),
-                20
-        );
+                12,
+                ProductStatus.ACTIVE);
+
+        ProductPutRequest request = createDefaultPutProductRequest();
 
         MvcResult result = mockMvc.perform(put(PRODUCT_URI + "/" + savedProduct.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -613,18 +502,14 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void patchProduct_whenPartiallyPatch_saveProductToDatabase() throws Exception {
+        Product savedProduct = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                12,
+                ProductStatus.ACTIVE);
 
-        Product product = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(399.99))
-                .quantity(12)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
-
-        ProductPatchRequest request = new ProductPatchRequest(
+        ProductPatchRequest request = createPatchProductRequest(
                 "PS5 update",
                 null,
                 BigDecimal.valueOf(499.99),
@@ -662,15 +547,12 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void deleteProduct_whenProductFound_productDeletedFromDatabase() throws Exception {
-        Product product = Product.builder()
-                .name("PS5")
-                .description("Playstation")
-                .price(BigDecimal.valueOf(399.99))
-                .quantity(12)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        Product savedProduct = productRepository.save(product);
+        Product savedProduct = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                12,
+                ProductStatus.ACTIVE);
 
         mockMvc.perform(delete(PRODUCT_URI + "/" + savedProduct.getId()))
                 .andExpect(status().isNoContent());

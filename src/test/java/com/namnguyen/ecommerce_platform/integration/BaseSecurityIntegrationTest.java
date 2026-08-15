@@ -1,86 +1,54 @@
 package com.namnguyen.ecommerce_platform.integration;
 
+import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitResult;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitRule;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.support.NoOpCacheManager;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import tools.jackson.databind.ObjectMapper;
+import org.springframework.test.web.servlet.MvcResult;
 
+import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.LOGIN_URI;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
 @AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-@Import(BaseSecurityIntegrationTest.NoCacheTestConfig.class)
-public class BaseSecurityIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer postgres =
-            new PostgreSQLContainer("postgres:16-alpine");
-
-    @Autowired
-    protected MockMvc mockMvc;
-
-    @Autowired
-    protected ObjectMapper objectMapper;
-
-    @Autowired
-    protected JdbcTemplate jdbcTemplate;
+public abstract class BaseSecurityIntegrationTest extends AbstractIntegrationTestSupport {
 
     @MockitoBean
     protected RateLimitService rateLimitService;
 
     @BeforeEach
-    void cleanDatabase() {
-        jdbcTemplate.execute("""
-                TRUNCATE TABLE
-                    payments,
-                    order_items,
-                    orders,
-                    cart_items,
-                    carts,
-                    products,
-                    users
-                RESTART IDENTITY CASCADE
-                """);
-
-        when(rateLimitService.isAllowed(any(), any()))
+    protected void allowRateLimit() {
+        when(rateLimitService.isAllowed(anyString(), any(RateLimitRule.class)))
                 .thenReturn(new RateLimitResult(true, 100, 99, 0L));
     }
 
-    @AfterEach
-    void clearSecurityContext() {
-        SecurityContextHolder.clearContext();
-    }
+    private record TokenResponse(String token) {}
 
-    @TestConfiguration
-    static class NoCacheTestConfig {
-        @Bean
-        @Primary
-        CacheManager noOpCacheManager() {
-            return new NoOpCacheManager();
-        }
+    protected String loginAndGetToken(String email, String password) throws Exception {
+        LoginRequest request = new LoginRequest (
+                email,
+                password
+        );
+
+        MvcResult result = mockMvc.perform(post(LOGIN_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+
+        TokenResponse response = objectMapper.readValue(responseBody, TokenResponse.class);
+
+        return response.token();
     }
 }

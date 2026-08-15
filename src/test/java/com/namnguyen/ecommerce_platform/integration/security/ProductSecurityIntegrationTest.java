@@ -5,7 +5,6 @@ import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
-import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +24,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void createProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        ProductCreateRequest request = new ProductCreateRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
+        ProductCreateRequest request = createDefaultProductCreateRequest();
 
         mockMvc.perform(post(PRODUCT_URI)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -41,12 +35,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     @Test
     @WithMockUser(roles = "USER")
     void createProduct_whenUserRole_returnsForbidden() throws Exception {
-        ProductCreateRequest request = new ProductCreateRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
+        ProductCreateRequest request = createDefaultProductCreateRequest();
 
         mockMvc.perform(post(PRODUCT_URI)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -57,12 +46,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     @Test
     @WithMockUser(roles = "ADMIN")
     void createProduct_whenAdminRole_returnsCreated() throws Exception {
-        ProductCreateRequest request = new ProductCreateRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
+        ProductCreateRequest request = createDefaultProductCreateRequest();
 
         mockMvc.perform(post(PRODUCT_URI)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -78,13 +62,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void getProductById_whenUnauthenticated_returnsOk() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
@@ -94,22 +72,11 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void putProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
-        ProductPutRequest request = new ProductPutRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
+        ProductPutRequest request = createDefaultPutProductRequest();
 
         mockMvc.perform(put(PRODUCT_URI + "/" + savedProduct.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -120,22 +87,11 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     @Test
     @WithMockUser(roles = "USER")
     void putProduct_whenUserRole_returnsForbidden() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
-        ProductPutRequest request = new ProductPutRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
+        ProductPutRequest request = createDefaultPutProductRequest();
 
         mockMvc.perform(put(PRODUCT_URI + "/" + savedProduct.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -146,22 +102,11 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     @Test
     @WithMockUser(roles = "ADMIN")
     void putProduct_whenAdminRole_returnsOk() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
-        ProductPutRequest request = new ProductPutRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
+        ProductPutRequest request = createDefaultPutProductRequest();
 
         mockMvc.perform(put(PRODUCT_URI + "/" + savedProduct.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -171,17 +116,11 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void patchProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
-        ProductPatchRequest request = new ProductPatchRequest(
+        ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
                 null,
                 BigDecimal.valueOf(399.99),
@@ -197,17 +136,11 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     @Test
     @WithMockUser(roles = "USER")
     void patchProduct_whenUserRole_returnsForbidden() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
-        ProductPatchRequest request = new ProductPatchRequest(
+        ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
                 null,
                 BigDecimal.valueOf(399.99),
@@ -223,18 +156,11 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     @Test
     @WithMockUser(roles = "ADMIN")
     void patchProduct_whenAdminRole_returnsOk() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
-
-        ProductPatchRequest request = new ProductPatchRequest(
+        ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
                 null,
                 BigDecimal.valueOf(399.99),
@@ -249,13 +175,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void deleteProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
@@ -266,13 +186,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     @Test
     @WithMockUser(roles = "USER")
     void deleteProduct_whenUserRole_returnsForbidden() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
@@ -283,13 +197,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     @Test
     @WithMockUser(roles = "ADMIN")
     void deleteProduct_whenAdminRole_returnsOk() throws Exception {
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
-                .status(ProductStatus.ACTIVE)
-                .build();
+        Product product = createDefaultProduct();
 
         Product savedProduct = productRepository.save(product);
 
