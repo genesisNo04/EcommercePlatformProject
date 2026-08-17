@@ -2,15 +2,15 @@ package com.namnguyen.ecommerce_platform.integration.user;
 
 import com.namnguyen.ecommerce_platform.integration.BaseIntegrationTest;
 import com.namnguyen.ecommerce_platform.testutil.MockAuthentication;
+import com.namnguyen.ecommerce_platform.user.dto.UserPatchRequest;
 import com.namnguyen.ecommerce_platform.user.dto.UserPutRequest;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-
-
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -59,7 +59,12 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[1].phoneNumber").value("123456780"))
                 .andExpect(jsonPath("$.content[1].role").value(Role.ADMIN.name()))
                 .andExpect(jsonPath("$.content[1].createdAt").exists())
-                .andExpect(jsonPath("$.content[1].updatedAt").exists());
+                .andExpect(jsonPath("$.content[1].updatedAt").exists())
+
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.numberOfElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     @Test
@@ -76,12 +81,22 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(get(USER_URI + "/" + user.getId()))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(user.getId()))
                 .andExpect(jsonPath("$.email").value(user.getEmail()))
                 .andExpect(jsonPath("$.password").doesNotExist())
                 .andExpect(jsonPath("$.firstName").value(user.getFirstName()))
                 .andExpect(jsonPath("$.lastName").value(user.getLastName()))
                 .andExpect(jsonPath("$.phoneNumber").value(user.getPhoneNumber()))
                 .andExpect(jsonPath("$.role").value(user.getRole().name()));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getUserById_whenUserNotFound_returnsNotFoundResponse() throws Exception {
+        Long userId = 999L;
+
+        mockMvc.perform(get(USER_URI + "/" + userId))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -97,7 +112,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.firstName").value(user.getFirstName()))
                 .andExpect(jsonPath("$.lastName").value(user.getLastName()))
                 .andExpect(jsonPath("$.phoneNumber").value(user.getPhoneNumber()))
-                .andExpect(jsonPath("$.role").value(user.getRole().name()));
+                .andExpect(jsonPath("$.role").value(user.getRole().name()))
+                .andExpect(jsonPath("$.id").value(user.getId()));
     }
 
     @Test
@@ -112,32 +128,58 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(user.getId()))
                 .andExpect(jsonPath("$.email").value(request.email()))
                 .andExpect(jsonPath("$.password").doesNotExist())
                 .andExpect(jsonPath("$.firstName").value(request.firstName()))
                 .andExpect(jsonPath("$.lastName").value(request.lastName()))
                 .andExpect(jsonPath("$.phoneNumber").value(request.phoneNumber()))
                 .andExpect(jsonPath("$.role").value(user.getRole().name()));
+
+        User updatedUser = userRepository.findById(user.getId()).orElseThrow();
+
+        assertThat(updatedUser.getEmail()).isEqualTo(request.email());
+        assertThat(updatedUser.getFirstName()).isEqualTo(request.firstName());
+        assertThat(updatedUser.getLastName()).isEqualTo(request.lastName());
+        assertThat(updatedUser.getPhoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(updatedUser.getRole()).isEqualTo(Role.CUSTOMER);
+        assertThat(passwordEncoder.matches(request.password(), updatedUser.getPasswordHash())).isTrue();
     }
 
     @Test
-    void patchUser_whenSameCustomer_patchUser() throws Exception {
+    void patchUser_whenSameCustomer_patchesUser() throws Exception {
         User user = createDefaultCustomer();
 
-        UserPutRequest request = createDefaultPutUserRequest();
+        UserPatchRequest request = createPatchUserRequest(
+                null,
+                null,
+                "updatedFirstName",
+                null,
+                "1234567801"
+        );
 
         MockAuthentication.authenticateUser(user.getId());
 
-        mockMvc.perform(put(USER_URI + "/" + user.getId())
+        mockMvc.perform(patch(USER_URI + "/" + user.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value(request.email()))
+                .andExpect(jsonPath("$.id").value(user.getId()))
+                .andExpect(jsonPath("$.email").value(user.getEmail()))
                 .andExpect(jsonPath("$.password").doesNotExist())
                 .andExpect(jsonPath("$.firstName").value(request.firstName()))
-                .andExpect(jsonPath("$.lastName").value(request.lastName()))
+                .andExpect(jsonPath("$.lastName").value(user.getLastName()))
                 .andExpect(jsonPath("$.phoneNumber").value(request.phoneNumber()))
                 .andExpect(jsonPath("$.role").value(user.getRole().name()));
+
+        User updatedUser = userRepository.findById(user.getId()).orElseThrow();
+
+        assertThat(updatedUser.getEmail()).isEqualTo(user.getEmail());
+        assertThat(updatedUser.getFirstName()).isEqualTo(request.firstName());
+        assertThat(updatedUser.getLastName()).isEqualTo(user.getLastName());
+        assertThat(updatedUser.getPhoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(updatedUser.getRole()).isEqualTo(Role.CUSTOMER);
+        assertThat(updatedUser.getPasswordHash()).isEqualTo(user.getPasswordHash());
     }
 
     @Test
@@ -147,5 +189,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(delete(USER_URI + "/" + user.getId()))
                 .andExpect(status().isNoContent());
+
+        assertThat(userRepository.existsById(user.getId())).isFalse();
     }
 }

@@ -5,9 +5,7 @@ import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
-import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -18,9 +16,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest {
-
-    @Autowired
-    private ProductRepository productRepository;
 
     @Test
     void createProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
@@ -33,8 +28,8 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     }
 
     @Test
-    @WithMockUser(roles = "USER")
-    void createProduct_whenUserRole_returnsForbidden() throws Exception {
+    @WithMockUser(roles = "CUSTOMER")
+    void createProduct_withCustomerRole_returnsForbidden() throws Exception {
         ProductCreateRequest request = createDefaultProductCreateRequest();
 
         mockMvc.perform(post(PRODUCT_URI)
@@ -45,7 +40,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void createProduct_whenAdminRole_returnsCreated() throws Exception {
+    void createProduct_withAdminRole_returnsCreated() throws Exception {
         ProductCreateRequest request = createDefaultProductCreateRequest();
 
         mockMvc.perform(post(PRODUCT_URI)
@@ -64,9 +59,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     void getProductById_whenUnauthenticated_returnsOk() throws Exception {
         Product product = createDefaultProduct();
 
-        Product savedProduct = productRepository.save(product);
-
-        mockMvc.perform(get(PRODUCT_URI + "/" + savedProduct.getId()))
+        mockMvc.perform(get(PRODUCT_URI + "/" + product.getId()))
                 .andExpect(status().isOk());
     }
 
@@ -74,26 +67,22 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     void putProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
         Product product = createDefaultProduct();
 
-        Product savedProduct = productRepository.save(product);
-
         ProductPutRequest request = createDefaultPutProductRequest();
 
-        mockMvc.perform(put(PRODUCT_URI + "/" + savedProduct.getId())
+        mockMvc.perform(put(PRODUCT_URI + "/" + product.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @WithMockUser(roles = "USER")
-    void putProduct_whenUserRole_returnsForbidden() throws Exception {
+    @WithMockUser(roles = "CUSTOMER")
+    void putProduct_withCustomerRole_returnsForbidden() throws Exception {
         Product product = createDefaultProduct();
-
-        Product savedProduct = productRepository.save(product);
 
         ProductPutRequest request = createDefaultPutProductRequest();
 
-        mockMvc.perform(put(PRODUCT_URI + "/" + savedProduct.getId())
+        mockMvc.perform(put(PRODUCT_URI + "/" + product.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -101,14 +90,12 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void putProduct_whenAdminRole_returnsOk() throws Exception {
+    void putProduct_withAdminRole_returnsOk() throws Exception {
         Product product = createDefaultProduct();
-
-        Product savedProduct = productRepository.save(product);
 
         ProductPutRequest request = createDefaultPutProductRequest();
 
-        mockMvc.perform(put(PRODUCT_URI + "/" + savedProduct.getId())
+        mockMvc.perform(put(PRODUCT_URI + "/" + product.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -118,8 +105,6 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     void patchProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
         Product product = createDefaultProduct();
 
-        Product savedProduct = productRepository.save(product);
-
         ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
                 null,
@@ -127,18 +112,16 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        mockMvc.perform(patch(PRODUCT_URI + "/" + savedProduct.getId())
+        mockMvc.perform(patch(PRODUCT_URI + "/" + product.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @WithMockUser(roles = "USER")
-    void patchProduct_whenUserRole_returnsForbidden() throws Exception {
+    @WithMockUser(roles = "CUSTOMER")
+    void patchProduct_withCustomerRole_returnsForbidden() throws Exception {
         Product product = createDefaultProduct();
-
-        Product savedProduct = productRepository.save(product);
 
         ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
@@ -147,7 +130,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        mockMvc.perform(patch(PRODUCT_URI + "/" + savedProduct.getId())
+        mockMvc.perform(patch(PRODUCT_URI + "/" + product.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -155,10 +138,8 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void patchProduct_whenAdminRole_returnsOk() throws Exception {
+    void patchProduct_withAdminRole_returnsOk() throws Exception {
         Product product = createDefaultProduct();
-
-        Product savedProduct = productRepository.save(product);
 
         ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
@@ -167,7 +148,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        mockMvc.perform(patch(PRODUCT_URI + "/" + savedProduct.getId())
+        mockMvc.perform(patch(PRODUCT_URI + "/" + product.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -177,31 +158,25 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
     void deleteProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
         Product product = createDefaultProduct();
 
-        Product savedProduct = productRepository.save(product);
-
-        mockMvc.perform(delete(PRODUCT_URI + "/" + savedProduct.getId()))
+        mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId()))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @WithMockUser(roles = "USER")
-    void deleteProduct_whenUserRole_returnsForbidden() throws Exception {
+    @WithMockUser(roles = "CUSTOMER")
+    void deleteProduct_withCustomerRole_returnsForbidden() throws Exception {
         Product product = createDefaultProduct();
 
-        Product savedProduct = productRepository.save(product);
-
-        mockMvc.perform(delete(PRODUCT_URI + "/" + savedProduct.getId()))
+        mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void deleteProduct_whenAdminRole_returnsOk() throws Exception {
+    void deleteProduct_withAdminRole_returnsNoContent() throws Exception {
         Product product = createDefaultProduct();
 
-        Product savedProduct = productRepository.save(product);
-
-        mockMvc.perform(delete(PRODUCT_URI + "/" + savedProduct.getId()))
+        mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId()))
                 .andExpect(status().isNoContent());
     }
 }

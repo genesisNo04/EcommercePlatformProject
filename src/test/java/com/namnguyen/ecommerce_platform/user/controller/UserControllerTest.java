@@ -65,7 +65,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER,
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -79,7 +79,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.firstName").value(VALID_FIRST_NAME))
                 .andExpect(jsonPath("$.lastName").value(VALID_LAST_NAME))
                 .andExpect(jsonPath("$.phoneNumber").value(VALID_PHONE_NUMBER))
-                .andExpect(jsonPath("$.role").value(ROLE.name()))
+                .andExpect(jsonPath("$.role").value(ROLE_CUSTOMER.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
@@ -132,7 +132,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER,
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -143,7 +143,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME + "1",
                 VALID_LAST_NAME + "1",
                 "1234567892",
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -165,7 +165,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.content[0].firstName").value(VALID_FIRST_NAME))
                 .andExpect(jsonPath("$.content[0].lastName").value(VALID_LAST_NAME))
                 .andExpect(jsonPath("$.content[0].phoneNumber").value(VALID_PHONE_NUMBER))
-                .andExpect(jsonPath("$.content[0].role").value(ROLE.name()))
+                .andExpect(jsonPath("$.content[0].role").value(ROLE_CUSTOMER.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").exists())
                 .andExpect(jsonPath("$.content[0].updatedAt").exists())
                 .andExpect(jsonPath("$.content[1].id").value(userId1))
@@ -211,7 +211,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER,
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -222,7 +222,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME + "1",
                 VALID_LAST_NAME + "1",
                 "1234567892",
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -238,7 +238,7 @@ public class UserControllerTest {
                         .param("size", "10")
                         .param("email", VALID_EMAIL)
                         .param("keyword", VALID_FIRST_NAME)
-                        .param("role", ROLE.name()))
+                        .param("role", ROLE_CUSTOMER.name()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(2)))
@@ -247,7 +247,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.content[0].firstName").value(VALID_FIRST_NAME))
                 .andExpect(jsonPath("$.content[0].lastName").value(VALID_LAST_NAME))
                 .andExpect(jsonPath("$.content[0].phoneNumber").value(VALID_PHONE_NUMBER))
-                .andExpect(jsonPath("$.content[0].role").value(ROLE.name()))
+                .andExpect(jsonPath("$.content[0].role").value(ROLE_CUSTOMER.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").exists())
                 .andExpect(jsonPath("$.content[0].updatedAt").exists())
                 .andExpect(jsonPath("$.content[1].id").value(userId1))
@@ -273,7 +273,7 @@ public class UserControllerTest {
 
         assertThat(requestCapture.email()).isEqualTo(VALID_EMAIL);
         assertThat(requestCapture.keyword()).isEqualTo(VALID_FIRST_NAME);
-        assertThat(requestCapture.role()).isEqualTo(ROLE);
+        assertThat(requestCapture.role()).isEqualTo(ROLE_CUSTOMER);
 
         assertThat(pageableCapture.getPageNumber()).isEqualTo(0);
         assertThat(pageableCapture.getPageSize()).isEqualTo(10);
@@ -355,7 +355,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER,
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -371,7 +371,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.firstName").value(VALID_FIRST_NAME))
                 .andExpect(jsonPath("$.lastName").value(VALID_LAST_NAME))
                 .andExpect(jsonPath("$.phoneNumber").value(VALID_PHONE_NUMBER))
-                .andExpect(jsonPath("$.role").value(ROLE.name()))
+                .andExpect(jsonPath("$.role").value(ROLE_CUSTOMER.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
@@ -862,7 +862,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER,
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -878,7 +878,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.firstName").value(VALID_FIRST_NAME))
                 .andExpect(jsonPath("$.lastName").value(VALID_LAST_NAME))
                 .andExpect(jsonPath("$.phoneNumber").value(VALID_PHONE_NUMBER))
-                .andExpect(jsonPath("$.role").value(ROLE.name()))
+                .andExpect(jsonPath("$.role").value(ROLE_CUSTOMER.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
@@ -1242,7 +1242,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER,
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -1258,7 +1258,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.firstName").value(VALID_FIRST_NAME))
                 .andExpect(jsonPath("$.lastName").value(VALID_LAST_NAME))
                 .andExpect(jsonPath("$.phoneNumber").value(VALID_PHONE_NUMBER))
-                .andExpect(jsonPath("$.role").value(ROLE.name()))
+                .andExpect(jsonPath("$.role").value(ROLE_CUSTOMER.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
@@ -1293,7 +1293,7 @@ public class UserControllerTest {
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER,
-                ROLE,
+                ROLE_CUSTOMER,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -1309,7 +1309,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.firstName").value(VALID_FIRST_NAME))
                 .andExpect(jsonPath("$.lastName").value(VALID_LAST_NAME))
                 .andExpect(jsonPath("$.phoneNumber").value(VALID_PHONE_NUMBER))
-                .andExpect(jsonPath("$.role").value(ROLE.name()))
+                .andExpect(jsonPath("$.role").value(ROLE_CUSTOMER.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 

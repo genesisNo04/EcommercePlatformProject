@@ -2,11 +2,8 @@ package com.namnguyen.ecommerce_platform.integration.security;
 
 import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.integration.BaseSecurityIntegrationTest;
-import com.namnguyen.ecommerce_platform.user.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-
-import java.math.BigDecimal;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -31,8 +28,6 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void login_withInvalidPassword_returnsUnauthorized() throws Exception {
-        String password = "test123456789";
-
         createDefaultAdmin();
 
         LoginRequest request = new LoginRequest(
@@ -55,20 +50,20 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
         mockMvc.perform(post(PRODUCT_URI)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultPutProductRequest())))
+                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void createProduct_whenAdminJwt_returnsCreated() throws Exception {
-        createDefaultCustomer();
+        createDefaultAdmin();
 
-        String token = loginAndGetToken("customer@gmail.com", "test123456789");
+        String token = loginAndGetToken("admin@gmail.com", "test123456789");
 
         mockMvc.perform(post(PRODUCT_URI)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultPutProductRequest())))
+                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
                 .andExpect(status().isCreated());
     }
 
@@ -85,7 +80,7 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
         mockMvc.perform(post(PRODUCT_URI)
                         .header("Authorization", "Bearer " + invalidToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultPutProductRequest())))
+                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -93,7 +88,7 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void createProduct_whenMissingToken_returnsUnauthorized() throws Exception {
         mockMvc.perform(post(PRODUCT_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultPutProductRequest())))
+                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
                 .andExpect(status().isUnauthorized());
     }
 

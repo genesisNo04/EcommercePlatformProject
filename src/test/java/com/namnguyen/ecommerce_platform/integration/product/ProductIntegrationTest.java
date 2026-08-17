@@ -7,9 +7,7 @@ import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductResponse;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
-import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
@@ -25,9 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ProductIntegrationTest extends BaseIntegrationTest {
-
-    @Autowired
-    private ProductRepository productRepository;
 
     @Test
     void getProductById_whenProductExists_returnsProductFromDataBase() throws Exception {
@@ -114,9 +109,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenProductsExistsWithCustomPaginationGetSecondPage_returnsListOfProductsFromDatabase() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        createDefaultProduct();
 
-        Product savedProduct1 = createProduct(
+        createProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -156,7 +151,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
     void getAllProducts_whenStatusFilterProvided_returnsOnlyThatStatus() throws Exception {
         Product savedProduct = createDefaultProduct();
 
-        Product savedProduct1 = createProduct(
+        createProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(399.99),
@@ -202,7 +197,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenKeywordMatchesName_returnsMatchingProducts() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        createDefaultProduct();
 
         Product savedProduct1 = createProduct(
                 "PS5",
@@ -241,9 +236,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenKeywordMatchesDescription_returnsMatchingProducts() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        createDefaultProduct();
 
-        Product savedProduct1 = createProduct(
+        createProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -280,7 +275,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenPriceRangeProvided_returnsProductsInsideRange() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        createDefaultProduct();
 
         Product savedProduct1 = createProduct(
                 "PS5",
@@ -386,7 +381,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenMultipleFiltersProvided_returnsListOfProductsFromDatabase() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        createDefaultProduct();
 
         Product savedProduct1 = createProduct(
                 "PS5",
@@ -395,7 +390,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 12,
                 ProductStatus.ACTIVE);
 
-        Product savedProduct2 = createProduct(
+        createProduct(
                         "XBOX",
                         "XBox",
                         BigDecimal.valueOf(499.99),
@@ -497,6 +492,8 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
         assertThat(savedUpdateProduct.getQuantity()).isEqualTo(20);
         assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
         assertThat(savedUpdateProduct.getId()).isEqualTo(response.id());
+
+        assertThat(response.id()).isEqualTo(savedProduct.getId());
         assertThat(productRepository.count()).isEqualTo(1);
     }
 
@@ -542,6 +539,8 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
         assertThat(savedUpdateProduct.getQuantity()).isEqualTo(12);
         assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
         assertThat(savedUpdateProduct.getId()).isEqualTo(response.id());
+
+        assertThat(response.id()).isEqualTo(savedProduct.getId());
         assertThat(productRepository.count()).isEqualTo(1);
     }
 

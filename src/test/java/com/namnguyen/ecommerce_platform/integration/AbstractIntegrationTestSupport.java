@@ -1,5 +1,7 @@
 package com.namnguyen.ecommerce_platform.integration;
 
+import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
+import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
@@ -33,6 +35,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+
+import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 
 @SpringBootTest
 @Testcontainers
@@ -169,7 +173,7 @@ public abstract class AbstractIntegrationTestSupport {
     protected User createDefaultCustomer() {
         return createUser(
                 "customer@gmail.com",
-                "test123456789",
+                VALID_PASSWORD,
                 "test",
                 "customer",
                 "1234567891",
@@ -180,7 +184,7 @@ public abstract class AbstractIntegrationTestSupport {
     protected User createDefaultAdmin() {
         return createUser(
                 "admin@gmail.com",
-                "test123456789",
+                VALID_PASSWORD,
                 "test",
                 "admin",
                 "1234567892",
@@ -191,7 +195,7 @@ public abstract class AbstractIntegrationTestSupport {
     protected UserPutRequest createDefaultPutUserRequest() {
         return new UserPutRequest(
                 "testupdate@gmail.com",
-                "test123456780",
+                VALID_PASSWORD,
                 "testupdate",
                 "userupdate",
                 "1234567801"
@@ -217,7 +221,7 @@ public abstract class AbstractIntegrationTestSupport {
     protected UserPatchRequest createDefaultPatchUserRequest() {
         return new UserPatchRequest(
                 "testupdate@gmail.com",
-                "test123456780",
+                VALID_PASSWORD,
                 "testupdate",
                 "userupdate",
                 "1234567801"
@@ -268,5 +272,45 @@ public abstract class AbstractIntegrationTestSupport {
                 .build();
 
         return productRepository.save(product);
+    }
+
+    protected RegisterRequest createRegisterRequest(
+            String email,
+            String password,
+            String firstName,
+            String lastName,
+            String phoneNumber
+    ) {
+        return new RegisterRequest(
+                email,
+                password,
+                firstName,
+                lastName,
+                phoneNumber
+        );
+    }
+
+    protected RegisterRequest createDefaultRegisterRequest() {
+        return new RegisterRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
+        );
+    }
+
+    protected LoginRequest createLoginRequest(String email, String password) {
+        return new LoginRequest(
+                email,
+                password
+        );
+    }
+
+    protected LoginRequest createDefaultLoginRequest() {
+        return new LoginRequest(
+                "customer@gmail.com",
+                VALID_PASSWORD
+        );
     }
 }
