@@ -2,6 +2,11 @@ package com.namnguyen.ecommerce_platform.integration;
 
 import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
+import com.namnguyen.ecommerce_platform.cart.dto.CartItemRequest;
+import com.namnguyen.ecommerce_platform.cart.entity.Cart;
+import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
+import com.namnguyen.ecommerce_platform.cart.repository.CartItemRepository;
+import com.namnguyen.ecommerce_platform.cart.repository.CartRepository;
 import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
@@ -44,7 +49,6 @@ import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 @Import(AbstractIntegrationTestSupport.NoCacheTestConfig.class)
 public abstract class AbstractIntegrationTestSupport {
 
-    @SuppressWarnings({"resource", "rawtypes"})
     @Container
     @ServiceConnection
     static PostgreSQLContainer postgres =
@@ -67,6 +71,12 @@ public abstract class AbstractIntegrationTestSupport {
 
     @Autowired
     protected ProductRepository productRepository;
+
+    @Autowired
+    protected CartRepository cartRepository;
+
+    @Autowired
+    protected CartItemRepository cartItemRepository;
 
     @BeforeEach
     protected void cleanDatabase() {
@@ -267,7 +277,7 @@ public abstract class AbstractIntegrationTestSupport {
                 .name("Keyboard")
                 .description("Mechanical keyboard")
                 .price(BigDecimal.valueOf(99.99))
-                .quantity(10)
+                .quantity(50)
                 .status(ProductStatus.ACTIVE)
                 .build();
 
@@ -312,5 +322,28 @@ public abstract class AbstractIntegrationTestSupport {
                 "customer@gmail.com",
                 VALID_PASSWORD
         );
+    }
+
+    protected CartItemRequest createCartItemRequest(Long productId, int quantity) {
+        return new CartItemRequest(
+                productId,
+                quantity
+        );
+    }
+
+    protected Cart createCart(User user) {
+        return cartRepository.save(Cart
+                .builder()
+                .user(user)
+                .build());
+    }
+
+    protected CartItem createCartItem(Cart cart, Product product, int quantity) {
+        return cartItemRepository.save(CartItem
+                .builder()
+                .cart(cart)
+                .product(product)
+                .quantity(quantity)
+                .build());
     }
 }
