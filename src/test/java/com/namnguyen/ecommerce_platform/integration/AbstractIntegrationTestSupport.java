@@ -7,6 +7,15 @@ import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
 import com.namnguyen.ecommerce_platform.cart.repository.CartItemRepository;
 import com.namnguyen.ecommerce_platform.cart.repository.CartRepository;
+import com.namnguyen.ecommerce_platform.order.dto.CreateOrderItemRequest;
+import com.namnguyen.ecommerce_platform.order.entity.Order;
+import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
+import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
+import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
+import com.namnguyen.ecommerce_platform.payment.entity.Payment;
+import com.namnguyen.ecommerce_platform.payment.enums.PaymentMethod;
+import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
+import com.namnguyen.ecommerce_platform.payment.repository.PaymentRepository;
 import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
@@ -40,6 +49,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 
@@ -77,6 +87,12 @@ public abstract class AbstractIntegrationTestSupport {
 
     @Autowired
     protected CartItemRepository cartItemRepository;
+
+    @Autowired
+    protected OrderRepository orderRepository;
+
+    @Autowired
+    protected PaymentRepository paymentRepository;
 
     @BeforeEach
     protected void cleanDatabase() {
@@ -331,6 +347,13 @@ public abstract class AbstractIntegrationTestSupport {
         );
     }
 
+    protected CreateOrderItemRequest createCreateOrderItemRequest(Long productId, int quantity) {
+        return new CreateOrderItemRequest(
+                productId,
+                quantity
+        );
+    }
+
     protected Cart createCart(User user) {
         return cartRepository.save(Cart
                 .builder()
@@ -344,6 +367,38 @@ public abstract class AbstractIntegrationTestSupport {
                 .cart(cart)
                 .product(product)
                 .quantity(quantity)
+                .build());
+    }
+
+    protected Order createOrder(
+            BigDecimal total,
+            OrderStatus status,
+            User user,
+            List<OrderItem> orderItems,
+            Payment payment
+    ) {
+        return orderRepository.save(Order
+                .builder()
+                .total(total)
+                .status(status)
+                .user(user)
+                .orderItems(orderItems)
+                .payment(payment)
+                .build());
+    }
+
+    protected Payment createPayment(
+            PaymentMethod method,
+            PaymentStatus status,
+            Order order,
+            BigDecimal amount
+    ) {
+        return paymentRepository.save(Payment
+                .builder()
+                .paymentMethod(method)
+                .paymentStatus(status)
+                .order(order)
+                .amount(amount)
                 .build());
     }
 }
