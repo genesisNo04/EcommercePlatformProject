@@ -387,6 +387,20 @@ public abstract class AbstractIntegrationTestSupport {
                 .build());
     }
 
+    protected OrderItem createOrderItem(
+            Order order,
+            Product product,
+            int quantity,
+            BigDecimal price
+    ) {
+        return OrderItem
+                .builder()
+                .order(order)
+                .quantity(quantity)
+                .price(price)
+                .build();
+    }
+
     protected Payment createPayment(
             PaymentMethod method,
             PaymentStatus status,

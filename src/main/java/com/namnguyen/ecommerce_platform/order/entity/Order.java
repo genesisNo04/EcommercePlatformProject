@@ -66,7 +66,10 @@ public class Order {
     public void prePersist() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        status = OrderStatus.PENDING_PAYMENT;
+
+        if (status == null) {
+            status = OrderStatus.PENDING_PAYMENT;
+        }
     }
 
     @PreUpdate

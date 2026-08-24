@@ -91,6 +91,10 @@ public class OrderServiceImpl implements OrderService {
         if (order.getStatus() == OrderStatus.CANCELLED) {
             throw new InvalidOrderStateException("Order is already cancelled");
         }
+
+        if (order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.PROCESSING) {
+            throw new InvalidOrderStateException("Order cannot be cancelled");
+        }
     }
 
     private void validateCreateOrderRequests(CreateOrderRequest request) {

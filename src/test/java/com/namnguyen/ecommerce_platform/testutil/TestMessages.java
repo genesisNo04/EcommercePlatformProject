@@ -16,6 +16,7 @@ public final class TestMessages {
     private static final String INVALID_ORDER_NO_ITEM_MESSAGE = "Order must contain at least one item";
     private static final String INVALID_ORDER_STATE_DELIVERED_ORDER_MESSAGE = "Delivered order cannot be cancelled";
     private static final String INVALID_ORDER_STATE_CANCELLED_MESSAGE = "Order is already cancelled";
+    private static final String INVALID_ORDER_CANCELLED_MESSAGE = "Order cannot be cancelled";
     private static final String INVALID_ORDER_STATE_EMPTY_CART_MESSAGE = "Cannot checkout an empty cart";
     private static final String INVALID_ORDER_STATE_NOT_PENDING_PAYMENT_MESSAGE = "Order is not pending payment";
     private static final String INVALID_PAYMENT_STATE_NOT_PENDING_PAYMENT_MESSAGE = "Only pending payments can be updated";
@@ -112,6 +113,10 @@ public final class TestMessages {
 
     public static String emptyCart() {
         return INVALID_ORDER_STATE_EMPTY_CART_MESSAGE;
+    }
+
+    public static String cannotCancelOrder() {
+        return INVALID_ORDER_CANCELLED_MESSAGE;
     }
 
     public static String orderNotInPendingPayment() { return INVALID_ORDER_STATE_NOT_PENDING_PAYMENT_MESSAGE; }

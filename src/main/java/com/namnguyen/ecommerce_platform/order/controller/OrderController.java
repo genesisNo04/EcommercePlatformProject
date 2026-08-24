@@ -35,7 +35,7 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<Page<OrderResponse>> getOrders(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @ModelAttribute OrderFilterRequest request,
+            @Valid @ModelAttribute OrderFilterRequest request,
             @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(orderService.getOrders(userDetails.getUserId(), request, pageable));
