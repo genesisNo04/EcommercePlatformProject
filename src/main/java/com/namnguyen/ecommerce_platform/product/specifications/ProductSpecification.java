@@ -13,9 +13,19 @@ public class ProductSpecification {
                 status == null ? null : cb.equal(root.get("status"), status);
     }
 
-    public static Specification<Product> nameContains(String keyword) {
-        return (root, query, cb) ->
-                keyword == null ? null : cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%");
+    public static Specification<Product> keywordContains(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) {
+                return null;
+            }
+
+            String pattern = "%" + keyword.toLowerCase() + "%";
+
+            return cb.or(
+                    cb.like(cb.lower(root.get("name")), pattern),
+                    cb.like(cb.lower(root.get("description")), pattern)
+            );
+        };
     }
 
     public static Specification<Product> priceGreaterThanOrEqual(BigDecimal minPrice) {

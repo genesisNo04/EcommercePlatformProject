@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @ModelAttribute UserFilterRequest request,
             @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
@@ -29,23 +31,27 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id == principal.userId")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id == principal.userId")
     public ResponseEntity<UserResponse> putUser(@PathVariable Long id, @Valid @RequestBody UserPutRequest userPutRequest) {
         return ResponseEntity
                 .ok(userService.putUser(id, userPutRequest));
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id == principal.userId")
     public ResponseEntity<UserResponse> patchUser(@PathVariable Long id, @Valid @RequestBody UserPatchRequest userPatchRequest) {
         return ResponseEntity
                 .ok(userService.patchUser(id, userPatchRequest));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();

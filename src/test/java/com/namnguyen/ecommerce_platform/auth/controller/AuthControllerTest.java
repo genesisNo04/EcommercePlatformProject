@@ -5,6 +5,8 @@ import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
 import com.namnguyen.ecommerce_platform.auth.service.AuthService;
 import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
+import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitFilter;
+import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,8 @@ public class AuthControllerTest {
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
 
+    @MockitoBean
+    private RateLimitService rateLimitService;
 
     @Test
     void login_whenValidRequest_returnsAuthResponse() throws Exception{
