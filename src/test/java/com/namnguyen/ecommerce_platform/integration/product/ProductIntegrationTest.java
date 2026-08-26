@@ -34,7 +34,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Keyboard"))
                 .andExpect(jsonPath("$.description").value("Mechanical keyboard"))
                 .andExpect(jsonPath("$.price").value(BigDecimal.valueOf(99.99).doubleValue()))
-                .andExpect(jsonPath("$.quantity").value(10))
+                .andExpect(jsonPath("$.quantity").value(50))
                 .andExpect(jsonPath("$.status").value(ProductStatus.ACTIVE.name()));
     }
 
@@ -78,7 +78,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[0].name").value("Keyboard"))
                 .andExpect(jsonPath("$.content[0].description").value("Mechanical keyboard"))
                 .andExpect(jsonPath("$.content[0].price").value(BigDecimal.valueOf(99.99).doubleValue()))
-                .andExpect(jsonPath("$.content[0].quantity").value(10))
+                .andExpect(jsonPath("$.content[0].quantity").value(50))
                 .andExpect(jsonPath("$.content[0].status").value(ProductStatus.ACTIVE.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").exists())
                 .andExpect(jsonPath("$.content[0].updatedAt").exists())
@@ -175,7 +175,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[0].name").value("Keyboard"))
                 .andExpect(jsonPath("$.content[0].description").value("Mechanical keyboard"))
                 .andExpect(jsonPath("$.content[0].price").value(BigDecimal.valueOf(99.99).doubleValue()))
-                .andExpect(jsonPath("$.content[0].quantity").value(10))
+                .andExpect(jsonPath("$.content[0].quantity").value(50))
                 .andExpect(jsonPath("$.content[0].status").value(ProductStatus.ACTIVE.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").exists())
                 .andExpect(jsonPath("$.content[0].updatedAt").exists())
@@ -350,7 +350,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[2].name").value("Keyboard"))
                 .andExpect(jsonPath("$.content[2].description").value("Mechanical keyboard"))
                 .andExpect(jsonPath("$.content[2].price").value(BigDecimal.valueOf(99.99).doubleValue()))
-                .andExpect(jsonPath("$.content[2].quantity").value(10))
+                .andExpect(jsonPath("$.content[2].quantity").value(50))
                 .andExpect(jsonPath("$.content[2].status").value(ProductStatus.ACTIVE.name()))
                 .andExpect(jsonPath("$.content[2].createdAt").exists())
                 .andExpect(jsonPath("$.content[2].updatedAt").exists())

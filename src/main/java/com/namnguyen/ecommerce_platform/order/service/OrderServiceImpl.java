@@ -130,7 +130,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse getOrderById(Long orderId, Long userId) {
         Order order = orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() ->
-                        new NoResourceFoundException("No order with id: " + orderId +  " found for this user id: " + userId));
+                        new NoResourceFoundException("No order found with id: " + orderId +  " for user id: " + userId));
         return OrderMapper.toResponse(order);
     }
 
@@ -154,7 +154,7 @@ public class OrderServiceImpl implements OrderService {
     public void cancelOrder(Long orderId, Long userId) {
         Order order = orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() ->
-                        new NoResourceFoundException("No order with id: " + orderId +  " found for this user id: " + userId));
+                        new NoResourceFoundException("No order found with id: " + orderId +  " for user id: " + userId));
 
         validateOrderCanBeCancelled(order);
 

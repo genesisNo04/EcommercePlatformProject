@@ -12,7 +12,6 @@ import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
-import com.namnguyen.ecommerce_platform.payment.dto.PaymentRequest;
 import com.namnguyen.ecommerce_platform.payment.entity.Payment;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentMethod;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
@@ -44,8 +43,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
@@ -55,16 +52,9 @@ import java.util.List;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
-@Import(AbstractIntegrationTestSupport.NoCacheTestConfig.class)
+@Import(AbstractIntegrationTestSupport.IntegrationTestConfig.class)
 public abstract class AbstractIntegrationTestSupport {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer postgres =
-            new PostgreSQLContainer("postgres:16-alpine");
-
     @Autowired
     protected MockMvc mockMvc;
 
@@ -115,8 +105,15 @@ public abstract class AbstractIntegrationTestSupport {
         SecurityContextHolder.clearContext();
     }
 
-    @TestConfiguration
-    public static class NoCacheTestConfig {
+    @TestConfiguration(proxyBeanMethods = false)
+    public static class IntegrationTestConfig {
+
+        @Bean
+        @ServiceConnection
+        PostgreSQLContainer postgreSQLContainer() {
+            return new PostgreSQLContainer("postgres:16-alpine");
+        }
+
         @Bean
         @Primary
         CacheManager noOpCacheManager() {
