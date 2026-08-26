@@ -136,12 +136,13 @@ public class PaymentControllerTest {
     void submitPayment_whenPaymentMethodIsInvalid_returnsBadRequest() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
+        String method = "TESTING";
 
         String requestBody = """
             {
-                "paymentMethod": "TESTING"
+                "paymentMethod": "%s"
             }
-            """;
+            """.formatted(method);
 
         authenticateUser(userId);
 
@@ -155,7 +156,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)))
                 .andExpect(jsonPath("$.fieldErrors.paymentMethod",
-                        containsInAnyOrder(paymentMethodInvalid())));
+                        containsInAnyOrder(paymentMethodInvalid(method))));
 
         verifyNoInteractions(paymentService);
     }
@@ -458,12 +459,13 @@ public class PaymentControllerTest {
     void updatePayment_whenPaymentMethodIsInvalid_returnsBadRequest() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
+        String method = "TESTING";
 
         String requestBody = """
             {
-                "paymentMethod": "TESTING"
+                "paymentMethod": "%s"
             }
-            """;
+            """.formatted(method);
 
         authenticateUser(userId);
 
@@ -477,7 +479,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.message").value(validationFailed()))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)))
                 .andExpect(jsonPath("$.fieldErrors.paymentMethod",
-                        containsInAnyOrder(paymentMethodInvalid())));
+                        containsInAnyOrder(paymentMethodInvalid(method))));
 
         verifyNoInteractions(paymentService);
     }
@@ -773,16 +775,17 @@ public class PaymentControllerTest {
     void confirmPayment_whenPaymentStatusParamIsInvalid_returnsBadRequest() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
+        String status = "TESTING";
 
         authenticateUser(userId);
 
         mockMvc.perform(post(String.format(PAYMENT_URI + "/confirm", orderId))
-                        .param("paymentStatus", "TESTING"))
+                        .param("paymentStatus", status))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(paymentStatusInvalid()))
+                .andExpect(jsonPath("$.message").value(paymentStatusInvalid(status)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI + "/confirm", orderId)));
 
         verifyNoInteractions(paymentService);

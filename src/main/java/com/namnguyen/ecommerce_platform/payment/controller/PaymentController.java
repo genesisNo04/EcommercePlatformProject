@@ -48,6 +48,8 @@ public class PaymentController {
                 ));
     }
 
+    // Development/testing endpoint used to simulate a payment provider callback.
+    // In production this would be replaced by a provider webhook/callback.
     @PostMapping("/confirm")
     public ResponseEntity<PaymentResponse> confirmPayment(
             @AuthenticationPrincipal CustomUserDetails userDetails,

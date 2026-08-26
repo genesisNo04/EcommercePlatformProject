@@ -6,7 +6,7 @@ public final class TestMessages {
     private static final String NO_RESOURCE_FOUND_EXCEPTION_CART_MESSAGE = "Cart not found for user id: ";
     private static final String NO_RESOURCE_FOUND_EXCEPTION_PRODUCT_MESSAGE = "Product not found with id: ";
     private static final String NO_RESOURCE_FOUND_EXCEPTION_ITEM_MESSAGE = "No item found with product id: ";
-    private static final String NO_RESOURCE_FOUND_EXCEPTION_ORDER_MESSAGE = "No order with id: %s found for this user id: %s";
+    private static final String NO_RESOURCE_FOUND_EXCEPTION_ORDER_MESSAGE = "No order found with id: %s for user id: %s";
     private static final String NO_RESOURCE_FOUND_EXCEPTION_PAYMENT_MESSAGE = "No payment found for order with id: %s";
     private static final String INSUFFICIENT_STOCK_EXCEPTION_MESSAGE = "Not enough stock for product: ";
     private static final String DUPLICATE_RESOURCE_EXCEPTION_EMAIL_MESSAGE = "Email already exists";
@@ -54,8 +54,8 @@ public final class TestMessages {
     private static final String QUANTITY_IS_REQUIRED_MESSAGE = "Quantity is required";
     private static final String QUANTITY_IS_ZERO_MESSAGE = "Quantity need to be at least 1";
     private static final String PAYMENT_METHOD_IS_REQUIRED_MESSAGE = "Payment method is required";
-    private static final String PAYMENT_STATUS_ALLOWED_MESSAGE = "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [PENDING, SUCCESS, FAILED]";
-    private static final String PAYMENT_METHOD_ALLOWED_MESSAGE = "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [CARD, PAYPAL, BANK_TRANSFER]";
+    private static final String PAYMENT_STATUS_ALLOWED_MESSAGE = "Invalid value '%s' for parameter 'paymentStatus''. Allowed values: [PENDING, SUCCESS, FAILED]";
+    private static final String PAYMENT_METHOD_ALLOWED_MESSAGE = "Invalid value '%s' for parameter 'paymentStatus''. Allowed values: [CARD, PAYPAL, BANK_TRANSFER]";
 
     private TestMessages() {}
 
@@ -217,7 +217,7 @@ public final class TestMessages {
 
     public static String paymentMethodRequired() { return PAYMENT_METHOD_IS_REQUIRED_MESSAGE; }
 
-    public static String paymentStatusInvalid() { return PAYMENT_STATUS_ALLOWED_MESSAGE; }
+    public static String paymentStatusInvalid(String status) { return String.format(PAYMENT_STATUS_ALLOWED_MESSAGE, status); }
 
-    public static String paymentMethodInvalid() { return PAYMENT_METHOD_ALLOWED_MESSAGE; }
+    public static String paymentMethodInvalid(String method) { return String.format(PAYMENT_METHOD_ALLOWED_MESSAGE, method); }
 }

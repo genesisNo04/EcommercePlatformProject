@@ -42,19 +42,6 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     }
 
     @Test
-    void createProduct_whenCustomerJwt_returnsForbidden() throws Exception {
-        createDefaultCustomer();
-
-        String token = loginAndGetToken("customer@gmail.com", "test123456789");
-
-        mockMvc.perform(post(PRODUCT_URI)
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     void createProduct_whenAdminJwt_returnsCreated() throws Exception {
         createDefaultAdmin();
 
@@ -92,4 +79,16 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void createProduct_whenCustomerJwt_returnsForbidden() throws Exception {
+        createDefaultCustomer();
+
+        String token = loginAndGetToken("customer@gmail.com", "test123456789");
+
+        mockMvc.perform(post(PRODUCT_URI)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
+                .andExpect(status().isForbidden());
+    }
 }

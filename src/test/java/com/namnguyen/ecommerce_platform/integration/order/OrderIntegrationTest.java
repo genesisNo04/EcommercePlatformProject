@@ -91,7 +91,8 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").exists());
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.fieldErrors.items").value(orderHasAtLeastOneItem()));
     }
 
     @Test
@@ -111,7 +112,8 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").exists());
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.fieldErrors.[\"items[0].quantity\"]").value(invalidQuantity()));
     }
 
     @Test
@@ -127,7 +129,8 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").exists());
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.fieldErrors.items").value(orderHasAtLeastOneItem()));
     }
 
     @Test
@@ -137,7 +140,8 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(post(ORDER_URI))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").exists());
+                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.fieldErrors.requestBody").value(invalidParameter("requestBody")));
     }
 
     @Test
@@ -409,7 +413,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getOrderById_whenOrdersExits_returnsOk() throws Exception {
+    void getOrderById_whenOrderExists_returnsOk() throws Exception {
         User user = createDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 

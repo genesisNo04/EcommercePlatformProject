@@ -54,7 +54,10 @@ public class Payment {
     public void prePersist() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        paymentStatus = PaymentStatus.PENDING;
+
+        if (paymentStatus == null) {
+            paymentStatus = PaymentStatus.PENDING;
+        }
     }
 
     @PreUpdate
