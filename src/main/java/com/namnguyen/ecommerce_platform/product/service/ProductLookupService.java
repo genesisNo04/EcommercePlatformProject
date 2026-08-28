@@ -6,6 +6,9 @@ import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.productNotFoundWithId;
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.productNotFoundWithName;
+
 @Service
 @RequiredArgsConstructor
 public class ProductLookupService {
@@ -13,11 +16,11 @@ public class ProductLookupService {
 
     public Product getProductById(Long productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new NoResourceFoundException("No product found with id: " + productId));
+                .orElseThrow(() -> new NoResourceFoundException(productNotFoundWithId(productId)));
     }
 
     public Product getProductByName(String name) {
         return productRepository.findByName(name)
-                .orElseThrow(() -> new NoResourceFoundException("No product found with name: " + name));
+                .orElseThrow(() -> new NoResourceFoundException(productNotFoundWithName(name)));
     }
 }

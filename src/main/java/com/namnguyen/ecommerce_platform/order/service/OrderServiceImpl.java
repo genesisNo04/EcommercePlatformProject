@@ -1,8 +1,10 @@
 package com.namnguyen.ecommerce_platform.order.service;
 
 import com.namnguyen.ecommerce_platform.cart.entity.*;
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
 import com.namnguyen.ecommerce_platform.cart.service.CartLookupService;
-import com.namnguyen.ecommerce_platform.common.exception.*;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderException;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.order.specifications.OrderSpecification;
 import com.namnguyen.ecommerce_platform.order.dto.*;
 import com.namnguyen.ecommerce_platform.order.entity.*;
@@ -10,7 +12,7 @@ import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.order.mapper.OrderMapper;
 import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
-import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
+import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.product.service.ProductLookupService;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.service.UserLookupService;
@@ -24,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static com.namnguyen.ecommerce_platform.cart.error.CartErrorMessages.EMPTY_CART;
+import static com.namnguyen.ecommerce_platform.order.error.OrderErrorMessages.*;
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.insufficientStockForProduct;
+
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -32,15 +38,15 @@ public class OrderServiceImpl implements OrderService {
     private final UserLookupService userLookupService;
     private final CartLookupService cartLookupService;
     private final ProductLookupService productLookupService;
+    private final OrderLookupService orderLookupService;
 
     private void validateOrderItemQuantity(int quantity) {
         if (quantity <= 0) {
-            throw new InvalidOrderException("Order item quantity must be greater than zero");
+            throw new InvalidOrderException(ORDER_ITEM_QUANTITY_IS_INVALID);
         }
     }
 
     private OrderItem createOrderItem(CreateOrderItemRequest request, Order order) {
-        validateOrderItemQuantity(request.quantity());
         Product product = productLookupService.getProductById(request.productId());
         return createOrderItem(product, request.quantity(), order);
     }
@@ -54,7 +60,7 @@ public class OrderServiceImpl implements OrderService {
         validateOrderItemQuantity(quantity);
 
         if (product.getQuantity() < quantity) {
-            throw new InsufficientStockException("Not enough stock for product: " + product.getName());
+            throw new InsufficientStockException(insufficientStockForProduct(product.getName()));
         }
 
         product.setQuantity(product.getQuantity() - quantity);
@@ -85,28 +91,28 @@ public class OrderServiceImpl implements OrderService {
 
     private void validateOrderCanBeCancelled(Order order) {
         if (order.getStatus() == OrderStatus.DELIVERED) {
-            throw new InvalidOrderStateException("Delivered order cannot be cancelled");
+            throw new InvalidOrderStateException(DELIVERED_ORDER_CANNOT_BE_CANCELLED);
         }
 
         if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new InvalidOrderStateException("Order is already cancelled");
+            throw new InvalidOrderStateException(ORDER_ALREADY_CANCELLED);
         }
 
-        if (order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.PROCESSING) {
-            throw new InvalidOrderStateException("Order cannot be cancelled");
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidOrderStateException(ORDER_CANNOT_BE_CANCELLED);
         }
     }
 
-    private void validateCreateOrderRequests(CreateOrderRequest request) {
+    private void validateCreateOrderRequest(CreateOrderRequest request) {
         if (request == null || request.items() == null || request.items().isEmpty()) {
-            throw new InvalidOrderException("Order must contain at least one item");
+            throw new InvalidOrderException(ORDER_IS_EMPTY);
         }
     }
 
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request, Long userId) {
-        validateCreateOrderRequests(request);
+        validateCreateOrderRequest(request);
 
         User user = userLookupService.getUserById(userId);
 
@@ -128,9 +134,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long orderId, Long userId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
-                .orElseThrow(() ->
-                        new NoResourceFoundException("No order found with id: " + orderId +  " for user id: " + userId));
+        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
         return OrderMapper.toResponse(order);
     }
 
@@ -152,9 +156,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void cancelOrder(Long orderId, Long userId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
-                .orElseThrow(() ->
-                        new NoResourceFoundException("No order found with id: " + orderId +  " for user id: " + userId));
+        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
 
         validateOrderCanBeCancelled(order);
 
@@ -169,7 +171,7 @@ public class OrderServiceImpl implements OrderService {
         Cart cart = cartLookupService.getCartByUserId(userId);
 
         if (cart.getItems().isEmpty()) {
-            throw new InvalidOrderStateException("Cannot checkout an empty cart");
+            throw new InvalidCartStateException(EMPTY_CART);
         }
 
         Order order = new Order();

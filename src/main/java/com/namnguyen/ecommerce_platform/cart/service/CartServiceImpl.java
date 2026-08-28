@@ -9,7 +9,7 @@ import com.namnguyen.ecommerce_platform.cart.mapper.CartItemMapper;
 import com.namnguyen.ecommerce_platform.cart.mapper.CartMapper;
 import com.namnguyen.ecommerce_platform.cart.repository.CartItemRepository;
 import com.namnguyen.ecommerce_platform.cart.repository.CartRepository;
-import com.namnguyen.ecommerce_platform.common.exception.InsufficientStockException;
+import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.service.ProductLookupService;
@@ -21,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+import static com.namnguyen.ecommerce_platform.cart.error.CartErrorMessages.cartItemNotFoundWithProductId;
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.insufficientStockForProduct;
+
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
@@ -29,6 +32,7 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final UserLookupService userLookUpService;
     private final ProductLookupService productLookUpService;
+    private final CartLookupService cartLookupService;
 
     @Transactional
     public Cart createCartForUser(User user) {
@@ -41,7 +45,7 @@ public class CartServiceImpl implements CartService {
 
     private CartItem getCartItem(Cart cart, Long productId) {
         return cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
-                .orElseThrow(() -> new NoResourceFoundException("No item found with product id: " + productId));
+                .orElseThrow(() -> new NoResourceFoundException(cartItemNotFoundWithProductId(productId)));
     }
 
     private Cart getCartOrCreateIfAbsent(Long userId) {
@@ -49,15 +53,9 @@ public class CartServiceImpl implements CartService {
         return cartRepository.findByUserId(userId).orElseGet(() -> createCartForUser(user));
     }
 
-    private Cart getExistingCartOrThrow(Long userId) {
-        userLookUpService.getUserById(userId);
-        return cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new NoResourceFoundException("Cart not found for user id: " + userId));
-    }
-
     private void stockCheck(Product product, int quantity) {
         if (quantity > product.getQuantity()) {
-            throw new InsufficientStockException("Not enough stock for product: " + product.getName());
+            throw new InsufficientStockException(insufficientStockForProduct(product.getName()));
         }
     }
 
@@ -67,39 +65,39 @@ public class CartServiceImpl implements CartService {
         return CartMapper.toResponse(getCartOrCreateIfAbsent(userId));
     }
 
-        @Override
-        @Transactional
-        public CartItemResponse addItem(Long userId, CartItemRequest request) {
-            Cart cart = getCartOrCreateIfAbsent(userId);
-            Product product = productLookUpService.getProductById(request.productId());
+    @Override
+    @Transactional
+    public CartItemResponse addItem(Long userId, CartItemRequest request) {
+        Cart cart = getCartOrCreateIfAbsent(userId);
+        Product product = productLookUpService.getProductById(request.productId());
 
-            Optional<CartItem> existingItem =
-                    cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId());
+        Optional<CartItem> existingItem =
+                cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId());
 
-            int currentQuantity = existingItem.map(CartItem::getQuantity).orElse(0);
+        int currentQuantity = existingItem.map(CartItem::getQuantity).orElse(0);
 
-            int newQuantity = request.quantity() + currentQuantity;
-            stockCheck(product, newQuantity);
+        int newQuantity = request.quantity() + currentQuantity;
+        stockCheck(product, newQuantity);
 
-            CartItem item = existingItem.orElseGet(() -> {
-                        CartItem newItem = CartItem.builder()
-                                .quantity(0)
-                                .product(product)
-                                .build();
+        CartItem item = existingItem.orElseGet(() -> {
+            CartItem newItem = CartItem.builder()
+                    .quantity(0)
+                    .product(product)
+                    .build();
 
-                        cart.addItem(newItem);
-                        return newItem;
-                    });
+            cart.addItem(newItem);
+            return newItem;
+        });
 
-            item.setQuantity(newQuantity);
+        item.setQuantity(newQuantity);
 
-            return CartItemMapper.toResponse(cartItemRepository.save(item));
-        }
+        return CartItemMapper.toResponse(cartItemRepository.save(item));
+    }
 
     @Override
     @Transactional
     public CartResponse updateItemQuantity(Long userId, Long productId, int quantity) {
-        Cart cart = getExistingCartOrThrow(userId);
+        Cart cart = cartLookupService.getCartByUserId(userId);
         Product product = productLookUpService.getProductById(productId);
         CartItem item = getCartItem(cart, productId);
 
@@ -116,7 +114,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartResponse removeItem(Long userId, Long productId) {
-        Cart cart = getExistingCartOrThrow(userId);
+        Cart cart = cartLookupService.getCartByUserId(userId);
         CartItem item = getCartItem(cart, productId);
         cart.removeItem(item);
         return CartMapper.toResponse(cart);
@@ -125,7 +123,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartResponse clearCart(Long userId) {
-        Cart cart = getExistingCartOrThrow(userId);
+        Cart cart = cartLookupService.getCartByUserId(userId);
         cart.getItems().forEach(item -> item.setCart(null));
         cart.getItems().clear();
         return CartMapper.toResponse(cart);

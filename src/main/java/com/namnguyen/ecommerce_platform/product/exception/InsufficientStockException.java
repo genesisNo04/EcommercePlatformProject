@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.common.exception;
+package com.namnguyen.ecommerce_platform.product.exception;
 
 public class InsufficientStockException extends RuntimeException {
     public InsufficientStockException(String message) {

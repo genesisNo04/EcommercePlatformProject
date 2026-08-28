@@ -1,8 +1,8 @@
 package com.namnguyen.ecommerce_platform.payment.service;
 
 import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
-import com.namnguyen.ecommerce_platform.common.exception.InvalidOrderStateException;
-import com.namnguyen.ecommerce_platform.common.exception.InvalidPaymentStateException;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
+import com.namnguyen.ecommerce_platform.payment.exception.InvalidPaymentStateException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;

@@ -1,6 +1,11 @@
 package com.namnguyen.ecommerce_platform.common.exception;
 
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
 import com.namnguyen.ecommerce_platform.common.response.ValidationErrorResponse;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderException;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
+import com.namnguyen.ecommerce_platform.payment.exception.InvalidPaymentStateException;
+import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +28,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.namnguyen.ecommerce_platform.auth.error.AuthErrorMessages.INVALID_CREDENTIALS;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -94,7 +101,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        ex.getMessage(),
+                        INVALID_CREDENTIALS,
                         request.getRequestURI()));
     }
 
@@ -189,6 +196,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidOrderStateException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidOrderStateException(InvalidOrderStateException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidCartStateException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidCartStateException(InvalidCartStateException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
         return ResponseEntity.status(status)

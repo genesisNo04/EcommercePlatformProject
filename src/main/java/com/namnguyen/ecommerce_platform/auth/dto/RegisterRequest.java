@@ -5,23 +5,25 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import static com.namnguyen.ecommerce_platform.auth.error.AuthErrorMessages.*;
+
 public record RegisterRequest(
-        @NotBlank(message = "Email is required")
-        @Email(message = "Invalid Email format")
+        @NotBlank(message = AUTH_EMAIL_IS_REQUIRED)
+        @Email(message = AUTH_EMAIL_IS_INVALID)
         String email,
 
-        @NotBlank(message = "Password is required")
-        @Size(min = 8, max = 50, message = "Password has to be from 8 to 50 chars")
+        @NotBlank(message = AUTH_PASSWORD_IS_REQUIRED)
+        @Size(min = 8, max = 50, message = AUTH_PASSWORD_IS_INVALID)
         String password,
 
-        @NotBlank(message = "First Name is required")
+        @NotBlank(message = AUTH_FIRST_NAME_IS_REQUIRED)
         String firstName,
 
-        @NotBlank(message = "Last Name is required")
+        @NotBlank(message = AUTH_LAST_NAME_IS_REQUIRED)
         String lastName,
 
-        @NotBlank(message = "Phone Number is required")
-        @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Phone number must be from 10 to 15 digits (with or without +)")
+        @NotBlank(message = AUTH_PHONE_NUMBER_IS_REQUIRED)
+        @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = AUTH_PHONE_NUMBER_IS_INVALID)
         String phoneNumber
 )
 {}

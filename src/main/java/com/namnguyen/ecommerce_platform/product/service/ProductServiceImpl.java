@@ -18,16 +18,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.*;
+
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
-
-    private Product getProductOrThrow(Long productId) {
-        return productRepository.findById(productId)
-                .orElseThrow(() -> new NoResourceFoundException("Product not found with id: " + productId));
-    }
+    private final ProductLookupService productLookupService;
 
     @Override
     @Transactional
@@ -47,7 +45,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     @Cacheable(value = CacheNames.PRODUCTS, key = "#productId")
     public ProductResponse getProductById(Long productId) {
-        Product product = getProductOrThrow(productId);
+        Product product = productLookupService.getProductById(productId);
         return ProductMapper.toResponse(product);
     }
 
@@ -88,7 +86,7 @@ public class ProductServiceImpl implements ProductService {
             }
     )
     public ProductResponse putProduct(Long productId, ProductPutRequest request) {
-        Product product = getProductOrThrow(productId);
+        Product product = productLookupService.getProductById(productId);
         product.setName(request.name());
         product.setDescription(request.description());
         product.setPrice(request.price());
@@ -108,7 +106,7 @@ public class ProductServiceImpl implements ProductService {
             }
     )
     public ProductResponse patchProduct(Long productId, ProductPatchRequest request) {
-        Product product = getProductOrThrow(productId);
+        Product product = productLookupService.getProductById(productId);
 
         if (request.name() != null) {
             product.setName(request.name());
@@ -139,7 +137,7 @@ public class ProductServiceImpl implements ProductService {
             }
     )
     public void deleteProduct(Long productId) {
-        Product product = getProductOrThrow(productId);
+        Product product = productLookupService.getProductById(productId);
         productRepository.delete(product);
     }
 }

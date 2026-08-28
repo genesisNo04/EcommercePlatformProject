@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.common.exception;
+package com.namnguyen.ecommerce_platform.order.exception;
 
 public class InvalidOrderException extends RuntimeException {
     public InvalidOrderException(String message) {

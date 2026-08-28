@@ -1,9 +1,8 @@
 package com.namnguyen.ecommerce_platform.payment.service;
 
 import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
-import com.namnguyen.ecommerce_platform.common.exception.InvalidOrderStateException;
-import com.namnguyen.ecommerce_platform.common.exception.InvalidPaymentStateException;
-import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
+import com.namnguyen.ecommerce_platform.payment.exception.InvalidPaymentStateException;
 import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.order.service.OrderLookupService;
@@ -17,44 +16,38 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.namnguyen.ecommerce_platform.payment.error.PaymentErrorMessages.*;
+
 @Service
 @RequiredArgsConstructor
-public class PaymentServiceImpl implements PaymentService{
+public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderLookupService orderLookupService;
+    private final PaymentLookupService paymentLookupService;
 
     private void validatePaymentDoesNotExist(Long orderId) {
         if (paymentRepository.existsByOrderId(orderId)) {
-            throw new DuplicateResourceException("This order already has a payment");
+            throw new DuplicateResourceException(PAYMENT_ALREADY_EXISTS);
         }
-    }
-
-    private Order getOrder(Long orderId, Long userId) {
-        return orderLookupService.getOrderByIdAndUserId(orderId, userId);
-    }
-
-    private Payment getPayment(Order order) {
-        return paymentRepository.findByOrderId(order.getId())
-                .orElseThrow(() -> new NoResourceFoundException("No payment found for order with id: " + order.getId()));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaymentResponse getPaymentByOrderId(Long orderId, Long userId) {
-        Order order = getOrder(orderId, userId);
-        Payment payment = getPayment(order);
+        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+        Payment payment = paymentLookupService.getPaymentByOrderId(order.getId());
         return PaymentMapper.toResponse(payment);
     }
 
     @Override
     @Transactional
     public PaymentResponse updatePayment(Long orderId, Long userId, PaymentRequest request) {
-        Order order = getOrder(orderId, userId);
-        Payment payment = getPayment(order);
+        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+        Payment payment = paymentLookupService.getPaymentByOrderId(order.getId());
 
         if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
-            throw new InvalidPaymentStateException("Only pending payments can be updated");
+            throw new InvalidPaymentStateException(PAYMENT_NOT_PENDING);
         }
 
         payment.setPaymentMethod(request.paymentMethod());
@@ -67,7 +60,7 @@ public class PaymentServiceImpl implements PaymentService{
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
 
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
-            throw new InvalidOrderStateException("Order is not pending payment");
+            throw new InvalidOrderStateException(ORDER_NOT_PENDING_PAYMENT);
         }
 
         validatePaymentDoesNotExist(orderId);
@@ -85,15 +78,15 @@ public class PaymentServiceImpl implements PaymentService{
     @Override
     @Transactional
     public PaymentResponse confirmPayment(Long orderId, Long userId, PaymentStatus status) {
-        Order order = getOrder(orderId, userId);
-        Payment payment = getPayment(order);
+        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+        Payment payment = paymentLookupService.getPaymentByOrderId(order.getId());
 
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
-            throw new InvalidOrderStateException("Order is not pending payment");
+            throw new InvalidOrderStateException(ORDER_NOT_PENDING_PAYMENT);
         }
 
         if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
-            throw new InvalidPaymentStateException("Only pending payments can be confirmed");
+            throw new InvalidPaymentStateException(PAYMENT_NOT_PENDING);
         }
 
         if (status == PaymentStatus.SUCCESS) {
@@ -101,9 +94,8 @@ public class PaymentServiceImpl implements PaymentService{
             order.setStatus(OrderStatus.PAID);
         } else if (status == PaymentStatus.FAILED) {
             payment.setPaymentStatus(PaymentStatus.FAILED);
-            order.setStatus(OrderStatus.PENDING_PAYMENT);
         } else {
-            throw new InvalidPaymentStateException("Payment can only be confirmed as SUCCESS OR FAILED");
+            throw new InvalidPaymentStateException(INVALID_PAYMENT_STATUS);
         }
 
         return PaymentMapper.toResponse(payment);

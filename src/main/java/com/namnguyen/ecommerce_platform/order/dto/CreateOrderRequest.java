@@ -5,9 +5,10 @@ import jakarta.validation.constraints.*;
 
 import java.util.List;
 
+import static com.namnguyen.ecommerce_platform.order.error.OrderErrorMessages.ORDER_IS_EMPTY;
+
 public record CreateOrderRequest(
 
-        @NotEmpty(message = "Order must contain at least one item")
-        @Valid
-        List<CreateOrderItemRequest> items
+        @NotEmpty(message = ORDER_IS_EMPTY)
+        List<@Valid CreateOrderItemRequest> items
 ) {}

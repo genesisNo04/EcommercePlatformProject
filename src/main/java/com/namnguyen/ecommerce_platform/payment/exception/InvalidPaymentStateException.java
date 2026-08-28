@@ -1,4 +1,4 @@
-package com.namnguyen.ecommerce_platform.common.exception;
+package com.namnguyen.ecommerce_platform.payment.exception;
 
 public class InvalidPaymentStateException extends RuntimeException {
     public InvalidPaymentStateException(String message) {
