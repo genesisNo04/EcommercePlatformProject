@@ -20,11 +20,23 @@ public final class CartTestMessages {
     private CartTestMessages() {}
 
     public static String cartNotFoundWithUserId(Long userId) {
-        return "No cart for user with id: " + userId;
+        return "No cart for user with id: " + userId + ".";
     }
 
     public static String cartItemNotFoundWithProductId(Long productId) {
-        return "No cart item found with product id: " + productId;
+        return "No cart item found with product id: " + productId + ".";
+    }
+
+    public static String productNotFoundWithId(Long productId) {
+        return "Product not found with id: " + productId + ".";
+    }
+
+    public static String insufficientStock(String productName) {
+        return "Insufficient stock for product: " + productName + ".";
+    }
+
+    public static String userNotFoundWithId(Long userId) {
+        return "User not found with id: " + userId + ".";
     }
 
 }

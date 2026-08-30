@@ -22,7 +22,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.AuthTestMessages.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -95,15 +95,14 @@ public class AuthServiceImplTest {
 
         when(authenticationManager
                 .authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Bad Credentials"));
+                .thenThrow(new BadCredentialsException(BAD_CREDENTIALS));
 
         BadCredentialsException ex = assertThrows(
                 BadCredentialsException.class,
                 () -> authService.login(request)
         );
 
-        assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo("Bad Credentials");
+        assertThat(ex.getMessage()).isEqualTo(BAD_CREDENTIALS);
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verifyNoMoreInteractions(authenticationManager);
@@ -165,7 +164,7 @@ public class AuthServiceImplTest {
                 "71234567891"
         );
 
-        when(userService.createUser(any(UserCreateRequest.class))).thenThrow(new DuplicateResourceException(duplicateEmail()));
+        when(userService.createUser(any(UserCreateRequest.class))).thenThrow(new DuplicateResourceException(DUPLICATE_EMAIL));
 
         DuplicateResourceException ex = assertThrows(
                 DuplicateResourceException.class,
@@ -173,7 +172,7 @@ public class AuthServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(duplicateEmail());
+        assertThat(ex.getMessage()).isEqualTo(DUPLICATE_EMAIL);
 
         verify(userService).createUser(any(UserCreateRequest.class));
         verifyNoMoreInteractions(userService);
@@ -192,7 +191,7 @@ public class AuthServiceImplTest {
                 "71234567891"
         );
 
-        when(userService.createUser(any(UserCreateRequest.class))).thenThrow(new DuplicateResourceException(duplicatePhoneNumber()));
+        when(userService.createUser(any(UserCreateRequest.class))).thenThrow(new DuplicateResourceException(DUPLICATE_PHONE));
 
         DuplicateResourceException ex = assertThrows(
                 DuplicateResourceException.class,
@@ -200,7 +199,7 @@ public class AuthServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(duplicatePhoneNumber());
+        assertThat(ex.getMessage()).isEqualTo(DUPLICATE_PHONE);
 
         verify(userService).createUser(any(UserCreateRequest.class));
         verifyNoInteractions(authenticationManager);
@@ -220,7 +219,7 @@ public class AuthServiceImplTest {
         );
 
        when(customUserDetailsService.loadUserByUsername(request.email()))
-               .thenThrow(new UsernameNotFoundException("User not found"));
+               .thenThrow(new UsernameNotFoundException(USER_NOT_FOUND));
 
         UsernameNotFoundException ex = assertThrows(
                 UsernameNotFoundException.class,
@@ -228,7 +227,7 @@ public class AuthServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo("User not found");
+        assertThat(ex.getMessage()).isEqualTo(USER_NOT_FOUND);
 
         verify(userService).createUser(any(UserCreateRequest.class));
         verify(customUserDetailsService).loadUserByUsername(request.email());

@@ -27,7 +27,9 @@ import java.time.LocalDateTime;
 
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.invalidParameter;
+import static com.namnguyen.ecommerce_platform.testutil.messages.PaymentTestMessages.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -126,10 +128,10 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)))
                 .andExpect(jsonPath("$.fieldErrors.paymentMethod",
-                        containsInAnyOrder(paymentMethodRequired())));
+                        containsInAnyOrder(PAYMENT_METHOD_IS_REQUIRED)));
 
         verifyNoInteractions(paymentService);
     }
@@ -155,10 +157,10 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)))
                 .andExpect(jsonPath("$.fieldErrors.paymentMethod",
-                        containsInAnyOrder(paymentMethodInvalid(method))));
+                        containsInAnyOrder(paymentMethodIsInvalid(method))));
 
         verifyNoInteractions(paymentService);
     }
@@ -171,7 +173,7 @@ public class PaymentControllerTest {
         PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
 
         when(paymentService.submitPayment(orderId, userId, request))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         authenticateUser(userId);
 
@@ -182,7 +184,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotFound(orderId, userId)))
+                .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, userId)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)));
 
         verify(paymentService).submitPayment(orderId, userId, request);
@@ -197,7 +199,7 @@ public class PaymentControllerTest {
         PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
 
         when(paymentService.submitPayment(orderId, userId, request))
-                .thenThrow(new InvalidOrderStateException(orderNotInPendingPayment()));
+                .thenThrow(new InvalidOrderStateException(ORDER_NOT_PENDING_PAYMENT));
 
         authenticateUser(userId);
 
@@ -208,7 +210,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotInPendingPayment()))
+                .andExpect(jsonPath("$.message").value(ORDER_NOT_PENDING_PAYMENT))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)));
 
         verify(paymentService).submitPayment(orderId, userId, request);
@@ -216,14 +218,14 @@ public class PaymentControllerTest {
     }
 
     @Test
-    void submitPayment_whenPaymentAlreadyExists_returnsBadRequest() throws Exception {
+    void submitPayment_whenPaymentAlreadyExists_returnsConflict() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
 
         PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
 
         when(paymentService.submitPayment(orderId, userId, request))
-                .thenThrow(new DuplicateResourceException(paymentDuplicate()));
+                .thenThrow(new DuplicateResourceException(PAYMENT_ALREADY_EXISTS));
 
         authenticateUser(userId);
 
@@ -234,7 +236,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(paymentDuplicate()))
+                .andExpect(jsonPath("$.message").value(PAYMENT_ALREADY_EXISTS))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)));
 
         verify(paymentService).submitPayment(orderId, userId, request);
@@ -303,7 +305,7 @@ public class PaymentControllerTest {
         Long orderId = 2L;
 
         when(paymentService.getPaymentByOrderId(orderId, userId))
-                .thenThrow(new NoResourceFoundException(paymentNotFound(orderId)));
+                .thenThrow(new NoResourceFoundException(paymentNotFoundWithOrderId(orderId)));
 
         authenticateUser(userId);
 
@@ -312,7 +314,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(paymentNotFound(orderId)))
+                .andExpect(jsonPath("$.message").value(paymentNotFoundWithOrderId(orderId)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)));
 
         verify(paymentService).getPaymentByOrderId(orderId, userId);
@@ -325,7 +327,7 @@ public class PaymentControllerTest {
         Long orderId = 2L;
 
         when(paymentService.getPaymentByOrderId(orderId, userId))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         authenticateUser(userId);
 
@@ -334,7 +336,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotFound(orderId, userId)))
+                .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, userId)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)));
 
         verify(paymentService).getPaymentByOrderId(orderId, userId);
@@ -415,7 +417,7 @@ public class PaymentControllerTest {
         PaymentRequest request = new PaymentRequest(method);
 
         when(paymentService.updatePayment(orderId, userId, request))
-                .thenThrow(new NoResourceFoundException(paymentNotFound(orderId)));
+                .thenThrow(new NoResourceFoundException(paymentNotFoundWithOrderId(orderId)));
 
         authenticateUser(userId);
 
@@ -426,7 +428,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(paymentNotFound(orderId)))
+                .andExpect(jsonPath("$.message").value(paymentNotFoundWithOrderId(orderId)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)));
 
         verify(paymentService).updatePayment(orderId, userId, request);
@@ -449,10 +451,10 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)))
                 .andExpect(jsonPath("$.fieldErrors.paymentMethod",
-                        containsInAnyOrder(paymentMethodRequired())));
+                        containsInAnyOrder(PAYMENT_METHOD_IS_REQUIRED)));
 
         verifyNoInteractions(paymentService);
     }
@@ -478,10 +480,10 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)))
                 .andExpect(jsonPath("$.fieldErrors.paymentMethod",
-                        containsInAnyOrder(paymentMethodInvalid(method))));
+                        containsInAnyOrder(paymentMethodIsInvalid(method))));
 
         verifyNoInteractions(paymentService);
     }
@@ -495,7 +497,7 @@ public class PaymentControllerTest {
         PaymentRequest request = new PaymentRequest(method);
 
         when(paymentService.updatePayment(orderId, userId, request))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         authenticateUser(userId);
 
@@ -506,7 +508,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotFound(orderId, userId)))
+                .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, userId)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)));
 
         verify(paymentService).updatePayment(orderId, userId, request);
@@ -522,7 +524,7 @@ public class PaymentControllerTest {
         PaymentRequest request = new PaymentRequest(method);
 
         when(paymentService.updatePayment(orderId, userId, request))
-                .thenThrow(new InvalidPaymentStateException(paymentNotPending()));
+                .thenThrow(new InvalidPaymentStateException(PAYMENT_NOT_PENDING));
 
         authenticateUser(userId);
 
@@ -533,7 +535,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(paymentNotPending()))
+                .andExpect(jsonPath("$.message").value(PAYMENT_NOT_PENDING))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI, orderId)));
 
         verify(paymentService).updatePayment(orderId, userId, request);
@@ -655,12 +657,11 @@ public class PaymentControllerTest {
     void confirmPayment_whenPaymentNotFound_returnsNotFound() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
-        PaymentMethod method = PaymentMethod.CARD;
         PaymentStatus status = PaymentStatus.SUCCESS;
 
 
         when(paymentService.confirmPayment(orderId, userId, status))
-                .thenThrow(new NoResourceFoundException(paymentNotFound(orderId)));
+                .thenThrow(new NoResourceFoundException(paymentNotFoundWithOrderId(orderId)));
 
         authenticateUser(userId);
 
@@ -670,7 +671,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(paymentNotFound(orderId)))
+                .andExpect(jsonPath("$.message").value(paymentNotFoundWithOrderId(orderId)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI + "/confirm", orderId)));
 
         verify(paymentService).confirmPayment(orderId, userId, status);
@@ -684,7 +685,7 @@ public class PaymentControllerTest {
         PaymentStatus status = PaymentStatus.SUCCESS;
 
         when(paymentService.confirmPayment(orderId, userId, status))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         authenticateUser(userId);
 
@@ -694,7 +695,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotFound(orderId, userId)))
+                .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, userId)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI + "/confirm", orderId)));
 
         verify(paymentService).confirmPayment(orderId, userId, status);
@@ -708,7 +709,7 @@ public class PaymentControllerTest {
         PaymentStatus status = PaymentStatus.SUCCESS;
 
         when(paymentService.confirmPayment(orderId, userId, status))
-                .thenThrow(new InvalidOrderStateException(orderNotInPendingPayment()));
+                .thenThrow(new InvalidOrderStateException(ORDER_NOT_PENDING_PAYMENT));
 
         authenticateUser(userId);
 
@@ -718,7 +719,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotInPendingPayment()))
+                .andExpect(jsonPath("$.message").value(ORDER_NOT_PENDING_PAYMENT))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI + "/confirm", orderId)));
 
         verify(paymentService).confirmPayment(orderId, userId, status);
@@ -732,7 +733,7 @@ public class PaymentControllerTest {
         PaymentStatus status = PaymentStatus.SUCCESS;
 
         when(paymentService.confirmPayment(orderId, userId, status))
-                .thenThrow(new InvalidPaymentStateException(paymentNotPending()));
+                .thenThrow(new InvalidPaymentStateException(PAYMENT_NOT_PENDING));
 
         authenticateUser(userId);
 
@@ -742,7 +743,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(paymentNotPending()))
+                .andExpect(jsonPath("$.message").value(PAYMENT_NOT_PENDING))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI + "/confirm", orderId)));
 
         verify(paymentService).confirmPayment(orderId, userId, status);
@@ -756,7 +757,7 @@ public class PaymentControllerTest {
         PaymentStatus status = PaymentStatus.PENDING;
 
         when(paymentService.confirmPayment(orderId, userId, status))
-                .thenThrow(new InvalidPaymentStateException(invalidStatusConfirmed()));
+                .thenThrow(new InvalidPaymentStateException(INVALID_PAYMENT_STATUS));
 
         authenticateUser(userId);
 
@@ -766,7 +767,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(invalidStatusConfirmed()))
+                .andExpect(jsonPath("$.message").value(INVALID_PAYMENT_STATUS))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI + "/confirm", orderId)));
 
         verify(paymentService).confirmPayment(orderId, userId, status);
@@ -787,7 +788,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(paymentStatusInvalid(status)))
+                .andExpect(jsonPath("$.message").value(paymentStatusIsInvalid(status)))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI + "/confirm", orderId)));
 
         verifyNoInteractions(paymentService);
@@ -825,7 +826,7 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(String.format(PAYMENT_URI + "/confirm", orderId)))
                 .andExpect(jsonPath("$.fieldErrors.paymentStatus",
                         containsInAnyOrder(invalidParameter("paymentStatus"))));

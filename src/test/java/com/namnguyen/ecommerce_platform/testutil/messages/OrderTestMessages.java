@@ -26,14 +26,33 @@ public final class OrderTestMessages {
     public static final String ORDER_IS_EMPTY =
             "Order must contain at least one item.";
 
+    public static final String EMPTY_CART =
+            "Cannot checkout an empty cart.";
+
     private OrderTestMessages() {}
 
     public static String orderNotFoundWithId(Long orderId) {
-        return "No order found with id: " + orderId;
+        return "No order found with id: " + orderId + ".";
+    }
+
+    public static String insufficientStock(String productName) {
+        return "Insufficient stock for product: " + productName + ".";
     }
 
     public static String orderNotFoundWithIdAndUserId(Long orderId, Long userId) {
         return  "No order found with id: " + orderId +
-                " for user id: " + userId;
+                " for user id: " + userId + ".";
+    }
+
+    public static String productNotFoundWithId(Long productId) {
+        return "Product not found with id: " + productId + ".";
+    }
+
+    public static String userNotFoundWithId(Long userId) {
+        return "User not found with id: " + userId + ".";
+    }
+
+    public static String cartNotFoundWithUserId(Long userId) {
+        return "No cart for user with id: " + userId + ".";
     }
 }

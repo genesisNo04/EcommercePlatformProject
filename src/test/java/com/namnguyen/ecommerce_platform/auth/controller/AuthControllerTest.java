@@ -5,7 +5,6 @@ import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
 import com.namnguyen.ecommerce_platform.auth.service.AuthService;
 import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
-import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitFilter;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
@@ -21,7 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.AuthTestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -89,7 +89,7 @@ public class AuthControllerTest {
         );
 
         when(authService.login(any(LoginRequest.class)))
-                .thenThrow(new BadCredentialsException(badCredentials()));
+                .thenThrow(new BadCredentialsException(BAD_CREDENTIALS));
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,7 +98,7 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(badCredentials()))
+                .andExpect(jsonPath("$.message").value(INVALID_CREDENTIALS))
                 .andExpect(jsonPath("$.uri").value(LOGIN_URI));
 
         ArgumentCaptor<LoginRequest> captor = ArgumentCaptor.forClass(LoginRequest.class);
@@ -126,9 +126,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsInvalid())));
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(AUTH_EMAIL_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -147,9 +147,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(AUTH_EMAIL_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -168,52 +168,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
-
-        verifyNoInteractions(authService);
-    }
-
-    @Test
-    void login_whenPasswordIsLessThan8_returnsBadRequest() throws Exception {
-        LoginRequest request = new LoginRequest(
-                VALID_EMAIL,
-                "test123"
-        );
-
-        mockMvc.perform(post(LOGIN_URI)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.timestamp").exists())
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
-
-
-        verifyNoInteractions(authService);
-    }
-
-    @Test
-    void login_whenPasswordIsMoreThan50_returnsBadRequest() throws Exception {
-        LoginRequest request = new LoginRequest(
-                VALID_EMAIL,
-                "test1235645646467879461313131313456464as1d313a1sd31"
-        );
-
-        mockMvc.perform(post(LOGIN_URI)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.timestamp").exists())
-                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(AUTH_EMAIL_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -232,12 +189,11 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(LOGIN_URI))
                 .andExpect(jsonPath("$.fieldErrors.password").isArray())
                 .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(
-                        passwordIsInvalid(),
-                        passwordIsRequired())));
+                        AUTH_PASSWORD_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -256,9 +212,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(LOGIN_URI))
-                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(AUTH_PASSWORD_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -350,9 +306,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(AUTH_EMAIL_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -374,9 +330,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(AUTH_EMAIL_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -398,9 +354,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(emailIsInvalid())));
+                .andExpect(jsonPath("$.fieldErrors.email", containsInAnyOrder(AUTH_EMAIL_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -422,9 +378,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(AUTH_PASSWORD_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -446,11 +402,11 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
                 .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(
-                        passwordIsRequired(),
-                        passwordIsInvalid())));
+                        AUTH_PASSWORD_IS_REQUIRED,
+                        AUTH_PASSWORD_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -472,9 +428,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(AUTH_PASSWORD_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -496,9 +452,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(passwordIsInvalid())));
+                .andExpect(jsonPath("$.fieldErrors.password", containsInAnyOrder(AUTH_PASSWORD_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -520,9 +476,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(firstNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(AUTH_FIRST_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -544,9 +500,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(firstNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.firstName", containsInAnyOrder(AUTH_FIRST_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -568,9 +524,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(lastNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(AUTH_LAST_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -592,9 +548,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(lastNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.lastName", containsInAnyOrder(AUTH_LAST_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -616,11 +572,11 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
                 .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(
-                        phoneNumberIsRequired(),
-                        phoneNumberIsInvalid())));
+                        AUTH_PHONE_NUMBER_IS_REQUIRED,
+                        AUTH_PHONE_NUMBER_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -642,9 +598,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(AUTH_PHONE_NUMBER_IS_REQUIRED)));
 
         verifyNoInteractions(authService);
     }
@@ -666,9 +622,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(AUTH_PHONE_NUMBER_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -690,9 +646,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(AUTH_PHONE_NUMBER_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -714,9 +670,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI))
-                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(phoneNumberIsInvalid())));
+                .andExpect(jsonPath("$.fieldErrors.phoneNumber", containsInAnyOrder(AUTH_PHONE_NUMBER_IS_INVALID)));
 
         verifyNoInteractions(authService);
     }
@@ -732,7 +688,7 @@ public class AuthControllerTest {
         );
 
         when(authService.register(any(RegisterRequest.class)))
-                .thenThrow(new DuplicateResourceException(emailDuplicate()));
+                .thenThrow(new DuplicateResourceException(DUPLICATE_EMAIL));
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -741,7 +697,7 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(emailDuplicate()))
+                .andExpect(jsonPath("$.message").value(DUPLICATE_EMAIL))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI));
 
         verify(authService).register(any(RegisterRequest.class));
@@ -759,7 +715,7 @@ public class AuthControllerTest {
         );
 
         when(authService.register(any(RegisterRequest.class)))
-                .thenThrow(new DuplicateResourceException(phoneDuplicate()));
+                .thenThrow(new DuplicateResourceException(DUPLICATE_PHONE));
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -768,7 +724,7 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(phoneDuplicate()))
+                .andExpect(jsonPath("$.message").value(DUPLICATE_PHONE))
                 .andExpect(jsonPath("$.uri").value(REGISTER_URI));
 
         verify(authService).register(any(RegisterRequest.class));

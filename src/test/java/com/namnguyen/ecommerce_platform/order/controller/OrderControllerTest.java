@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.order.controller;
 
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
@@ -28,9 +29,9 @@ import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.invalidQuantity;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.quantityIsRequired;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.invalidParameter;
+import static com.namnguyen.ecommerce_platform.testutil.messages.OrderTestMessages.*;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -164,9 +165,9 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
-                .andExpect(jsonPath("$.fieldErrors['items[0].productId']", containsInAnyOrder(productIdIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors['items[0].productId']", containsInAnyOrder(ORDER_ITEM_PRODUCT_ID_IS_REQUIRED)));
 
         verifyNoInteractions(orderService);
     }
@@ -193,10 +194,10 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
-                        containsInAnyOrder(invalidQuantity())));
+                        containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_INVALID)));
 
         verifyNoInteractions(orderService);
     }
@@ -215,7 +216,7 @@ public class OrderControllerTest {
         CreateOrderRequest request = new CreateOrderRequest(List.of(orderItemRequest));
 
         when(orderService.createOrder(request, userId))
-                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         authenticateUser(userId);
 
@@ -226,7 +227,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI));
 
         verify(orderService).createOrder(any(CreateOrderRequest.class), eq(userId));
@@ -254,10 +255,10 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
-                        containsInAnyOrder(quantityIsRequired())));
+                        containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_REQUIRED)));
 
         verifyNoInteractions(orderService);
     }
@@ -284,10 +285,10 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
-                        containsInAnyOrder(invalidQuantity())));
+                        containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_INVALID)));
 
         verifyNoInteractions(orderService);
     }
@@ -307,10 +308,10 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.items",
-                        containsInAnyOrder(orderHasAtLeastOneItem())));
+                        containsInAnyOrder(ORDER_IS_EMPTY)));
 
         verifyNoInteractions(orderService);
     }
@@ -330,10 +331,39 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.items",
-                        containsInAnyOrder(orderHasAtLeastOneItem())));
+                        containsInAnyOrder(ORDER_IS_EMPTY)));
+
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void createOrder_whenProductIdIsZero_returnsBadRequest() throws Exception {
+        Long userId = 1L;
+
+        CreateOrderItemRequest item =
+                new CreateOrderItemRequest(0L, 1);
+
+        CreateOrderRequest request =
+                new CreateOrderRequest(List.of(item));
+
+        authenticateUser(userId);
+
+        mockMvc.perform(post(ORDER_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.uri").value(ORDER_URI))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.fieldErrors['items[0].productId']",
+                        containsInAnyOrder(ORDER_ITEM_PRODUCT_ID_IS_INVALID)
+
+                ));
 
         verifyNoInteractions(orderService);
     }
@@ -462,7 +492,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.status",
                         containsInAnyOrder(invalidParameter("status"))));
@@ -489,7 +519,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.minTotal",
                         containsInAnyOrder(invalidParameter("minTotal"))));
@@ -516,7 +546,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.maxTotal",
                         containsInAnyOrder(invalidParameter("maxTotal"))));
@@ -542,7 +572,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.createdAfter",
                         containsInAnyOrder(invalidParameter("createdAfter"))));
@@ -568,7 +598,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.createdBefore",
                         containsInAnyOrder(invalidParameter("createdBefore"))));
@@ -750,7 +780,7 @@ public class OrderControllerTest {
         Long orderId = 2L;
 
         when(orderService.getOrderById(orderId,userId))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         authenticateUser(userId);
 
@@ -759,7 +789,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotFound(orderId, userId)))
+                .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, userId)))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId));
 
 
@@ -806,7 +836,7 @@ public class OrderControllerTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        doThrow(new NoResourceFoundException(orderNotFound(orderId, userId)))
+        doThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)))
                 .when(orderService).cancelOrder(orderId, userId);
 
         authenticateUser(userId);
@@ -816,7 +846,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotFound(orderId, userId)))
+                .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, userId)))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId + "/cancel"));
 
 
@@ -829,7 +859,7 @@ public class OrderControllerTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        doThrow(new InvalidOrderStateException(cannotCancelDeliveredOrder()))
+        doThrow(new InvalidOrderStateException(DELIVERED_ORDER_CANNOT_BE_CANCELLED))
                 .when(orderService).cancelOrder(orderId, userId);
 
         authenticateUser(userId);
@@ -839,7 +869,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(cannotCancelDeliveredOrder()))
+                .andExpect(jsonPath("$.message").value(DELIVERED_ORDER_CANNOT_BE_CANCELLED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId + "/cancel"));
 
 
@@ -852,7 +882,7 @@ public class OrderControllerTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        doThrow(new InvalidOrderStateException(orderAlreadyCancelled()))
+        doThrow(new InvalidOrderStateException(ORDER_ALREADY_CANCELLED))
                 .when(orderService).cancelOrder(orderId, userId);
 
         authenticateUser(userId);
@@ -862,7 +892,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderAlreadyCancelled()))
+                .andExpect(jsonPath("$.message").value(ORDER_ALREADY_CANCELLED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId + "/cancel"));
 
 
@@ -938,7 +968,7 @@ public class OrderControllerTest {
     void checkoutCart_whenCartIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
-        doThrow(new InvalidOrderStateException(emptyCart()))
+        doThrow(new InvalidCartStateException(EMPTY_CART))
                 .when(orderService).checkoutCart(userId);
 
         authenticateUser(userId);
@@ -948,7 +978,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(emptyCart()))
+                .andExpect(jsonPath("$.message").value(EMPTY_CART))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI + "/checkout"));
 
 

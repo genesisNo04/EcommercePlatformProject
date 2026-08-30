@@ -28,5 +28,18 @@ public final class AuthTestMessages {
     public static final String INVALID_CREDENTIALS =
             "Invalid email or password.";
 
+    public static final String DUPLICATE_EMAIL =
+            "Email already exists.";
+
+    public static final String DUPLICATE_PHONE =
+            "Phone number already exists.";
+
+    public static final String USER_NOT_FOUND =
+            "User not found";
+
+    public static final String BAD_CREDENTIALS =
+            "Bad credentials";
+
+
     private AuthTestMessages() {}
 }

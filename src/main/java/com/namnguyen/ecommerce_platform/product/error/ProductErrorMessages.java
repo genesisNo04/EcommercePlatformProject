@@ -18,7 +18,7 @@ public final class ProductErrorMessages {
             "Product description cannot be empty.";
 
     public static final String PRODUCT_DESCRIPTION_IS_INVALID =
-            "Product description must be between 5 and 1000 chars.";
+            "Product description must be between 5 and 1000 characters.";
 
     public static final String PRODUCT_PRICE_IS_REQUIRED =
             "Product price is required.";
@@ -36,14 +36,14 @@ public final class ProductErrorMessages {
     }
 
     public static String productNotFoundWithId(Long productId) {
-        return "Product not found with id: " + productId;
+        return "Product not found with id: " + productId + ".";
     }
 
     public static String productNotFoundWithName(String productName) {
-        return "Product not found with name: " + productName;
+        return "Product not found with name: " + productName + ".";
     }
 
     public static String insufficientStockForProduct(String productName) {
-        return  "Not enough stock for product: " + productName;
+        return  "Insufficient stock for product: " + productName + ".";
     }
 }

@@ -2,6 +2,7 @@ package com.namnguyen.ecommerce_platform.order.service;
 
 import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
 import com.namnguyen.ecommerce_platform.cart.service.CartLookupService;
 import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderException;
@@ -34,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.OrderTestMessages.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -232,7 +233,7 @@ public class OrderServiceImplTest {
         );
 
         when(userLookupService.getUserById(userId))
-                .thenThrow(new NoResourceFoundException(userNotFound(userId)));
+                .thenThrow(new NoResourceFoundException(userNotFoundWithId(userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -240,7 +241,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userLookupService).getUserById(userId);
         verifyNoMoreInteractions(userLookupService);
@@ -267,7 +268,7 @@ public class OrderServiceImplTest {
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
         when(productLookupService.getProductById(productId))
-                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -275,7 +276,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(productNotFound(productId));
+        assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
         verify(userLookupService).getUserById(userId);
         verify(productLookupService).getProductById(productId);
@@ -297,7 +298,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderHasAtLeastOneItem());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_IS_EMPTY);
 
         verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
@@ -317,7 +318,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderHasAtLeastOneItem());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_IS_EMPTY);
 
         verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
@@ -334,7 +335,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderHasAtLeastOneItem());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_IS_EMPTY);
 
         verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
@@ -366,7 +367,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderItemGreaterThanZero());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
 
         verify(userLookupService).getUserById(userId);
         verifyNoInteractions(productLookupService);
@@ -398,7 +399,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderItemGreaterThanZero());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
 
         verify(userLookupService).getUserById(userId);
         verifyNoInteractions(productLookupService);
@@ -547,7 +548,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderNotFound(orderId, userId));
+        assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderRepository);
@@ -783,7 +784,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderNotFound(orderId, userId));
+        assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderRepository);
@@ -833,7 +834,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(cannotCancelDeliveredOrder());
+        assertThat(ex.getMessage()).isEqualTo(DELIVERED_ORDER_CANNOT_BE_CANCELLED);
         assertThat(product1.getQuantity()).isEqualTo(initialQuantity1);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
 
@@ -885,9 +886,40 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderAlreadyCancelled());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_ALREADY_CANCELLED);
         assertThat(product1.getQuantity()).isEqualTo(initialQuantity1);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+
+        verify(orderRepository).findByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderRepository);
+    }
+
+    @Test
+    void cancelOrder_whenOrderIsPaid_throwsInvalidOrderStateException() {
+        Long userId = 1L;
+        Long orderId = 2L;
+
+        User user = createUser(userId);
+
+        Order order = createOrder(
+                orderId,
+                BigDecimal.TEN,
+                OrderStatus.PAID,
+                user
+        );
+
+        when(orderRepository.findByIdAndUserId(orderId, userId))
+                .thenReturn(Optional.of(order));
+
+        InvalidOrderStateException ex = assertThrows(
+                InvalidOrderStateException.class,
+                () -> orderService.cancelOrder(orderId, userId)
+        );
+
+        assertThat(ex.getMessage())
+                .isEqualTo(ORDER_CANNOT_BE_CANCELLED);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderRepository);
@@ -980,7 +1012,7 @@ public class OrderServiceImplTest {
         Long userId = 999L;
 
         when(cartLookupService.getCartByUserId(userId))
-                .thenThrow(new NoResourceFoundException(cartNotFound(userId)));
+                .thenThrow(new NoResourceFoundException(cartNotFoundWithUserId(userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -988,14 +1020,14 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(cartNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(cartNotFoundWithUserId(userId));
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoInteractions(orderRepository);
     }
 
     @Test
-    void checkoutCart_whenCartEmpty_throwInvalidOrderStateException() {
+    void checkoutCart_whenCartIsEmpty_throwsInvalidCartStateException() {
         Long userId = 1L;
         Long cartId = 2L;
 
@@ -1004,13 +1036,13 @@ public class OrderServiceImplTest {
 
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
 
-        InvalidOrderStateException ex = assertThrows(
-                InvalidOrderStateException.class,
+        InvalidCartStateException ex = assertThrows(
+                InvalidCartStateException.class,
                 () -> orderService.checkoutCart(userId)
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(emptyCart());
+        assertThat(ex.getMessage()).isEqualTo(EMPTY_CART);
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoInteractions(orderRepository);
@@ -1063,7 +1095,7 @@ public class OrderServiceImplTest {
     }
 
     @Test
-    void checkoutCart_whenQuantityIsNegative_throwInsufficientStockException() {
+    void checkoutCart_whenQuantityIsNegative_throwsInvalidOrderException() {
         Long userId = 1L;
         Long cartId = 2L;
         Long productId = 3L;
@@ -1098,7 +1130,7 @@ public class OrderServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderItemGreaterThanZero());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoMoreInteractions(cartLookupService);
@@ -1134,8 +1166,6 @@ public class OrderServiceImplTest {
 
         cart.addItem(item);
 
-        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
             Order order = inv.getArgument(0);
@@ -1143,7 +1173,7 @@ public class OrderServiceImplTest {
             return order;
         });
 
-        OrderResponse response = orderService.checkoutCart(userId);
+        orderService.checkoutCart(userId);
 
         assertThat(product.getQuantity()).isEqualTo(0);
         assertThat(product.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);

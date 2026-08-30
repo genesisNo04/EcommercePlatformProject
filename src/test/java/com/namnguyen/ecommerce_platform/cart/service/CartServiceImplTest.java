@@ -23,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CartTestMessages.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 
 import static org.assertj.core.api.Assertions.*;
@@ -153,7 +153,7 @@ public class CartServiceImplTest {
         Long userId = 999L;
 
         when(userLookupService.getUserById(userId))
-                .thenThrow(new NoResourceFoundException(userNotFound(userId)));
+                .thenThrow(new NoResourceFoundException(userNotFoundWithId(userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -161,7 +161,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userLookupService).getUserById(userId);
         verify(cartRepository, never()).save(any(Cart.class));
@@ -310,7 +310,7 @@ public class CartServiceImplTest {
         );
 
         when(userLookupService.getUserById(userId))
-                .thenThrow(new NoResourceFoundException(userNotFound(userId)));
+                .thenThrow(new NoResourceFoundException(userNotFoundWithId(userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -318,7 +318,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userLookupService).getUserById(userId);
         verifyNoInteractions(cartRepository);
@@ -343,7 +343,7 @@ public class CartServiceImplTest {
         when(userLookupService.getUserById(userId)).thenReturn(user);
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
         when(productLookupService.getProductById(productId))
-                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -351,7 +351,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(productNotFound(productId));
+        assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
         verify(userLookupService).getUserById(userId);
         verify(cartRepository).findByUserId(userId);
@@ -591,7 +591,7 @@ public class CartServiceImplTest {
         int updateQuantity = 4;
 
         when(userLookupService.getUserById(userId))
-                .thenThrow(new NoResourceFoundException(userNotFound(userId)));
+                .thenThrow(new NoResourceFoundException(userNotFoundWithId(userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -599,7 +599,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userLookupService).getUserById(userId);
         verifyNoMoreInteractions(cartRepository);
@@ -624,7 +624,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(cartNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(cartNotFoundWithUserId(userId));
 
         verify(userLookupService).getUserById(userId);
         verify(cartRepository).findByUserId(userId);
@@ -647,7 +647,7 @@ public class CartServiceImplTest {
         when(userLookupService.getUserById(userId)).thenReturn(user);
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
         when(productLookupService.getProductById(productId))
-                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -655,7 +655,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(productNotFound(productId));
+        assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
         verify(userLookupService).getUserById(userId);
         verify(cartRepository).findByUserId(userId);
@@ -692,7 +692,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(cartItemNotFound(productId));
+        assertThat(ex.getMessage()).isEqualTo(cartItemNotFoundWithProductId(productId));
 
         verify(userLookupService).getUserById(userId);
         verify(cartRepository).findByUserId(userId);
@@ -965,7 +965,7 @@ public class CartServiceImplTest {
         Long cartItemId = 1L;
 
         when(userLookupService.getUserById(userId))
-                .thenThrow(new NoResourceFoundException(userNotFound(userId)));
+                .thenThrow(new NoResourceFoundException(userNotFoundWithId(userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -973,7 +973,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userLookupService).getUserById(userId);
         verifyNoMoreInteractions(userLookupService);
@@ -1001,7 +1001,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(cartItemNotFound(productId));
+        assertThat(ex.getMessage()).isEqualTo(cartItemNotFoundWithProductId(productId));
 
         verify(userLookupService).getUserById(userId);
         verify(cartRepository).findByUserId(userId);
@@ -1028,7 +1028,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(cartNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(cartNotFoundWithUserId(userId));
 
         verify(userLookupService).getUserById(userId);
         verify(cartRepository).findByUserId(userId);
@@ -1107,7 +1107,7 @@ public class CartServiceImplTest {
         Long userId = 999L;
 
         when(userLookupService.getUserById(userId))
-                .thenThrow(new NoResourceFoundException(userNotFound(userId)));
+                .thenThrow(new NoResourceFoundException(userNotFoundWithId(userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -1115,7 +1115,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userLookupService).getUserById(userId);
         verifyNoMoreInteractions(userLookupService);
@@ -1139,7 +1139,7 @@ public class CartServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(cartNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(cartNotFoundWithUserId(userId));
 
         verify(userLookupService).getUserById(userId);
         verify(cartRepository).findByUserId(userId);

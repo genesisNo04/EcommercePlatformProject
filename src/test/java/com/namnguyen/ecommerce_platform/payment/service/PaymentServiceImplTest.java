@@ -25,8 +25,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.invalidStatusConfirmed;
+import static com.namnguyen.ecommerce_platform.testutil.messages.PaymentTestMessages.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -104,7 +103,7 @@ public class PaymentServiceImplTest {
         PaymentRequest request = new PaymentRequest(method);
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -112,7 +111,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderNotFound(orderId, userId));
+        assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
@@ -144,7 +143,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderNotInPendingPayment());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_NOT_PENDING_PAYMENT);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
@@ -179,7 +178,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(paymentDuplicate());
+        assertThat(ex.getMessage()).isEqualTo(PAYMENT_ALREADY_EXISTS);
         assertThat(order.getStatus()).isEqualTo(status);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
@@ -237,7 +236,7 @@ public class PaymentServiceImplTest {
         Long orderId = 3L;
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -245,7 +244,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderNotFound(orderId, userId));
+        assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
@@ -278,7 +277,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(paymentNotFound(orderId));
+        assertThat(ex.getMessage()).isEqualTo(paymentNotFoundWithOrderId(orderId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verify(paymentRepository).findByOrderId(orderId);
@@ -371,7 +370,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(paymentNotPending());
+        assertThat(ex.getMessage()).isEqualTo(PAYMENT_NOT_PENDING);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verify(paymentRepository).findByOrderId(orderId);
@@ -388,7 +387,7 @@ public class PaymentServiceImplTest {
         PaymentRequest request = new PaymentRequest(updatePaymentMethod);
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -396,7 +395,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderNotFound(orderId, userId));
+        assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
@@ -430,7 +429,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(paymentNotFound(orderId));
+        assertThat(ex.getMessage()).isEqualTo(paymentNotFoundWithOrderId(orderId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verify(paymentRepository).findByOrderId(orderId);
@@ -563,11 +562,15 @@ public class PaymentServiceImplTest {
 
         InvalidPaymentStateException ex = assertThrows(
                 InvalidPaymentStateException.class,
-                () -> paymentService.confirmPayment(orderId, userId, confirmStatus)
+                () -> paymentService.confirmPayment(
+                        orderId,
+                        userId,
+                        confirmStatus
+                )
         );
 
-        assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(invalidStatusConfirmed());
+        assertThat(ex.getMessage())
+                .isEqualTo(INVALID_PAYMENT_STATUS);
         assertThat(order.getStatus()).isEqualTo(orderStatus);
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
@@ -584,7 +587,7 @@ public class PaymentServiceImplTest {
         PaymentStatus status = PaymentStatus.SUCCESS;
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -592,7 +595,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderNotFound(orderId, userId));
+        assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
@@ -623,7 +626,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(paymentNotFound(orderId));
+        assertThat(ex.getMessage()).isEqualTo(paymentNotFoundWithOrderId(orderId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verify(paymentRepository).findByOrderId(orderId);
@@ -667,7 +670,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(paymentCannotConfirmed());
+        assertThat(ex.getMessage()).isEqualTo(PAYMENT_CANNOT_BE_CONFIRMED);
         assertThat(order.getStatus()).isEqualTo(orderStatus);
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
@@ -713,7 +716,7 @@ public class PaymentServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(orderNotInPendingPayment());
+        assertThat(ex.getMessage()).isEqualTo(ORDER_NOT_PENDING_PAYMENT);
         assertThat(order.getStatus()).isEqualTo(orderStatus);
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
