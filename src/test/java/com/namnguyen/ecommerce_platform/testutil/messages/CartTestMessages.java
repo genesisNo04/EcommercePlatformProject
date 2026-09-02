@@ -17,6 +17,9 @@ public final class CartTestMessages {
     public static final String CART_ITEM_QUANTITY_IS_INVALID =
             "Cart item quantity must be at least 1.";
 
+    public static final String CART_ITEM_UPDATE_QUANTITY_IS_INVALID =
+            "Cart item update quantity must be greater than or equal to 0.";
+
     private CartTestMessages() {}
 
     public static String cartNotFoundWithUserId(Long userId) {

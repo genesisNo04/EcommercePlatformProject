@@ -5,6 +5,7 @@ import com.namnguyen.ecommerce_platform.cart.dto.CartItemResponse;
 import com.namnguyen.ecommerce_platform.cart.dto.CartResponse;
 import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidQuantityException;
 import com.namnguyen.ecommerce_platform.cart.mapper.CartItemMapper;
 import com.namnguyen.ecommerce_platform.cart.mapper.CartMapper;
 import com.namnguyen.ecommerce_platform.cart.repository.CartItemRepository;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+import static com.namnguyen.ecommerce_platform.cart.error.CartErrorMessages.CART_ITEM_UPDATE_QUANTITY_IS_INVALID;
 import static com.namnguyen.ecommerce_platform.cart.error.CartErrorMessages.cartItemNotFoundWithProductId;
 import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.insufficientStockForProduct;
 
@@ -97,13 +99,17 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartResponse updateItemQuantity(Long userId, Long productId, int quantity) {
+        if (quantity < 0) {
+            throw new InvalidQuantityException(CART_ITEM_UPDATE_QUANTITY_IS_INVALID);
+        }
+
         Cart cart = cartLookupService.getCartByUserId(userId);
-        Product product = productLookUpService.getProductById(productId);
         CartItem item = getCartItem(cart, productId);
 
-        if (quantity <= 0) {
+        if (quantity == 0) {
             cart.removeItem(item);
         } else {
+            Product product = productLookUpService.getProductById(productId);
             stockCheck(product, quantity);
             item.setQuantity(quantity);
         }

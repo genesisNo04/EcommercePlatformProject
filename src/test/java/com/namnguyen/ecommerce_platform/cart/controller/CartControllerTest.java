@@ -75,7 +75,7 @@ public class CartControllerTest {
 
         authenticateUser(userId);
 
-        CartItemResponse itemResponse = new CartItemResponse(
+        CartItemResponse firstItemResponse = new CartItemResponse(
                 firstProductId,
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_PRICE,
@@ -83,7 +83,7 @@ public class CartControllerTest {
                 total
         );
 
-        CartItemResponse itemResponse1 = new CartItemResponse(
+        CartItemResponse secondItemResponse = new CartItemResponse(
                 secondProductId,
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_PRICE,
@@ -91,7 +91,7 @@ public class CartControllerTest {
                 total
         );
 
-        CartResponse cartResponse = new CartResponse(List.of(itemResponse, itemResponse1), totalCart);
+        CartResponse cartResponse = new CartResponse(List.of(firstItemResponse, secondItemResponse), totalCart);
 
         when(cartService.getCart(userId)).thenReturn(cartResponse);
 
@@ -148,7 +148,7 @@ public class CartControllerTest {
 
         BigDecimal total = VALID_PRODUCT_PRICE.multiply(BigDecimal.valueOf(quantity));
 
-        CartItemResponse response = new CartItemResponse(
+        CartItemResponse itemResponse = new CartItemResponse(
                 productId,
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_PRICE,
@@ -156,7 +156,7 @@ public class CartControllerTest {
                 total
         );
 
-        when(cartService.addItem(userId, request)).thenReturn(response);
+        when(cartService.addItem(userId, request)).thenReturn(itemResponse);
 
         authenticateUser(userId);
 
@@ -173,10 +173,10 @@ public class CartControllerTest {
         ArgumentCaptor<CartItemRequest> captor = ArgumentCaptor.forClass(CartItemRequest.class);
         verify(cartService).addItem(eq(userId), captor.capture());
 
-        CartItemRequest requestCaptured = captor.getValue();
+        CartItemRequest capturedRequest = captor.getValue();
 
-        assertThat(requestCaptured.productId()).isEqualTo(productId);
-        assertThat(requestCaptured.quantity()).isEqualTo(quantity);
+        assertThat(capturedRequest.productId()).isEqualTo(productId);
+        assertThat(capturedRequest.quantity()).isEqualTo(quantity);
 
         verifyNoMoreInteractions(cartService);
     }
@@ -186,7 +186,7 @@ public class CartControllerTest {
         Long userId = 2L;
         int quantity = 2;
 
-        CartItemRequest request = new CartItemRequest(
+        CartItemRequest itemRequest = new CartItemRequest(
                 null,
                 quantity
         );
@@ -195,7 +195,7 @@ public class CartControllerTest {
 
         mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(itemRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -213,7 +213,7 @@ public class CartControllerTest {
         Long productId = 0L;
         int quantity = 2;
 
-        CartItemRequest request = new CartItemRequest(
+        CartItemRequest itemRequest = new CartItemRequest(
                 productId,
                 quantity
         );
@@ -222,7 +222,7 @@ public class CartControllerTest {
 
         mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(itemRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -241,7 +241,7 @@ public class CartControllerTest {
         Long productId = 1L;
         Long userId = 2L;
 
-        CartItemRequest request = new CartItemRequest(
+        CartItemRequest itemRequest = new CartItemRequest(
                 productId,
                 null
         );
@@ -250,7 +250,7 @@ public class CartControllerTest {
 
         mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(itemRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -267,7 +267,7 @@ public class CartControllerTest {
         Long productId = 1L;
         Long userId = 2L;
 
-        CartItemRequest request = new CartItemRequest(
+        CartItemRequest itemRequest = new CartItemRequest(
                 productId,
                 0
         );
@@ -276,7 +276,7 @@ public class CartControllerTest {
 
         mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(itemRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))

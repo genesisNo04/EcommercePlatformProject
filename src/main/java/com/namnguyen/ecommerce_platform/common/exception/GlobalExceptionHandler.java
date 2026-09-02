@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.common.exception;
 
 import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidQuantityException;
 import com.namnguyen.ecommerce_platform.common.response.ValidationErrorResponse;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderException;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
@@ -209,6 +210,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidCartStateException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidCartStateException(InvalidCartStateException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidQuantityException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidQuantityException(InvalidQuantityException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
         return ResponseEntity.status(status)

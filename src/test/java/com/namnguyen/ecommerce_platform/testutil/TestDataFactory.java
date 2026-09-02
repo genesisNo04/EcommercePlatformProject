@@ -110,6 +110,15 @@ public final class TestDataFactory {
         return product;
     }
 
+    public static Product createDefaultProduct(Long productId) {
+        return createProduct(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+    }
+
     public static CartItem createCartItem(
             Long cartItemId,
             Cart cart,

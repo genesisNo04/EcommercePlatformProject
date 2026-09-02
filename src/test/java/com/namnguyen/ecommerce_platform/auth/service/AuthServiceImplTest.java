@@ -49,33 +49,35 @@ public class AuthServiceImplTest {
 
     @Test
     void login_whenCredentialsAreValid_returnsAuthResponse() {
-        LoginRequest request = createDefaultLoginRequest();
+        LoginRequest loginRequest = createDefaultLoginRequest();
 
-        UserDetails userDetails = User.withUsername(request.email())
+        UserDetails userDetails = User.withUsername(loginRequest.email())
                         .password(ENCODED_PASSWORD)
                         .roles(Role.CUSTOMER.name())
                         .build();
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(mock(Authentication.class));
-        when(customUserDetailsService.loadUserByUsername(request.email()))
+        when(customUserDetailsService.loadUserByUsername(loginRequest.email()))
                 .thenReturn(userDetails);
         when(jwtService.generateToken(userDetails)).thenReturn(MOCK_JWT_TOKEN);
 
-        AuthResponse response = authService.login(request);
+        AuthResponse authResponse = authService.login(loginRequest);
 
-        assertThat(response).isNotNull();
-        assertThat(response.token()).isEqualTo(MOCK_JWT_TOKEN);
+        assertThat(authResponse).isNotNull();
+        assertThat(authResponse.token()).isEqualTo(MOCK_JWT_TOKEN);
 
-        ArgumentCaptor<UsernamePasswordAuthenticationToken> captor = ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
-        verify(authenticationManager).authenticate(captor.capture());
+        ArgumentCaptor<UsernamePasswordAuthenticationToken> authenticationCaptor
+                = ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
 
-        UsernamePasswordAuthenticationToken authToken = captor.getValue();
+        verify(authenticationManager).authenticate(authenticationCaptor.capture());
 
-        assertThat(authToken.getPrincipal()).isEqualTo(request.email());
-        assertThat(authToken.getCredentials()).isEqualTo(request.password());
+        UsernamePasswordAuthenticationToken authToken = authenticationCaptor.getValue();
 
-        verify(customUserDetailsService).loadUserByUsername(request.email());
+        assertThat(authToken.getPrincipal()).isEqualTo(loginRequest.email());
+        assertThat(authToken.getCredentials()).isEqualTo(loginRequest.password());
+
+        verify(customUserDetailsService).loadUserByUsername(loginRequest.email());
         verify(jwtService).generateToken(userDetails);
         verifyNoInteractions(userService);
         verifyNoMoreInteractions(authenticationManager);
@@ -85,7 +87,7 @@ public class AuthServiceImplTest {
 
     @Test
     void login_whenAuthenticationFails_throwsBadCredentialsException() {
-        LoginRequest request = createDefaultLoginRequest();
+        LoginRequest loginRequest = createDefaultLoginRequest();
 
         when(authenticationManager
                 .authenticate(any(UsernamePasswordAuthenticationToken.class)))
@@ -93,7 +95,7 @@ public class AuthServiceImplTest {
 
         BadCredentialsException ex = assertThrows(
                 BadCredentialsException.class,
-                () -> authService.login(request)
+                () -> authService.login(loginRequest)
         );
 
         assertThat(ex.getMessage()).isEqualTo(BAD_CREDENTIALS);
@@ -107,32 +109,32 @@ public class AuthServiceImplTest {
 
     @Test
     void register_whenEmailIsNew_createsUserAndReturnsResponse() {
-        RegisterRequest request = createDefaultRegisterRequest();
+        RegisterRequest registerRequest = createDefaultRegisterRequest();
 
-        UserDetails userDetails = User.withUsername(request.email())
+        UserDetails userDetails = User.withUsername(registerRequest.email())
                 .password(ENCODED_PASSWORD)
                 .roles(Role.CUSTOMER.name())
                 .build();
 
-        when(customUserDetailsService.loadUserByUsername(request.email())).thenReturn(userDetails);
+        when(customUserDetailsService.loadUserByUsername(registerRequest.email())).thenReturn(userDetails);
         when(jwtService.generateToken(userDetails)).thenReturn(MOCK_JWT_TOKEN);
 
-        AuthResponse response = authService.register(request);
+        AuthResponse authResponse = authService.register(registerRequest);
 
-        assertThat(response).isNotNull();
-        assertThat(response.token()).isEqualTo(MOCK_JWT_TOKEN);
+        assertThat(authResponse).isNotNull();
+        assertThat(authResponse.token()).isEqualTo(MOCK_JWT_TOKEN);
 
-        ArgumentCaptor<UserCreateRequest> captor = ArgumentCaptor.forClass(UserCreateRequest.class);
-        verify(userService).createUser(captor.capture());
+        ArgumentCaptor<UserCreateRequest> userCreateRequestCaptor = ArgumentCaptor.forClass(UserCreateRequest.class);
+        verify(userService).createUser(userCreateRequestCaptor.capture());
 
-        UserCreateRequest userCreateRequest = captor.getValue();
-        assertThat(userCreateRequest.email()).isEqualTo(request.email());
-        assertThat(userCreateRequest.password()).isEqualTo(request.password());
-        assertThat(userCreateRequest.firstName()).isEqualTo(request.firstName());
-        assertThat(userCreateRequest.lastName()).isEqualTo(request.lastName());
-        assertThat(userCreateRequest.phoneNumber()).isEqualTo(request.phoneNumber());
+        UserCreateRequest userCreateRequest = userCreateRequestCaptor.getValue();
+        assertThat(userCreateRequest.email()).isEqualTo(registerRequest.email());
+        assertThat(userCreateRequest.password()).isEqualTo(registerRequest.password());
+        assertThat(userCreateRequest.firstName()).isEqualTo(registerRequest.firstName());
+        assertThat(userCreateRequest.lastName()).isEqualTo(registerRequest.lastName());
+        assertThat(userCreateRequest.phoneNumber()).isEqualTo(registerRequest.phoneNumber());
 
-        verify(customUserDetailsService).loadUserByUsername(request.email());
+        verify(customUserDetailsService).loadUserByUsername(registerRequest.email());
         verify(jwtService).generateToken(userDetails);
         verifyNoInteractions(authenticationManager);
         verifyNoMoreInteractions(userService);
@@ -142,13 +144,14 @@ public class AuthServiceImplTest {
 
     @Test
     void register_whenEmailAlreadyExists_throwsDuplicateResourceException() {
-        RegisterRequest request = createDefaultRegisterRequest();
+        RegisterRequest registerRequest = createDefaultRegisterRequest();
 
-        when(userService.createUser(any(UserCreateRequest.class))).thenThrow(new DuplicateResourceException(DUPLICATE_EMAIL));
+        when(userService.createUser(any(UserCreateRequest.class)))
+                .thenThrow(new DuplicateResourceException(DUPLICATE_EMAIL));
 
         DuplicateResourceException ex = assertThrows(
                 DuplicateResourceException.class,
-                () -> authService.register(request)
+                () -> authService.register(registerRequest)
         );
 
         assertThat(ex).isNotNull();
@@ -163,13 +166,14 @@ public class AuthServiceImplTest {
 
     @Test
     void register_whenPhoneNumberAlreadyExists_throwsDuplicateResourceException() {
-        RegisterRequest request = createDefaultRegisterRequest();
+        RegisterRequest registerRequest = createDefaultRegisterRequest();
 
-        when(userService.createUser(any(UserCreateRequest.class))).thenThrow(new DuplicateResourceException(DUPLICATE_PHONE));
+        when(userService.createUser(any(UserCreateRequest.class)))
+                .thenThrow(new DuplicateResourceException(DUPLICATE_PHONE));
 
         DuplicateResourceException ex = assertThrows(
                 DuplicateResourceException.class,
-                () -> authService.register(request)
+                () -> authService.register(registerRequest)
         );
 
         assertThat(ex).isNotNull();
@@ -184,21 +188,21 @@ public class AuthServiceImplTest {
 
     @Test
     void register_whenUserDetailsCannotBeLoaded_throwsUsernameNotFoundException() {
-        RegisterRequest request = createDefaultRegisterRequest();
+        RegisterRequest registerRequest = createDefaultRegisterRequest();
 
-       when(customUserDetailsService.loadUserByUsername(request.email()))
+       when(customUserDetailsService.loadUserByUsername(registerRequest.email()))
                .thenThrow(new UsernameNotFoundException(USER_NOT_FOUND));
 
         UsernameNotFoundException ex = assertThrows(
                 UsernameNotFoundException.class,
-                () -> authService.register(request)
+                () -> authService.register(registerRequest)
         );
 
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(USER_NOT_FOUND);
 
         verify(userService).createUser(any(UserCreateRequest.class));
-        verify(customUserDetailsService).loadUserByUsername(request.email());
+        verify(customUserDetailsService).loadUserByUsername(registerRequest.email());
         verifyNoInteractions(authenticationManager);
         verifyNoMoreInteractions(userService);
         verifyNoMoreInteractions(customUserDetailsService);

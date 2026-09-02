@@ -53,37 +53,37 @@ public class AuthControllerTest {
     private RateLimitService rateLimitService;
 
     @Test
-    void login_whenValidRequest_returnsAuthResponse() throws Exception{
-        LoginRequest request = new LoginRequest(
+    void login_whenValidRequest_returnsAuthResponse() throws Exception {
+        LoginRequest loginRequest = new LoginRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD
         );
 
-        AuthResponse response = new AuthResponse(MOCK_JWT_TOKEN);
+        AuthResponse authResponse = new AuthResponse(MOCK_JWT_TOKEN);
 
         when(authService.login(any(LoginRequest.class)))
-                .thenReturn(response);
+                .thenReturn(authResponse);
 
         mockMvc.perform(post(LOGIN_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value(MOCK_JWT_TOKEN));
 
         ArgumentCaptor<LoginRequest> captor = ArgumentCaptor.forClass(LoginRequest.class);
         verify(authService).login(captor.capture());
 
-        LoginRequest captureRequest = captor.getValue();
+        LoginRequest capturedLoginRequest = captor.getValue();
 
-        assertThat(captureRequest.email()).isEqualTo(request.email());
-        assertThat(captureRequest.password()).isEqualTo(request.password());
+        assertThat(capturedLoginRequest.email()).isEqualTo(loginRequest.email());
+        assertThat(capturedLoginRequest.password()).isEqualTo(loginRequest.password());
 
         verifyNoMoreInteractions(authService);
     }
 
     @Test
     void login_whenInvalidCredentials_returnsUnauthorized() throws Exception {
-        LoginRequest request = new LoginRequest(
+        LoginRequest loginRequest = new LoginRequest(
                 VALID_EMAIL,
                 WRONG_PASSWORD
         );
@@ -93,7 +93,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
@@ -104,24 +104,24 @@ public class AuthControllerTest {
         ArgumentCaptor<LoginRequest> captor = ArgumentCaptor.forClass(LoginRequest.class);
         verify(authService).login(captor.capture());
 
-        LoginRequest captureRequest = captor.getValue();
+        LoginRequest capturedLoginRequest = captor.getValue();
 
-        assertThat(captureRequest.email()).isEqualTo(request.email());
-        assertThat(captureRequest.password()).isEqualTo(request.password());
+        assertThat(capturedLoginRequest.email()).isEqualTo(loginRequest.email());
+        assertThat(capturedLoginRequest.password()).isEqualTo(loginRequest.password());
 
         verifyNoMoreInteractions(authService);
     }
 
     @Test
     void login_whenInvalidEmail_returnsBadRequest() throws Exception {
-        LoginRequest request = new LoginRequest(
+        LoginRequest loginRequest = new LoginRequest(
                 INVALID_EMAIL,
                 VALID_PASSWORD
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -135,14 +135,14 @@ public class AuthControllerTest {
 
     @Test
     void login_whenEmailIsBlank_returnsBadRequest() throws Exception {
-        LoginRequest request = new LoginRequest(
+        LoginRequest loginRequest = new LoginRequest(
                 "",
                 VALID_PASSWORD
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -156,14 +156,14 @@ public class AuthControllerTest {
 
     @Test
     void login_whenEmailIsNull_returnsBadRequest() throws Exception {
-        LoginRequest request = new LoginRequest(
+        LoginRequest loginRequest = new LoginRequest(
                 null,
                 VALID_PASSWORD
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -177,14 +177,14 @@ public class AuthControllerTest {
 
     @Test
     void login_whenPasswordIsBlank_returnsBadRequest() throws Exception {
-        LoginRequest request = new LoginRequest(
+        LoginRequest loginRequest = new LoginRequest(
                 VALID_EMAIL,
                 ""
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -200,14 +200,14 @@ public class AuthControllerTest {
 
     @Test
     void login_whenPasswordIsNull_returnsBadRequest() throws Exception {
-        LoginRequest request = new LoginRequest(
+        LoginRequest loginRequest = new LoginRequest(
                 VALID_EMAIL,
                 null
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -220,8 +220,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenValidRequest_returnsAuthResponse() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenValidRequest_returnsAuthResponse() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -229,34 +229,34 @@ public class AuthControllerTest {
                 VALID_PHONE_NUMBER
         );
 
-        AuthResponse response = new AuthResponse(MOCK_JWT_TOKEN);
+        AuthResponse authResponse = new AuthResponse(MOCK_JWT_TOKEN);
 
         when(authService.register(any(RegisterRequest.class)))
-                .thenReturn(response);
+                .thenReturn(authResponse);
 
         mockMvc.perform(post(REGISTER_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").value(MOCK_JWT_TOKEN));
 
         ArgumentCaptor<RegisterRequest> captor = ArgumentCaptor.forClass(RegisterRequest.class);
         verify(authService).register(captor.capture());
 
-        RegisterRequest captorRequest = captor.getValue();
+        RegisterRequest capturedRegisterRequest = captor.getValue();
 
-        assertThat(captorRequest.email()).isEqualTo(request.email());
-        assertThat(captorRequest.password()).isEqualTo(request.password());
-        assertThat(captorRequest.firstName()).isEqualTo(request.firstName());
-        assertThat(captorRequest.lastName()).isEqualTo(request.lastName());
-        assertThat(captorRequest.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(capturedRegisterRequest.email()).isEqualTo(registerRequest.email());
+        assertThat(capturedRegisterRequest.password()).isEqualTo(registerRequest.password());
+        assertThat(capturedRegisterRequest.firstName()).isEqualTo(registerRequest.firstName());
+        assertThat(capturedRegisterRequest.lastName()).isEqualTo(registerRequest.lastName());
+        assertThat(capturedRegisterRequest.phoneNumber()).isEqualTo(registerRequest.phoneNumber());
 
         verifyNoMoreInteractions(authService);
     }
 
     @Test
-    void register_whenPhoneNumberHasPlus_returnsAuthResponse() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPhoneNumberHasPlus_returnsAuthResponse() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -264,34 +264,34 @@ public class AuthControllerTest {
                 VALID_PHONE_NUMBER_WITH_PLUS
         );
 
-        AuthResponse response = new AuthResponse(MOCK_JWT_TOKEN);
+        AuthResponse authResponse = new AuthResponse(MOCK_JWT_TOKEN);
 
         when(authService.register(any(RegisterRequest.class)))
-                .thenReturn(response);
+                .thenReturn(authResponse);
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").value(MOCK_JWT_TOKEN));
 
         ArgumentCaptor<RegisterRequest> captor = ArgumentCaptor.forClass(RegisterRequest.class);
         verify(authService).register(captor.capture());
 
-        RegisterRequest captorRequest = captor.getValue();
+        RegisterRequest capturedRegisterRequest = captor.getValue();
 
-        assertThat(captorRequest.email()).isEqualTo(request.email());
-        assertThat(captorRequest.password()).isEqualTo(request.password());
-        assertThat(captorRequest.firstName()).isEqualTo(request.firstName());
-        assertThat(captorRequest.lastName()).isEqualTo(request.lastName());
-        assertThat(captorRequest.phoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(capturedRegisterRequest.email()).isEqualTo(registerRequest.email());
+        assertThat(capturedRegisterRequest.password()).isEqualTo(registerRequest.password());
+        assertThat(capturedRegisterRequest.firstName()).isEqualTo(registerRequest.firstName());
+        assertThat(capturedRegisterRequest.lastName()).isEqualTo(registerRequest.lastName());
+        assertThat(capturedRegisterRequest.phoneNumber()).isEqualTo(registerRequest.phoneNumber());
 
         verifyNoMoreInteractions(authService);
     }
 
     @Test
-    void register_whenEmailIsNull_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenEmailIsNull_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 null,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -301,7 +301,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -314,8 +314,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenEmailIsBlank_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenEmailIsBlank_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 "",
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -325,7 +325,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -338,8 +338,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenEmailIsInvalid_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenEmailIsInvalid_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 INVALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -349,7 +349,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -362,8 +362,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPasswordIsNull_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPasswordIsNull_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 null,
                 VALID_FIRST_NAME,
@@ -373,7 +373,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -386,8 +386,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPasswordIsBlank_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPasswordIsBlank_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 "",
                 VALID_FIRST_NAME,
@@ -397,7 +397,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -412,8 +412,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPasswordIsLessThan8_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPasswordIsLessThan8_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 INVALID_PASSWORD_LESS_THAN_EIGHT,
                 VALID_FIRST_NAME,
@@ -423,7 +423,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -436,8 +436,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPasswordIsMoreThan50_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPasswordIsMoreThan50_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 INVALID_PASSWORD_MORE_THAN_FIFTY,
                 VALID_FIRST_NAME,
@@ -447,7 +447,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -460,8 +460,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenFirstNameIsBlank_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenFirstNameIsBlank_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 "",
@@ -471,7 +471,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -484,8 +484,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenFirstNameIsNull_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenFirstNameIsNull_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 null,
@@ -495,7 +495,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -508,8 +508,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenLastNameIsBlank_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenLastNameIsBlank_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -519,7 +519,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -532,8 +532,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenLastNameIsNull_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenLastNameIsNull_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -543,7 +543,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -556,8 +556,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPhoneNumberIsBlank_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPhoneNumberIsBlank_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -567,7 +567,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -582,8 +582,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPhoneNumberIsNull_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPhoneNumberIsNull_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -593,7 +593,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -606,8 +606,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPhoneNumberHasLessThan10_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPhoneNumberHasLessThan10_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -617,7 +617,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -630,8 +630,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPhoneNumberHasMoreThan15_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPhoneNumberHasMoreThan15_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -641,7 +641,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -654,8 +654,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPhoneNumberHasInvalidSymbol_returnsBadRequest() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPhoneNumberHasInvalidSymbol_returnsBadRequest() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -665,7 +665,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
@@ -678,8 +678,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenEmailAlreadyExists_returnsConflict() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenEmailAlreadyExists_returnsConflict() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -692,7 +692,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
@@ -705,8 +705,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void register_whenPhoneNumberAlreadyExists_returnsConflict() throws Exception{
-        RegisterRequest request = new RegisterRequest(
+    void register_whenPhoneNumberAlreadyExists_returnsConflict() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -719,7 +719,7 @@ public class AuthControllerTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
