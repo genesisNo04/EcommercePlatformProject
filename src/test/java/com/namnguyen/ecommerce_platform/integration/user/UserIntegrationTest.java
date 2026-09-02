@@ -69,6 +69,48 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void getAllUsers_withFilters_returnsPageOfUsers() throws Exception {
+
+        createUser(
+                "test@gmail.com",
+                "test123456789",
+                "test",
+                "user",
+                "123456789",
+                Role.CUSTOMER
+        );
+
+        User user1 = createUser(
+                "test1@gmail.com",
+                "test123456789",
+                "test1",
+                "user1",
+                "123456780",
+                Role.ADMIN
+        );
+
+        mockMvc.perform(get(USER_URI)
+                        .param("role", Role.ADMIN.name()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(user1.getId()))
+                .andExpect(jsonPath("$.content[0].email").value("test1@gmail.com"))
+                .andExpect(jsonPath("$.content[0].firstName").value("test1"))
+                .andExpect(jsonPath("$.content[0].lastName").value("user1"))
+                .andExpect(jsonPath("$.content[0].phoneNumber").value("123456780"))
+                .andExpect(jsonPath("$.content[0].role").value(Role.ADMIN.name()))
+                .andExpect(jsonPath("$.content[0].createdAt").exists())
+                .andExpect(jsonPath("$.content[0].updatedAt").exists())
+
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.numberOfElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void getUserById_withAdminRole_returnsUser() throws Exception {
         User user = createUser(
                 "test@gmail.com",
@@ -147,6 +189,61 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void putUser_whenEmailAlreadyExists_returnsConflictAndKeepsUserUnchanged() throws Exception {
+        User user = createDefaultCustomer();
+
+        User otherUser = createUser(
+                "other@gmail.com",
+                "test123456789",
+                "Other",
+                "User",
+                "1234567891",
+                Role.CUSTOMER
+        );
+
+        String originalEmail = user.getEmail();
+
+        UserPutRequest request = new UserPutRequest(
+                otherUser.getEmail(),
+                "test123456789",
+                "Updated",
+                "User",
+                "1234567892"
+        );
+
+        MockAuthentication.authenticateUser(user.getId());
+
+        mockMvc.perform(put(USER_URI + "/" + user.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+
+        User savedUser = userRepository.findById(user.getId()).orElseThrow();
+
+        assertThat(savedUser.getEmail()).isEqualTo(originalEmail);
+    }
+
+    @Test
+    void putUser_whenUserNotFound_returnsNotFound() throws Exception {
+        Long userId = 999_999L;
+
+        UserPutRequest request = new UserPutRequest(
+                "test@gmail.com",
+                "test123456789",
+                "Updated",
+                "User",
+                "1234567892"
+        );
+
+        MockAuthentication.authenticateUser(userId);
+
+        mockMvc.perform(put(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void patchUser_whenSameCustomer_patchesUser() throws Exception {
         User user = createDefaultCustomer();
 
@@ -183,6 +280,64 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void patchUser_whenPhoneNumberAlreadyExists_returnsConflictAndKeepsUserUnchanged()
+            throws Exception {
+
+        User user = createDefaultCustomer();
+
+        User otherUser = createUser(
+                "other@gmail.com",
+                "test123456789",
+                "Other",
+                "User",
+                "1234567891",
+                Role.CUSTOMER
+        );
+
+        String originalPhoneNumber = user.getPhoneNumber();
+
+        UserPatchRequest request = new UserPatchRequest(
+                null,
+                null,
+                null,
+                null,
+                otherUser.getPhoneNumber()
+        );
+
+        MockAuthentication.authenticateUser(user.getId());
+
+        mockMvc.perform(patch(USER_URI + "/" + user.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+
+        User savedUser = userRepository.findById(user.getId()).orElseThrow();
+
+        assertThat(savedUser.getPhoneNumber())
+                .isEqualTo(originalPhoneNumber);
+    }
+
+    @Test
+    void patchUser_whenUserNotFound_returnsNotFound() throws Exception {
+        Long userId = 999_999L;
+
+        UserPatchRequest request = new UserPatchRequest(
+                "test@gmail.com",
+                "test123456789",
+                "Updated",
+                "User",
+                "1234567892"
+        );
+
+        MockAuthentication.authenticateUser(userId);
+
+        mockMvc.perform(patch(USER_URI + "/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @WithMockUser(roles = "ADMIN")
     void deleteUser_withAdminRole_deletesUser() throws Exception {
         User user = createDefaultCustomer();
@@ -191,5 +346,14 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isNoContent());
 
         assertThat(userRepository.existsById(user.getId())).isFalse();
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteUser_whenUserNotFound_returnsNotFound() throws Exception {
+        Long userId = 999_999L;
+
+        mockMvc.perform(delete(USER_URI + "/" + userId))
+                .andExpect(status().isNotFound());
     }
 }

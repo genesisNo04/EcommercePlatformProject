@@ -47,11 +47,10 @@ public final class UserTestMessages {
     private UserTestMessages() {}
 
     public static String userNotFoundWithId(Long userId) {
-        return "User not found with id: " + userId;
+        return "User not found with id: " + userId + ".";
     }
 
     public static String userNotFoundWithEmail(String email) {
-        return "User not found with email: " + email;
+        return "User not found with email: " + email + ".";
     }
-
 }

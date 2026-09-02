@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.math.BigDecimal;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.ProductTestMessages.*;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,7 +47,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
     }
 
@@ -456,6 +456,36 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void createProduct_whenQuantityIsZero_savesProductAsOutOfStock() throws Exception {
+        ProductCreateRequest request = createProductCreateRequest(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                0
+        );
+
+        MvcResult result = mockMvc.perform(post(PRODUCT_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.quantity").value(0))
+                .andExpect(jsonPath("$.status").value(ProductStatus.OUT_OF_STOCK.name()))
+                .andReturn();
+
+        ProductResponse response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                ProductResponse.class
+        );
+
+        Product savedProduct =
+                productRepository.findById(response.id()).orElseThrow();
+
+        assertThat(savedProduct.getQuantity()).isZero();
+        assertThat(savedProduct.getStatus())
+                .isEqualTo(ProductStatus.OUT_OF_STOCK);
+    }
+
+    @Test
     void putProduct_whenPutRequestIsValid_saveProductToDatabase() throws Exception {
         Product savedProduct = createProduct(
                 "PS5",
@@ -495,6 +525,62 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
         assertThat(response.id()).isEqualTo(savedProduct.getId());
         assertThat(productRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void putProduct_whenQuantityIsZero_savesProductAsOutOfStock() throws Exception {
+        Product product = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                12,
+                ProductStatus.ACTIVE);
+
+        ProductPutRequest request = createPutProductRequest(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                0
+        );
+
+        MvcResult result = mockMvc.perform(put(PRODUCT_URI + "/" + product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantity").value(0))
+                .andExpect(jsonPath("$.status").value(ProductStatus.OUT_OF_STOCK.name()))
+                .andReturn();
+
+        ProductResponse response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                ProductResponse.class
+        );
+
+        Product savedProduct =
+                productRepository.findById(response.id()).orElseThrow();
+
+        assertThat(savedProduct.getQuantity()).isZero();
+        assertThat(savedProduct.getStatus())
+                .isEqualTo(ProductStatus.OUT_OF_STOCK);
+    }
+
+    @Test
+    void putProduct_whenProductNotFound_returnsNotFound() throws Exception {
+        Long productId = 999_999L;
+
+        ProductPutRequest request = createPutProductRequest(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                0
+        );
+
+        mockMvc.perform(put(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+
+        assertThat(productRepository.count()).isZero();
     }
 
     @Test
@@ -545,6 +631,62 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void patchProduct_whenQuantityIsZero_savesProductAsOutOfStock() throws Exception {
+        Product product = createProduct(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(499.99),
+                12,
+                ProductStatus.ACTIVE);
+
+        ProductPatchRequest request = createPatchProductRequest(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                0
+        );
+
+        MvcResult result = mockMvc.perform(patch(PRODUCT_URI + "/" + product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantity").value(0))
+                .andExpect(jsonPath("$.status").value(ProductStatus.OUT_OF_STOCK.name()))
+                .andReturn();
+
+        ProductResponse response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                ProductResponse.class
+        );
+
+        Product savedProduct =
+                productRepository.findById(response.id()).orElseThrow();
+
+        assertThat(savedProduct.getQuantity()).isZero();
+        assertThat(savedProduct.getStatus())
+                .isEqualTo(ProductStatus.OUT_OF_STOCK);
+    }
+
+    @Test
+    void patchProduct_whenProductNotFound_returnsNotFound() throws Exception {
+        Long productId = 999_999L;
+
+        ProductPatchRequest request = createPatchProductRequest(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                0
+        );
+
+        mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+
+        assertThat(productRepository.count()).isZero();
+    }
+
+    @Test
     void deleteProduct_whenProductFound_productDeletedFromDatabase() throws Exception {
         Product savedProduct = createProduct(
                 "PS5",
@@ -557,6 +699,16 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isNoContent());
 
         assertThat(productRepository.existsById(savedProduct.getId())).isFalse();
+    }
+
+    @Test
+    void deleteProduct_whenProductNotFound_returnsNotFound() throws Exception {
+        Long productId = 999_999L;
+
+        mockMvc.perform(delete(PRODUCT_URI + "/" + productId))
+                .andExpect(status().isNotFound());
+
+        assertThat(productRepository.count()).isZero();
     }
 
 }

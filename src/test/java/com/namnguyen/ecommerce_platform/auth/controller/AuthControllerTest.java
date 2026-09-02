@@ -59,7 +59,7 @@ public class AuthControllerTest {
                 VALID_PASSWORD
         );
 
-        AuthResponse response = new AuthResponse("fake-jwt-token");
+        AuthResponse response = new AuthResponse(MOCK_JWT_TOKEN);
 
         when(authService.login(any(LoginRequest.class)))
                 .thenReturn(response);
@@ -68,7 +68,7 @@ public class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("fake-jwt-token"));
+                .andExpect(jsonPath("$.token").value(MOCK_JWT_TOKEN));
 
         ArgumentCaptor<LoginRequest> captor = ArgumentCaptor.forClass(LoginRequest.class);
         verify(authService).login(captor.capture());
@@ -85,7 +85,7 @@ public class AuthControllerTest {
     void login_whenInvalidCredentials_returnsUnauthorized() throws Exception {
         LoginRequest request = new LoginRequest(
                 VALID_EMAIL,
-                "wrongpassword"
+                WRONG_PASSWORD
         );
 
         when(authService.login(any(LoginRequest.class)))
@@ -229,7 +229,7 @@ public class AuthControllerTest {
                 VALID_PHONE_NUMBER
         );
 
-        AuthResponse response = new AuthResponse("fake-jwt-token");
+        AuthResponse response = new AuthResponse(MOCK_JWT_TOKEN);
 
         when(authService.register(any(RegisterRequest.class)))
                 .thenReturn(response);
@@ -238,7 +238,7 @@ public class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.token").value("fake-jwt-token"));
+                .andExpect(jsonPath("$.token").value(MOCK_JWT_TOKEN));
 
         ArgumentCaptor<RegisterRequest> captor = ArgumentCaptor.forClass(RegisterRequest.class);
         verify(authService).register(captor.capture());
@@ -261,10 +261,10 @@ public class AuthControllerTest {
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
-                "+1234567891"
+                VALID_PHONE_NUMBER_WITH_PLUS
         );
 
-        AuthResponse response = new AuthResponse("fake-jwt-token");
+        AuthResponse response = new AuthResponse(MOCK_JWT_TOKEN);
 
         when(authService.register(any(RegisterRequest.class)))
                 .thenReturn(response);
@@ -273,7 +273,7 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.token").value("fake-jwt-token"));
+                .andExpect(jsonPath("$.token").value(MOCK_JWT_TOKEN));
 
         ArgumentCaptor<RegisterRequest> captor = ArgumentCaptor.forClass(RegisterRequest.class);
         verify(authService).register(captor.capture());
@@ -415,7 +415,7 @@ public class AuthControllerTest {
     void register_whenPasswordIsLessThan8_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
                 VALID_EMAIL,
-                "test123",
+                INVALID_PASSWORD_LESS_THAN_EIGHT,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER
@@ -439,7 +439,7 @@ public class AuthControllerTest {
     void register_whenPasswordIsMoreThan50_returnsBadRequest() throws Exception{
         RegisterRequest request = new RegisterRequest(
                 VALID_EMAIL,
-                "test1235645646467879461313131313456464as1d313a1sd31",
+                INVALID_PASSWORD_MORE_THAN_FIFTY,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
                 VALID_PHONE_NUMBER
@@ -612,7 +612,7 @@ public class AuthControllerTest {
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
-                "123456789"
+                INVALID_PHONE_NUMBER_LESS_THAN_TEN
         );
 
         mockMvc.perform(post(REGISTER_URI)
@@ -636,7 +636,7 @@ public class AuthControllerTest {
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
-                "1234567891234567"
+                INVALID_PHONE_NUMBER_MORE_THAN_FIFTEEN
         );
 
         mockMvc.perform(post(REGISTER_URI)
@@ -660,7 +660,7 @@ public class AuthControllerTest {
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
-                "-1234567891"
+                INVALID_PHONE_NUMBER_WITH_MINUS
         );
 
         mockMvc.perform(post(REGISTER_URI)

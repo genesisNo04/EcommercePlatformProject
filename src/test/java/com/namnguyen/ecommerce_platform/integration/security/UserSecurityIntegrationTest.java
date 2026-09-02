@@ -182,7 +182,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     }
 
     @Test
-    void patchUser_withCustomerJwt_patchOtherUser_returnsForbidden() throws Exception {
+    void patchUser_withDifferentCustomerJwt_returnsForbidden() throws Exception {
         User user = createDefaultCustomer();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);

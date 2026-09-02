@@ -30,7 +30,7 @@ public final class ProductErrorMessages {
             "Product quantity is required.";
 
     public static final String PRODUCT_QUANTITY_IS_INVALID =
-            "Product quantity must be greater or equal to 0.";
+            "Product quantity must be greater than or equal to 0.";
 
     private ProductErrorMessages() {
     }

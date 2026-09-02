@@ -1,5 +1,7 @@
 package com.namnguyen.ecommerce_platform.testutil;
 
+import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
+import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
 import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
 import com.namnguyen.ecommerce_platform.order.entity.Order;
@@ -9,62 +11,85 @@ import com.namnguyen.ecommerce_platform.payment.entity.Payment;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentMethod;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
-import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
-public class TestDataFactory {
+public final class TestDataFactory {
+
+    public static final String LOGIN_URI = "/api/auth/login";
+    public static final String CART_URI = "/api/cart";
+    public static final String CART_ITEM_URI = "/api/cart/items";
+    public static final String ORDER_URI = "/api/orders";
+    public static final String REGISTER_URI = "/api/auth/register";
+    public static final String PRODUCT_URI = "/api/products";
+    public static final String USER_URI = "/api/users";
+
+    public static final String VALID_EMAIL = "test@gmail.com";
+    public static final String VALID_PASSWORD = "test123456789";
+    public static final String WRONG_PASSWORD = "wrongpassword";
+    public static final String VALID_FIRST_NAME = "test";
+    public static final String VALID_LAST_NAME = "user";
+    public static final String VALID_PHONE_NUMBER = "1234567891";
+    public static final String VALID_PHONE_NUMBER_WITH_PLUS = "+1234567891";
+    public static final String VALID_PRODUCT_NAME = "Test Product";
+    public static final String VALID_PRODUCT_DESCRIPTION = "Test Product Description";
+    public static final BigDecimal VALID_PRODUCT_PRICE = BigDecimal.valueOf(10.99);
+    public static final Integer VALID_PRODUCT_QUANTITY = 50;
 
     public static final String INVALID_ID = "test";
-    public final static String LOGIN_URI = "/api/auth/login";
-    public final static String CART_URI = "/api/cart";
-    public final static String CART_ITEM_URI = "/api/cart/items";
-    public final static String ORDER_URI = "/api/orders";
-    public final static String PAYMENT_URI = "/api/orders/%s/payments";
-    public final static String REGISTER_URI = "/api/auth/register";
-    public final static String PRODUCT_URI = "/api/products";
-    public final static String USER_URI = "/api/users";
-    public final static String VALID_EMAIL = "test@gmail.com";
-    public final static String INVALID_EMAIL = "testgmail.com";
-    public final static String VALID_PASSWORD = "test123456789";
-    public final static String INVALID_PASSWORD_LESS_THAN_EIGHT = "test123";
-    public final static String INVALID_PASSWORD_MORE_THAN_FIFTY = "test1235645646467879461313131313456464as1d313a1sd31";
-    public final static String VALID_FIRST_NAME = "test";
-    public final static String VALID_LAST_NAME = "user";
-    public final static String VALID_PHONE_NUMBER = "1234567891";
-    public final static String VALID_PHONE_NUMBER_WITH_PLUS = "+1234567891";
-    public final static String INVALID_PHONE_NUMBER_LESS_THAN_TEN = "123456789";
-    public final static String INVALID_PHONE_NUMBER_MORE_THAN_FIFTEEN = "123456789";
-    public final static String INVALID_PHONE_NUMBER_WITH_MINUS = "-1234567891";
-    public final static Role ROLE_CUSTOMER = Role.CUSTOMER;
-    public final static Role ROLE_ADMIN = Role.ADMIN;
-    public final static String VALID_PRODUCT_NAME = "Test Product";
-    public final static String VALID_PRODUCT_DESCRIPTION = "Test Product Description";
-    public final static BigDecimal VALID_PRODUCT_PRICE = BigDecimal.valueOf(10.99);
-    public final static Integer VALID_PRODUCT_QUANTITY = 50;
-    public final static ProductStatus VALID_PRODUCT_STATUS = ProductStatus.ACTIVE;
-    public final static String INVALID_PRODUCT_NAME_MORE_THAN_LIMIT = "ibrwaeapeeezjuueygyqakycukbvdpjydtyyipmwuairzqndtgwraymiccxzpvhazaechphrjmfmbxedzhiiuznbtdmiyqktadhzi";
-    public final static String INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT = "ndneyybzzbpctyxfhgpzcfifjqkgzezwjvrwedkydbvqjhyxejwnjtinndtqvvmmutvknjgpynjaupuqevnnyjzctjuxkukipdmrpupwquddrphzuzeqvgcbbhbchhbkkfkzktnxhgvgcmwbiivppinhwpjaczqdtmtyapfrfttdqkmdjtzdfqypbwwhgmthwchkjqybetkkkcpcktcgkpydqqakpqytpxwdaqfrdnnidkywdftjkzcwujpjwgxxyjgtgnvwamapvgbpadjjtfkuzmtfqkdmmiciuvcgjfqgwkkirtzgnkqzqijtcibajdyugwibnuwnwzxmhuknzyxfvfuudfprgghgbzejnvizkbgtbemqtzpkqkddaupcuynirhezjtwaizkcxtitvtwrfnpnzqdbipiradmjfweggwddymeydhpippdpcrgtdfxryhqnacpjuvfjdjxxnqnttjrqrinkdviquwvjtyvhaxqpapuakdwfhtdcredxhrnahigfnyqcdjzvvcjvxcukierkgmxfchzeetrwbxrivkydcjdtptybgjgfryafyncztzdnbzpxupffvxudtmtjuqbdnxacxuudhkqitnaumkttcqehdxwxtqwkaihbywqxttmcgpnrejkhuckhkfbaxpnnfrazathcauzbbprtweggdqhtjhgnwachzdvbbdafjquqiqnifkzzwzfhzmnkqxncxdgheuyrpzbudfjdtruzwkptuxqifncppavenkmurwadhmdhkiehbmwngrdmuqpicrkqiwfueimwhbhumgewmazdfjpfgctbcmbxfdbxvxhhpnbuqywnnxkmiknzykrwjfayghtqkxbxpcbunwfeifehzgthgyrxyjwtavvzzpcnzqdhgpkgjrkdfjyfggjqcbcgtunzzhtgfxukydjtabdarvtwwuyvwrfnmuafmwhbhxfupjbewmvjraqhjqrzngquvvwbwadic";
-    public final static String INVALID_PRODUCT_DESCRIPTION_LESS_THAN_LIMIT = "test";
-    public final static BigDecimal INVALID_PRODUCT_PRICE_ZERO = BigDecimal.valueOf(0.0);
-    public final static Integer INVALID_PRODUCT_NEGATIVE_QUANTITY = -1;
+    public static final String INVALID_EMAIL = "testgmail.com";
+    public static final String INVALID_PASSWORD_LESS_THAN_EIGHT = "a".repeat(7);
+    public static final String INVALID_PASSWORD_MORE_THAN_FIFTY = "a".repeat(51);
+    public static final String INVALID_PHONE_NUMBER_LESS_THAN_TEN = "1".repeat(9);
+    public static final String INVALID_PHONE_NUMBER_MORE_THAN_FIFTEEN = "1".repeat(16);
+    public static final String INVALID_PHONE_NUMBER_WITH_MINUS = "-1234567891";
+    public static final String INVALID_PRODUCT_NAME_MORE_THAN_LIMIT = "a".repeat(101);
+    public static final String INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT = "a".repeat(1001);
+    public static final String INVALID_PRODUCT_DESCRIPTION_LESS_THAN_LIMIT = "test";
+    public static final BigDecimal INVALID_PRODUCT_PRICE_ZERO = BigDecimal.ZERO;
+    public static final Integer INVALID_PRODUCT_NEGATIVE_QUANTITY = -1;
 
+    public static final String ENCODED_PASSWORD = "encodedPassword";
+    public static final String MOCK_JWT_TOKEN = "fake-jwt-token";
 
+    private TestDataFactory() {
+    }
 
-    private TestDataFactory(){
+    public static String productUri(Long productId) {
+        return PRODUCT_URI + "/" + productId;
+    }
+
+    public static String userUri(Long userId) {
+        return USER_URI + "/" + userId;
+    }
+
+    public static String orderUri(Long orderId) {
+        return ORDER_URI + "/" + orderId;
+    }
+
+    public static String paymentUri(Long orderId) {
+        return orderUri(orderId) + "/payments";
+    }
+
+    public static String cartItemUri(Long productId) {
+        return CART_ITEM_URI + "/" + productId;
+    }
+
+    public static String cartItemUri(String productId) {
+        return CART_ITEM_URI + "/" + productId;
     }
 
     public static User createUser(Long userId) {
         User user = new User();
         user.setId(userId);
-        user.setEmail("email@gmail.com");
-        user.setPasswordHash("Test123");
-        user.setFirstName("user");
-        user.setLastName("test");
-        user.setPhoneNumber("123456789");
+        user.setEmail(VALID_EMAIL);
+        user.setPasswordHash(ENCODED_PASSWORD);
+        user.setFirstName(VALID_FIRST_NAME);
+        user.setLastName(VALID_LAST_NAME);
+        user.setPhoneNumber(VALID_PHONE_NUMBER);
         user.setRole(Role.CUSTOMER);
 
         return user;
@@ -171,5 +196,22 @@ public class TestDataFactory {
                 .order(order)
                 .amount(amount)
                 .build();
+    }
+
+    public static RegisterRequest createDefaultRegisterRequest() {
+        return new RegisterRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER
+        );
+    }
+
+    public static LoginRequest createDefaultLoginRequest() {
+        return new LoginRequest(
+                VALID_EMAIL,
+                VALID_PASSWORD
+        );
     }
 }

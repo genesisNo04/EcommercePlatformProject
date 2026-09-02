@@ -20,7 +20,9 @@ import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.invalidParameter;
+import static com.namnguyen.ecommerce_platform.testutil.messages.OrderTestMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -91,8 +93,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.fieldErrors.items").value(orderHasAtLeastOneItem()));
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.fieldErrors.items").value(ORDER_IS_EMPTY));
+
+        assertThat(orderRepository.count()).isZero();
     }
 
     @Test
@@ -112,8 +116,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.fieldErrors.[\"items[0].quantity\"]").value(invalidQuantity()));
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.fieldErrors['items[0].quantity']").value(ORDER_ITEM_QUANTITY_IS_INVALID));
+
+        assertThat(orderRepository.count()).isZero();
     }
 
     @Test
@@ -129,8 +135,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.fieldErrors.items").value(orderHasAtLeastOneItem()));
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.fieldErrors.items").value(ORDER_IS_EMPTY));
+
+        assertThat(orderRepository.count()).isZero();
     }
 
     @Test
@@ -140,8 +148,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(post(ORDER_URI))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.fieldErrors.requestBody").value(invalidParameter("requestBody")));
+
+        assertThat(orderRepository.count()).isZero();
     }
 
     @Test
@@ -220,6 +230,8 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
+
+        assertThat(orderRepository.count()).isZero();
     }
 
     @Test
@@ -556,7 +568,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(cannotCancelDeliveredOrder()));
+                .andExpect(jsonPath("$.message").value(DELIVERED_ORDER_CANNOT_BE_CANCELLED));
+
+        Order savedOrder = orderRepository.findById(order.getId())
+                .orElseThrow();
+
+        assertThat(savedOrder.getStatus())
+                .isEqualTo(OrderStatus.DELIVERED);
     }
 
     @Test
@@ -576,7 +594,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(orderAlreadyCancelled()));
+                .andExpect(jsonPath("$.message").value(ORDER_ALREADY_CANCELLED));
+
+        Order savedOrder = orderRepository.findById(order.getId())
+                .orElseThrow();
+
+        assertThat(savedOrder.getStatus())
+                .isEqualTo(OrderStatus.CANCELLED);
     }
 
     @Test
@@ -596,7 +620,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(cannotCancelOrder()));
+                .andExpect(jsonPath("$.message").value(ORDER_CANNOT_BE_CANCELLED));
+
+        Order savedOrder = orderRepository.findById(order.getId())
+                .orElseThrow();
+
+        assertThat(savedOrder.getStatus())
+                .isEqualTo(OrderStatus.PAID);
     }
 
     @Test
@@ -616,7 +646,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(cannotCancelOrder()));
+                .andExpect(jsonPath("$.message").value(ORDER_CANNOT_BE_CANCELLED));
+
+        Order savedOrder = orderRepository.findById(order.getId())
+                .orElseThrow();
+
+        assertThat(savedOrder.getStatus())
+                .isEqualTo(OrderStatus.SHIPPED);
     }
 
     @Test
@@ -636,7 +672,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(cannotCancelOrder()));
+                .andExpect(jsonPath("$.message").value(ORDER_CANNOT_BE_CANCELLED));
+
+        Order savedOrder = orderRepository.findById(order.getId())
+                .orElseThrow();
+
+        assertThat(savedOrder.getStatus())
+                .isEqualTo(OrderStatus.PROCESSING);
     }
 
     @Test
@@ -790,6 +832,8 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(post(ORDER_URI + "/checkout"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(emptyCart()));
+                .andExpect(jsonPath("$.message").value(EMPTY_CART));
+
+        assertThat(orderRepository.count()).isZero();
     }
 }

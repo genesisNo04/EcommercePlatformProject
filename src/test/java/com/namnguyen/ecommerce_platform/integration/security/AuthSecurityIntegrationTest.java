@@ -3,12 +3,10 @@ package com.namnguyen.ecommerce_platform.integration.security;
 import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
 import com.namnguyen.ecommerce_platform.integration.BaseSecurityIntegrationTest;
-import com.namnguyen.ecommerce_platform.user.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 

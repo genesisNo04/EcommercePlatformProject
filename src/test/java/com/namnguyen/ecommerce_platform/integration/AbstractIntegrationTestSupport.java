@@ -130,6 +130,20 @@ public abstract class AbstractIntegrationTestSupport {
         );
     }
 
+    protected ProductCreateRequest createProductCreateRequest(
+            String productName,
+            String productDescription,
+            BigDecimal productPrice,
+            int productQuantit
+    ) {
+        return new ProductCreateRequest(
+                "PS5",
+                "Playstation",
+                BigDecimal.valueOf(399.99),
+                12
+        );
+    }
+
     protected ProductPutRequest createDefaultPutProductRequest() {
         return new ProductPutRequest(
                 "PS5 update",

@@ -18,7 +18,7 @@ import org.springframework.data.domain.*;
 import java.util.List;
 import java.util.Optional;
 
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.UserTestMessages.*;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -188,7 +188,7 @@ public class UserServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(duplicateEmail());
+        assertThat(ex.getMessage()).isEqualTo(EMAIL_ALREADY_EXISTS);
 
         verify(userRepository).existsByEmail(request.email());
         verify(userRepository, never()).existsByPhoneNumber(request.phoneNumber());
@@ -198,7 +198,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    void createUser_whenRequestHasDuplicatePhoneNumber_returnsDuplicateResourceExceptionResponse() {
+    void createUser_whenPhoneNumberAlreadyExists_throwsDuplicateResourceException() {
         Long userId = 1L;
 
         UserCreateRequest request = new UserCreateRequest(
@@ -218,7 +218,7 @@ public class UserServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(duplicatePhoneNumber());
+        assertThat(ex.getMessage()).isEqualTo(PHONE_NUMBER_ALREADY_EXISTS);
 
         verify(userRepository).existsByEmail(request.email());
         verify(userRepository).existsByPhoneNumber(request.phoneNumber());
@@ -269,7 +269,7 @@ public class UserServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userRepository).findById(userId);
         verifyNoMoreInteractions(userRepository);
@@ -426,7 +426,7 @@ public class UserServiceImplTest {
                 () -> userService.putUser(userId, request)
         );
 
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userRepository).findById(userId);
         verify(userRepository, never()).findByEmail(anyString());
@@ -476,7 +476,7 @@ public class UserServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(duplicateEmail());
+        assertThat(ex.getMessage()).isEqualTo(EMAIL_ALREADY_EXISTS);
 
         verify(userRepository).findById(userId);
         verify(userRepository).findByEmail(request.email());
@@ -526,7 +526,7 @@ public class UserServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(duplicatePhoneNumber());
+        assertThat(ex.getMessage()).isEqualTo(PHONE_NUMBER_ALREADY_EXISTS);
 
         verify(userRepository).findById(userId);
         verify(userRepository).findByEmail(request.email());
@@ -691,7 +691,7 @@ public class UserServiceImplTest {
                 () -> userService.patchUser(userId, request)
         );
 
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userRepository).findById(userId);
         verify(userRepository, never()).findByEmail(anyString());
@@ -735,11 +735,13 @@ public class UserServiceImplTest {
         assertThat(response.phoneNumber()).isEqualTo(request.phoneNumber());
         assertThat(response.role()).isEqualTo(Role.CUSTOMER);
 
+        assertThat(user.getPasswordHash()).isEqualTo("test123");
+
+        verifyNoInteractions(passwordEncoder);
         verify(userRepository).findByEmail(request.email());
         verify(userRepository).findByPhoneNumber(request.phoneNumber());
         verify(userRepository).findById(userId);
         verifyNoMoreInteractions(userRepository);
-        verifyNoMoreInteractions(passwordEncoder);
     }
 
     @Test
@@ -775,11 +777,13 @@ public class UserServiceImplTest {
         assertThat(response.phoneNumber()).isEqualTo(user.getPhoneNumber());
         assertThat(response.role()).isEqualTo(user.getRole());
 
+        assertThat(user.getPasswordHash()).isEqualTo("test123");
+
+        verifyNoInteractions(passwordEncoder);
         verify(userRepository).findById(userId);
         verify(userRepository, never()).findByEmail(any());
         verify(userRepository, never()).findByPhoneNumber(any());
         verifyNoMoreInteractions(userRepository);
-        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
@@ -823,7 +827,7 @@ public class UserServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(duplicateEmail());
+        assertThat(ex.getMessage()).isEqualTo(EMAIL_ALREADY_EXISTS);
 
         verify(userRepository).findById(userId);
         verify(userRepository).findByEmail(request.email());
@@ -873,7 +877,7 @@ public class UserServiceImplTest {
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(duplicatePhoneNumber());
+        assertThat(ex.getMessage()).isEqualTo(PHONE_NUMBER_ALREADY_EXISTS);
 
         verify(userRepository).findById(userId);
         verify(userRepository).findByEmail(request.email());
@@ -1008,7 +1012,7 @@ public class UserServiceImplTest {
                 () -> userService.deleteUser(userId)
         );
 
-        assertThat(ex.getMessage()).isEqualTo(userNotFound(userId));
+        assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
         verify(userRepository).findById(userId);
         verify(userRepository, never()).delete(any(User.class));

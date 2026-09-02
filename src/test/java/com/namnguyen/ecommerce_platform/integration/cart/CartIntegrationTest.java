@@ -153,6 +153,8 @@ public class CartIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+
+        assertThat(cartItemRepository.findAll()).isEmpty();
     }
 
     @Test
@@ -254,6 +256,12 @@ public class CartIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(patch(CART_URI + "/items/" + product.getId())
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isBadRequest());
+
+        CartItem savedItem = cartItemRepository
+                .findByCartIdAndProductId(cart.getId(), product.getId())
+                .orElseThrow();
+
+        assertThat(savedItem.getQuantity()).isEqualTo(initialQuantity);
     }
 
     @Test
@@ -279,6 +287,12 @@ public class CartIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(patch(CART_URI + "/items/" + product.getId())
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isBadRequest());
+
+        CartItem savedItem = cartItemRepository
+                .findByCartIdAndProductId(cart.getId(), product.getId())
+                .orElseThrow();
+
+        assertThat(savedItem.getQuantity()).isEqualTo(initialQuantity);
     }
 
     @Test

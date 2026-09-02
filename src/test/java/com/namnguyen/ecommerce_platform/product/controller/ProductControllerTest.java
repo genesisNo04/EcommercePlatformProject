@@ -24,7 +24,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.invalidParameter;
+import static com.namnguyen.ecommerce_platform.testutil.messages.ProductTestMessages.*;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -121,9 +123,12 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(productNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.name",
+                        containsInAnyOrder(
+                                PRODUCT_NAME_IS_REQUIRED,
+                                PRODUCT_NAME_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -144,9 +149,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(productNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(PRODUCT_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -167,9 +172,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(productNameLength())));
+                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(PRODUCT_NAME_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -190,11 +195,11 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
                 .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(
-                        productDescriptionLength(),
-                        productDescriptionIsRequired())));
+                        PRODUCT_DESCRIPTION_IS_INVALID,
+                        PRODUCT_DESCRIPTION_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -215,9 +220,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(productDescriptionIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(PRODUCT_DESCRIPTION_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -238,9 +243,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(productDescriptionLength())));
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(PRODUCT_DESCRIPTION_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -261,9 +266,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(productDescriptionLength())));
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(PRODUCT_DESCRIPTION_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -284,9 +289,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(productPriceIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(PRODUCT_PRICE_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -307,9 +312,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(productPriceZero())));
+                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(PRODUCT_PRICE_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -330,9 +335,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(productQuantityIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(PRODUCT_QUANTITY_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -353,9 +358,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
-                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(productNegativeQuantity())));
+                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(PRODUCT_QUANTITY_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -412,14 +417,14 @@ public class ProductControllerTest {
         Long productId = 1L;
 
         when(productService.getProductById(productId))
-                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         mockMvc.perform(get(PRODUCT_URI + "/" + productId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
 
 
@@ -598,7 +603,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
                 .andExpect(jsonPath("$.fieldErrors.status", containsInAnyOrder(invalidParameter("status"))));
 
@@ -618,7 +623,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
                 .andExpect(jsonPath("$.fieldErrors.minPrice", containsInAnyOrder(invalidParameter("minPrice"))));
 
@@ -638,7 +643,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
                 .andExpect(jsonPath("$.fieldErrors.maxPrice", containsInAnyOrder(invalidParameter("maxPrice"))));
 
@@ -776,11 +781,10 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(
-                        productNameIsRequired(),
-                        productNameLength())));
+                        PRODUCT_DESCRIPTION_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -803,9 +807,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(productNameIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(PRODUCT_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -828,9 +832,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(productNameLength())));
+                .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(PRODUCT_NAME_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -853,11 +857,10 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(
-                        productDescriptionLength(),
-                        productDescriptionIsRequired())));
+                        PRODUCT_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -880,9 +883,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(productDescriptionIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(PRODUCT_DESCRIPTION_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -905,9 +908,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(productDescriptionLength())));
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(PRODUCT_DESCRIPTION_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -930,9 +933,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(productDescriptionLength())));
+                .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(PRODUCT_DESCRIPTION_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -955,9 +958,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(productPriceIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(PRODUCT_PRICE_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -980,9 +983,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(productPriceZero())));
+                .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(PRODUCT_PRICE_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -1005,9 +1008,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(productQuantityIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(PRODUCT_QUANTITY_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -1030,9 +1033,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
-                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(productNegativeQuantity())));
+                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(PRODUCT_QUANTITY_IS_INVALID)));
 
         verifyNoInteractions(productService);
     }
@@ -1048,7 +1051,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_QUANTITY
         );
 
-        doThrow(new NoResourceFoundException(productNotFound(productId)))
+        doThrow(new NoResourceFoundException(productNotFoundWithId(productId)))
                 .when(productService).putProduct(productId, request);
 
         mockMvc.perform(put(PRODUCT_URI + "/" + productId)
@@ -1058,7 +1061,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
 
         verify(productService).putProduct(productId, request);
@@ -1258,11 +1261,10 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(
-                        productNameLength(),
-                        productNameIsEmpty()
+                        PRODUCT_NAME_IS_EMPTY
                 )));
 
         verifyNoInteractions(productService);
@@ -1286,10 +1288,10 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(
-                        productNameLength()
+                        PRODUCT_NAME_IS_INVALID
                 )));
 
         verifyNoInteractions(productService);
@@ -1313,11 +1315,11 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(
-                        productDescriptionLength(),
-                        productDescriptionIsEmpty()
+                        PRODUCT_DESCRIPTION_IS_INVALID,
+                        PRODUCT_DESCRIPTION_IS_EMPTY
                 )));
 
         verifyNoInteractions(productService);
@@ -1341,10 +1343,10 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(
-                        productDescriptionLength()
+                        PRODUCT_DESCRIPTION_IS_INVALID
                 )));
 
         verifyNoInteractions(productService);
@@ -1368,10 +1370,10 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.description", containsInAnyOrder(
-                        productDescriptionLength()
+                        PRODUCT_DESCRIPTION_IS_INVALID
                 )));
 
         verifyNoInteractions(productService);
@@ -1395,10 +1397,10 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.price", containsInAnyOrder(
-                        productPriceZero()
+                        PRODUCT_PRICE_IS_INVALID
                 )));
 
         verifyNoInteractions(productService);
@@ -1422,10 +1424,10 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId))
                 .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(
-                        productNegativeQuantity()
+                        PRODUCT_QUANTITY_IS_INVALID
                 )));
 
         verifyNoInteractions(productService);
@@ -1442,7 +1444,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_QUANTITY
         );
 
-        doThrow(new NoResourceFoundException(productNotFound(productId)))
+        doThrow(new NoResourceFoundException(productNotFoundWithId(productId)))
                 .when(productService).patchProduct(productId, request);
 
         mockMvc.perform(patch(PRODUCT_URI + "/" + productId)
@@ -1452,7 +1454,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
 
         verify(productService).patchProduct(productId, request);
@@ -1489,7 +1491,7 @@ public class ProductControllerTest {
     void deleteProduct_whenProductIdIsNotFound_returnsNotFound() throws Exception {
         Long productId = 1L;
 
-        doThrow(new NoResourceFoundException(productNotFound(productId)))
+        doThrow(new NoResourceFoundException(productNotFoundWithId(productId)))
                 .when(productService).deleteProduct(productId);
 
         mockMvc.perform(delete(PRODUCT_URI + "/" + productId))
@@ -1497,7 +1499,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI + "/" + productId));
 
         verify(productService).deleteProduct(productId);
