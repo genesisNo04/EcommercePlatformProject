@@ -31,7 +31,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,85 +62,85 @@ public class OrderServiceImplTest {
     void createOrder_whenRequestHasValidItems_createsPendingPaymentOrder() {
         Long userId = 1L;
         Long orderId = 2L;
-        Long productId1 = 3L;
-        Long productId2 = 4L;
-        int initialQuantity1 = 10;
-        int initialQuantity2 = 5;
-        int quantity1 = 2;
-        int quantity2 = 3;
+        Long firstProductId = 3L;
+        Long secondProductId = 4L;
+        int firstStockQuantity = 10;
+        int secondStockQuantity = 5;
+        int firstOrderQuantity = 2;
+        int secondOrderQuantity = 3;
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity1
+        Product firstProduct = createProduct(
+                firstProductId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                firstStockQuantity
         );
 
-        Product product2 = createProduct(
-                productId2,
+        Product secondProduct = createProduct(
+                secondProductId,
                 "XBOX",
                 BigDecimal.valueOf(450.99),
-                initialQuantity2
+                secondStockQuantity
         );
 
-        BigDecimal total = product1.getPrice().multiply(BigDecimal.valueOf(quantity1))
-                .add(product2.getPrice().multiply(BigDecimal.valueOf(quantity2)));
+        BigDecimal total = firstProduct.getPrice().multiply(BigDecimal.valueOf(firstOrderQuantity))
+                .add(secondProduct.getPrice().multiply(BigDecimal.valueOf(secondOrderQuantity)));
 
-        CreateOrderItemRequest item1 = new CreateOrderItemRequest(
-                productId1,
-                quantity1
+        CreateOrderItemRequest firstItemRequest = new CreateOrderItemRequest(
+                firstProductId,
+                firstOrderQuantity
         );
 
-        CreateOrderItemRequest item2 = new CreateOrderItemRequest(
-                productId2,
-                quantity2
+        CreateOrderItemRequest secondItemRequest = new CreateOrderItemRequest(
+                secondProductId,
+                secondOrderQuantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(item1, item2)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(firstItemRequest, secondItemRequest)
         );
 
         User user = createUser(userId);
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
-        when(productLookupService.getProductById(productId1)).thenReturn(product1);
-        when(productLookupService.getProductById(productId2)).thenReturn(product2);
+        when(productLookupService.getProductById(firstProductId)).thenReturn(firstProduct);
+        when(productLookupService.getProductById(secondProductId)).thenReturn(secondProduct);
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
            Order order = inv.getArgument(0);
            order.setId(orderId);
            return order;
         });
 
-        OrderResponse response = orderService.createOrder(request, userId);
+        OrderResponse orderResponse = orderService.createOrder(orderRequest, userId);
 
-        assertThat(response).isNotNull();
-        assertThat(response.orderId()).isEqualTo(orderId);
-        assertThat(response.userId()).isEqualTo(userId);
-        assertThat(response.total()).isEqualByComparingTo(total);
-        assertThat(response.items()).hasSize(2);
-        assertThat(response.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+        assertThat(orderResponse).isNotNull();
+        assertThat(orderResponse.orderId()).isEqualTo(orderId);
+        assertThat(orderResponse.userId()).isEqualTo(userId);
+        assertThat(orderResponse.total()).isEqualByComparingTo(total);
+        assertThat(orderResponse.items()).hasSize(2);
+        assertThat(orderResponse.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
 
-        assertThat(product1.getQuantity()).isEqualTo(initialQuantity1 - quantity1);
-        assertThat(product2.getQuantity()).isEqualTo(initialQuantity2 - quantity2);
-        assertThat(product1.getStatus()).isEqualTo(ProductStatus.ACTIVE);
-        assertThat(product2.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(firstProduct.getQuantity()).isEqualTo(firstStockQuantity - firstOrderQuantity);
+        assertThat(secondProduct.getQuantity()).isEqualTo(secondStockQuantity - secondOrderQuantity);
+        assertThat(firstProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(secondProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
-        OrderItemResponse itemResponse1 = response.items().getFirst();
-        assertThat(itemResponse1.productId()).isEqualTo(productId1);
-        assertThat(itemResponse1.productName()).isEqualTo(product1.getName());
-        assertThat(itemResponse1.quantity()).isEqualTo(item1.quantity());
-        assertThat(itemResponse1.price()).isEqualByComparingTo(product1.getPrice());
+        OrderItemResponse firstItemResponse = orderResponse.items().getFirst();
+        assertThat(firstItemResponse.productId()).isEqualTo(firstProductId);
+        assertThat(firstItemResponse.productName()).isEqualTo(firstProduct.getName());
+        assertThat(firstItemResponse.quantity()).isEqualTo(firstItemRequest.quantity());
+        assertThat(firstItemResponse.price()).isEqualByComparingTo(firstProduct.getPrice());
 
-        OrderItemResponse itemResponse2 = response.items().get(1);
-        assertThat(itemResponse2.productId()).isEqualTo(productId2);
-        assertThat(itemResponse2.productName()).isEqualTo(product2.getName());
-        assertThat(itemResponse2.quantity()).isEqualTo(item2.quantity());
-        assertThat(itemResponse2.price()).isEqualByComparingTo(product2.getPrice());
+        OrderItemResponse secondItemResponse = orderResponse.items().get(1);
+        assertThat(secondItemResponse.productId()).isEqualTo(secondProductId);
+        assertThat(secondItemResponse.productName()).isEqualTo(secondProduct.getName());
+        assertThat(secondItemResponse.quantity()).isEqualTo(secondItemRequest.quantity());
+        assertThat(secondItemResponse.price()).isEqualByComparingTo(secondProduct.getPrice());
 
-        ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
-        verify(orderRepository).save(captor.capture());
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
 
-        Order savedOrder = captor.getValue();
+        Order savedOrder = orderCaptor.getValue();
         assertThat(savedOrder.getId()).isEqualTo(orderId);
         assertThat(savedOrder.getUser()).isEqualTo(user);
         assertThat(savedOrder.getUser().getId()).isEqualTo(userId);
@@ -149,21 +148,21 @@ public class OrderServiceImplTest {
         assertThat(savedOrder.getOrderItems()).hasSize(2);
         assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
 
-        OrderItem savedOrderItem1 = savedOrder.getOrderItems().getFirst();
-        assertThat(savedOrderItem1.getOrder()).isEqualTo(savedOrder);
-        assertThat(savedOrderItem1.getProduct()).isEqualTo(product1);
-        assertThat(savedOrderItem1.getQuantity()).isEqualTo(quantity1);
-        assertThat(savedOrderItem1.getPrice()).isEqualByComparingTo(product1.getPrice());
+        OrderItem firstSavedOrderItem = savedOrder.getOrderItems().getFirst();
+        assertThat(firstSavedOrderItem.getOrder()).isEqualTo(savedOrder);
+        assertThat(firstSavedOrderItem.getProduct()).isEqualTo(firstProduct);
+        assertThat(firstSavedOrderItem.getQuantity()).isEqualTo(firstOrderQuantity);
+        assertThat(firstSavedOrderItem.getPrice()).isEqualByComparingTo(firstProduct.getPrice());
 
-        OrderItem savedOrderItem2 = savedOrder.getOrderItems().getLast();
-        assertThat(savedOrderItem2.getOrder()).isEqualTo(savedOrder);
-        assertThat(savedOrderItem2.getProduct()).isEqualTo(product2);
-        assertThat(savedOrderItem2.getQuantity()).isEqualTo(quantity2);
-        assertThat(savedOrderItem2.getPrice()).isEqualByComparingTo(product2.getPrice());
+        OrderItem secondSavedOrderItem = savedOrder.getOrderItems().getLast();
+        assertThat(secondSavedOrderItem.getOrder()).isEqualTo(savedOrder);
+        assertThat(secondSavedOrderItem.getProduct()).isEqualTo(secondProduct);
+        assertThat(secondSavedOrderItem.getQuantity()).isEqualTo(secondOrderQuantity);
+        assertThat(secondSavedOrderItem.getPrice()).isEqualByComparingTo(secondProduct.getPrice());
 
         verify(userLookupService).getUserById(userId);
-        verify(productLookupService).getProductById(productId1);
-        verify(productLookupService).getProductById(productId2);
+        verify(productLookupService).getProductById(firstProductId);
+        verify(productLookupService).getProductById(secondProductId);
         verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(productLookupService);
         verifyNoMoreInteractions(orderRepository);
@@ -172,45 +171,45 @@ public class OrderServiceImplTest {
     @Test
     void createOrder_whenProductQuantityBecomesZero_marksProductOutOfStock() {
         Long userId = 1L;
-        Long productId1 = 3L;
+        Long productId = 3L;
         Long orderId = 4L;
-        int quantity1 = 10;
+        int quantity = 10;
 
         User user = createUser(userId);
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
+        Product product = createProduct(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
                 10
         );
 
-        CreateOrderItemRequest item1 = new CreateOrderItemRequest(
-                productId1,
-                quantity1
+        CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
+                productId,
+                quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(item1)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(orderItemRequest)
         );
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
-        when(productLookupService.getProductById(productId1)).thenReturn(product1);
+        when(productLookupService.getProductById(productId)).thenReturn(product);
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
             Order order = inv.getArgument(0);
             order.setId(orderId);
             return order;
         });
 
-        OrderResponse response = orderService.createOrder(request, userId);
+        OrderResponse orderResponse = orderService.createOrder(orderRequest, userId);
 
-        assertThat(response).isNotNull();
-        assertThat(response.items()).hasSize(1);
-        assertThat(product1.getQuantity()).isEqualTo(0);
-        assertThat(product1.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
+        assertThat(orderResponse).isNotNull();
+        assertThat(orderResponse.items()).hasSize(1);
+        assertThat(product.getQuantity()).isEqualTo(0);
+        assertThat(product.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         verify(userLookupService).getUserById(userId);
-        verify(productLookupService).getProductById(productId1);
+        verify(productLookupService).getProductById(productId);
         verify(orderRepository).save(any(Order.class));
         verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(productLookupService);
@@ -221,15 +220,15 @@ public class OrderServiceImplTest {
     void createOrder_whenUserNotFound_throwNoResourceFoundException() {
         Long userId = 999L;
         Long productId = 1L;
-        int quantity1 = 2;
+        int quantity = 2;
 
-        CreateOrderItemRequest item1 = new CreateOrderItemRequest(
+        CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
                 productId,
-                quantity1
+                quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(item1)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(orderItemRequest)
         );
 
         when(userLookupService.getUserById(userId))
@@ -237,7 +236,7 @@ public class OrderServiceImplTest {
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
-                () -> orderService.createOrder(request, userId)
+                () -> orderService.createOrder(orderRequest, userId)
         );
 
         assertThat(ex).isNotNull();
@@ -257,13 +256,13 @@ public class OrderServiceImplTest {
 
         User user = createUser(userId);
 
-        CreateOrderItemRequest requestItem = new CreateOrderItemRequest(
+        CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
                 productId,
                 quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(requestItem)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(orderItemRequest)
         );
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
@@ -272,7 +271,7 @@ public class OrderServiceImplTest {
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
-                () -> orderService.createOrder(request, userId)
+                () -> orderService.createOrder(orderRequest, userId)
         );
 
         assertThat(ex).isNotNull();
@@ -288,13 +287,13 @@ public class OrderServiceImplTest {
     @Test
     void createOrder_whenItemsIsEmpty_throwsInvalidOrderException() {
         Long userId = 999L;
-        CreateOrderRequest request = new CreateOrderRequest(
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
                 List.of()
         );
 
         InvalidOrderException ex = assertThrows(
                 InvalidOrderException.class,
-                () -> orderService.createOrder(request, userId)
+                () -> orderService.createOrder(orderRequest, userId)
         );
 
         assertThat(ex).isNotNull();
@@ -308,13 +307,13 @@ public class OrderServiceImplTest {
     @Test
     void createOrder_whenItemsIsNull_throwsInvalidOrderException() {
         Long userId = 999L;
-        CreateOrderRequest request = new CreateOrderRequest(
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
                 null
         );
 
         InvalidOrderException ex = assertThrows(
                 InvalidOrderException.class,
-                () -> orderService.createOrder(request, userId)
+                () -> orderService.createOrder(orderRequest, userId)
         );
 
         assertThat(ex).isNotNull();
@@ -345,25 +344,25 @@ public class OrderServiceImplTest {
     @Test
     void createOrder_whenItemQuantityIsNegative_throwsInvalidOrderException() {
         Long userId = 1L;
-        Long productId1 = 3L;
-        int quantity1 = -1;
+        Long productId = 3L;
+        int quantity = -1;
 
         User user = createUser(userId);
 
-        CreateOrderItemRequest item1 = new CreateOrderItemRequest(
-                productId1,
-                quantity1
+        CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
+                productId,
+                quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(item1)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(orderItemRequest)
         );
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
 
         InvalidOrderException ex = assertThrows(
                 InvalidOrderException.class,
-                () -> orderService.createOrder(request, userId)
+                () -> orderService.createOrder(orderRequest, userId)
         );
 
         assertThat(ex).isNotNull();
@@ -377,25 +376,25 @@ public class OrderServiceImplTest {
     @Test
     void createOrder_whenItemQuantityIsZero_throwsInvalidOrderException() {
         Long userId = 1L;
-        Long productId1 = 3L;
-        int quantity1 = 0;
+        Long productId = 3L;
+        int quantity = 0;
 
         User user = createUser(userId);
 
-        CreateOrderItemRequest item1 = new CreateOrderItemRequest(
-                productId1,
-                quantity1
+        CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
+                productId,
+                quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(item1)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(orderItemRequest)
         );
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
 
         InvalidOrderException ex = assertThrows(
                 InvalidOrderException.class,
-                () -> orderService.createOrder(request, userId)
+                () -> orderService.createOrder(orderRequest, userId)
         );
 
         assertThat(ex).isNotNull();
@@ -409,43 +408,43 @@ public class OrderServiceImplTest {
     @Test
     void createOrder_whenOrderItemQuantityExceedStock_throwInsufficientStockException() {
         Long userId = 1L;
-        Long productId1 = 3L;
+        Long productId = 3L;
         int requestQuantity = 11;
         int quantity = 10;
 
         User user = createUser(userId);
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
+        Product product = createProduct(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
                 quantity
         );
 
-        CreateOrderItemRequest item1 = new CreateOrderItemRequest(
-                productId1,
+        CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
+                productId,
                 requestQuantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(item1)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(orderItemRequest)
         );
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
-        when(productLookupService.getProductById(productId1)).thenReturn(product1);
+        when(productLookupService.getProductById(productId)).thenReturn(product);
 
         InsufficientStockException ex = assertThrows(
                 InsufficientStockException.class,
-                () -> orderService.createOrder(request, userId)
+                () -> orderService.createOrder(orderRequest, userId)
         );
 
         assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(insufficientStock(product1.getName()));
-        assertThat(product1.getQuantity()).isEqualTo(quantity);
-        assertThat(product1.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(ex.getMessage()).isEqualTo(insufficientStock(product.getName()));
+        assertThat(product.getQuantity()).isEqualTo(quantity);
+        assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(userLookupService).getUserById(userId);
-        verify(productLookupService).getProductById(productId1);
+        verify(productLookupService).getProductById(productId);
         verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
@@ -455,32 +454,32 @@ public class OrderServiceImplTest {
     void getOrderById_whenOrderExists_returnOrderResponse() {
         Long userId = 1L;
         Long orderId = 2L;
-        Long productId1 = 3L;
-        Long productId2 = 4L;
-        Long orderItemId1 = 5L;
-        Long orderItemId2 = 6L;
-        int initialQuantity1 = 10;
-        int initialQuantity2 = 5;
-        int quantity1 = 2;
-        int quantity2 = 3;
+        Long firstProductId = 3L;
+        Long secondProductId = 4L;
+        Long firstOrderItemId = 5L;
+        Long secondOrderItemId = 6L;
+        int firstProductStockQuantity = 10;
+        int secondProductStockQuantity = 5;
+        int firstOrderItemQuantity = 2;
+        int secondOrderItemQuantity = 3;
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity1
+        Product firstProduct = createProduct(
+                firstProductId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                firstProductStockQuantity
         );
 
-        Product product2 = createProduct(
-                productId2,
+        Product secondProduct = createProduct(
+                secondProductId,
                 "XBOX",
                 BigDecimal.valueOf(450.99),
-                initialQuantity2
+                secondProductStockQuantity
         );
 
         User user = createUser(userId);
-        BigDecimal total = product1.getPrice().multiply(BigDecimal.valueOf(quantity1))
-                .add(product2.getPrice().multiply(BigDecimal.valueOf(quantity2)));
+        BigDecimal total = firstProduct.getPrice().multiply(BigDecimal.valueOf(firstOrderItemQuantity))
+                .add(secondProduct.getPrice().multiply(BigDecimal.valueOf(secondOrderItemQuantity)));
 
         Order order = createOrder(
                 orderId,
@@ -489,54 +488,54 @@ public class OrderServiceImplTest {
                 user
         );
 
-        OrderItem item1 = createOrderItem(
-                orderItemId1,
+        OrderItem firstOrderItem = createOrderItem(
+                firstOrderItemId,
                 order,
-                product1,
-                quantity1,
-                product1.getPrice()
+                firstProduct,
+                firstOrderItemQuantity,
+                firstProduct.getPrice()
         );
 
-        OrderItem item2 = createOrderItem(
-                orderItemId2,
+        OrderItem secondOrderItem = createOrderItem(
+                secondOrderItemId,
                 order,
-                product2,
-                quantity2,
-                product2.getPrice()
+                secondProduct,
+                secondOrderItemQuantity,
+                secondProduct.getPrice()
         );
 
-        order.addOrderItem(item1);
-        order.addOrderItem(item2);
+        order.addOrderItem(firstOrderItem);
+        order.addOrderItem(secondOrderItem);
 
         when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
 
-        OrderResponse response = orderService.getOrderById(orderId, userId);
+        OrderResponse orderResponse = orderService.getOrderById(orderId, userId);
 
-        assertThat(response).isNotNull();
-        assertThat(response.orderId()).isEqualTo(orderId);
-        assertThat(response.userId()).isEqualTo(userId);
-        assertThat(response.total()).isEqualByComparingTo(total);
-        assertThat(response.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
-        assertThat(response.items()).hasSize(2);
+        assertThat(orderResponse).isNotNull();
+        assertThat(orderResponse.orderId()).isEqualTo(orderId);
+        assertThat(orderResponse.userId()).isEqualTo(userId);
+        assertThat(orderResponse.total()).isEqualByComparingTo(total);
+        assertThat(orderResponse.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+        assertThat(orderResponse.items()).hasSize(2);
 
-        OrderItemResponse firstItem = response.items().getFirst();
-        assertThat(firstItem.productId()).isEqualTo(productId1);
-        assertThat(firstItem.productName()).isEqualTo(product1.getName());
-        assertThat(firstItem.quantity()).isEqualTo(quantity1);
-        assertThat(firstItem.price()).isEqualByComparingTo(product1.getPrice());
+        OrderItemResponse firstItemResponse = orderResponse.items().getFirst();
+        assertThat(firstItemResponse.productId()).isEqualTo(firstProductId);
+        assertThat(firstItemResponse.productName()).isEqualTo(firstProduct.getName());
+        assertThat(firstItemResponse.quantity()).isEqualTo(firstOrderItemQuantity);
+        assertThat(firstItemResponse.price()).isEqualByComparingTo(firstProduct.getPrice());
 
-        OrderItemResponse secondItem = response.items().getLast();
-        assertThat(secondItem.productId()).isEqualTo(productId2);
-        assertThat(secondItem.productName()).isEqualTo(product2.getName());
-        assertThat(secondItem.quantity()).isEqualTo(quantity2);
-        assertThat(secondItem.price()).isEqualByComparingTo(product2.getPrice());
+        OrderItemResponse secondItemResponse = orderResponse.items().getLast();
+        assertThat(secondItemResponse.productId()).isEqualTo(secondProductId);
+        assertThat(secondItemResponse.productName()).isEqualTo(secondProduct.getName());
+        assertThat(secondItemResponse.quantity()).isEqualTo(secondOrderItemQuantity);
+        assertThat(secondItemResponse.price()).isEqualByComparingTo(secondProduct.getPrice());
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderRepository);
     }
 
     @Test
-    void getOrderById_whenOrderOrUserNotExists_returnNoResourceFoundException() {
+    void getOrderById_whenOrderNotFoundForUser_throwsNoResourceFoundException() {
         Long userId = 1L;
         Long orderId = 2L;
 
@@ -557,93 +556,93 @@ public class OrderServiceImplTest {
     @Test
     void getOrders_whenOrdersExists_returnPageOrderResponse() {
         Long userId = 1L;
-        Long orderId1 = 2L;
-        Long orderId2 = 3L;
-        Long productId1 = 4L;
-        Long productId2 = 5L;
-        Long orderItemId1 = 6L;
-        Long orderItemId2 = 7L;
-        int initialQuantity1 = 10;
-        int initialQuantity2 = 5;
-        int quantity1 = 2;
-        int quantity2 = 3;
+        Long firstOrderId = 2L;
+        Long secondOrderId = 3L;
+        Long firstProductId = 4L;
+        Long secondProductId = 5L;
+        Long firstOrderItemId = 6L;
+        Long secondOrderItemId = 7L;
+        int firstProductStockQuantity = 10;
+        int secondProductStockQuantity = 5;
+        int firstItemQuantity = 2;
+        int secondItemQuantity = 3;
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity1
+        Product firstProduct = createProduct(
+                firstProductId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                firstProductStockQuantity
         );
 
-        Product product2 = createProduct(
-                productId2,
+        Product secondProduct = createProduct(
+                secondProductId,
                 "XBOX",
                 BigDecimal.valueOf(450.99),
-                initialQuantity2
+                secondProductStockQuantity
         );
 
         User user = createUser(userId);
-        BigDecimal total1 = product1.getPrice().multiply(BigDecimal.valueOf(quantity1));
-        BigDecimal total2 = product2.getPrice().multiply(BigDecimal.valueOf(quantity2));
+        BigDecimal firstOrderTotal = firstProduct.getPrice().multiply(BigDecimal.valueOf(firstItemQuantity));
+        BigDecimal secondOrderTotal = secondProduct.getPrice().multiply(BigDecimal.valueOf(secondItemQuantity));
 
-        Order order1 = createOrder(
-                orderId1,
-                total1,
+        Order firstOrder = createOrder(
+                firstOrderId,
+                firstOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 user
         );
 
-        Order order2 = createOrder(
-                orderId2,
-                total2,
+        Order secondOrder = createOrder(
+                secondOrderId,
+                secondOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 user
         );
 
-        OrderItem item1 = createOrderItem(
-                orderItemId1,
-                order1,
-                product1,
-                quantity1,
-                product1.getPrice()
+        OrderItem firstOrderItem = createOrderItem(
+                firstOrderItemId,
+                firstOrder,
+                firstProduct,
+                firstItemQuantity,
+                firstProduct.getPrice()
         );
 
-        order1.addOrderItem(item1);
+        firstOrder.addOrderItem(firstOrderItem);
 
-        OrderItem item2 = createOrderItem(
-                orderItemId2,
-                order2,
-                product2,
-                quantity2,
-                product2.getPrice()
+        OrderItem secondOrderItem = createOrderItem(
+                secondOrderItemId,
+                secondOrder,
+                secondProduct,
+                secondItemQuantity,
+                secondProduct.getPrice()
         );
 
-        order2.addOrderItem(item2);
-        List<Order> orders = List.of(order1, order2);
+        secondOrder.addOrderItem(secondOrderItem);
+        List<Order> orders = List.of(firstOrder, secondOrder);
 
-        OrderFilterRequest request = new OrderFilterRequest(null, null, null, null, null);
+        OrderFilterRequest orderFilterRequest = new OrderFilterRequest(null, null, null, null, null);
 
         Pageable pageable = PageRequest.of(0, 2);
-        Page<Order> orderPage = new PageImpl(orders, pageable, orders.size());
+        Page<Order> orderPage = new PageImpl<>(orders, pageable, orders.size());
 
         when(orderRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(orderPage);
 
-        Page<OrderResponse> response = orderService.getOrders(userId, request, pageable);
+        Page<OrderResponse> orderResponses = orderService.getOrders(userId, orderFilterRequest, pageable);
 
-        assertThat(response).isNotNull();
-        assertThat(response.getContent()).hasSize(2);
-        assertThat(response.getTotalElements()).isEqualTo(2);
-        assertThat(response.getTotalPages()).isEqualTo(1);
+        assertThat(orderResponses).isNotNull();
+        assertThat(orderResponses.getContent()).hasSize(2);
+        assertThat(orderResponses.getTotalElements()).isEqualTo(2);
+        assertThat(orderResponses.getTotalPages()).isEqualTo(1);
 
-        OrderResponse firstOrder = response.getContent().getFirst();
-        assertThat(firstOrder.orderId()).isEqualTo(orderId1);
-        assertThat(firstOrder.userId()).isEqualTo(userId);
-        assertThat(firstOrder.items().getFirst().productId()).isEqualTo(productId1);
+        OrderResponse firstOrderResponse = orderResponses.getContent().getFirst();
+        assertThat(firstOrderResponse.orderId()).isEqualTo(firstOrderId);
+        assertThat(firstOrderResponse.userId()).isEqualTo(userId);
+        assertThat(firstOrderResponse.items().getFirst().productId()).isEqualTo(firstProductId);
 
-        OrderResponse secondOrder = response.getContent().getLast();
-        assertThat(secondOrder.orderId()).isEqualTo(orderId2);
-        assertThat(secondOrder.userId()).isEqualTo(userId);
-        assertThat(secondOrder.items().getFirst().productId()).isEqualTo(productId2);
+        OrderResponse secondOrderResponse = orderResponses.getContent().getLast();
+        assertThat(secondOrderResponse.orderId()).isEqualTo(secondOrderId);
+        assertThat(secondOrderResponse.userId()).isEqualTo(userId);
+        assertThat(secondOrderResponse.items().getFirst().productId()).isEqualTo(secondProductId);
 
         verify(orderRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoMoreInteractions(orderRepository);
@@ -652,21 +651,20 @@ public class OrderServiceImplTest {
     @Test
     void getOrders_whenNoOrdersExists_returnPageOrderResponseWithEmptyList() {
         Long userId = 1L;
-        List<Order> orders = new ArrayList<>();
 
-        OrderFilterRequest request = new OrderFilterRequest(null, null, null, null, null);
+        OrderFilterRequest orderFilterRequest = new OrderFilterRequest(null, null, null, null, null);
 
         Pageable pageable = PageRequest.of(0, 2);
-        Page<Order> orderPage = new PageImpl(orders, pageable, orders.size());
+        Page<Order> orderPage = new PageImpl<>(List.of(), pageable, 0);
 
         when(orderRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(orderPage);
 
-        Page<OrderResponse> response = orderService.getOrders(userId, request, pageable);
+        Page<OrderResponse> orderResponses = orderService.getOrders(userId, orderFilterRequest, pageable);
 
-        assertThat(response).isNotNull();
-        assertThat(response.getContent()).hasSize(0);
-        assertThat(response.getTotalElements()).isEqualTo(0);
-        assertThat(response.getTotalPages()).isEqualTo(0);
+        assertThat(orderResponses).isNotNull();
+        assertThat(orderResponses.getContent()).hasSize(0);
+        assertThat(orderResponses.getTotalElements()).isEqualTo(0);
+        assertThat(orderResponses.getTotalPages()).isEqualTo(0);
 
         verify(orderRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoMoreInteractions(orderRepository);
@@ -676,20 +674,20 @@ public class OrderServiceImplTest {
     void cancelOrder_whenOrderExists_orderSetStatusCancelledAndRestock() {
         Long userId = 1L;
         Long orderId = 2L;
-        Long productId1 = 3L;
-        Long orderItemId1 = 5L;
-        int initialQuantity1 = 10;
-        int quantity1 = 2;
+        Long productId = 3L;
+        Long orderItemId = 5L;
+        int stockQuantity = 10;
+        int orderItemQuantity = 2;
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity1
+        Product product = createProduct(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                stockQuantity
         );
 
         User user = createUser(userId);
-        BigDecimal total = product1.getPrice().multiply(BigDecimal.valueOf(quantity1));
+        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(orderItemQuantity));
 
         Order order = createOrder(
                 orderId,
@@ -698,22 +696,22 @@ public class OrderServiceImplTest {
                 user
         );
 
-        OrderItem item1 = createOrderItem(
-                orderItemId1,
+        OrderItem item = createOrderItem(
+                orderItemId,
                 order,
-                product1,
-                quantity1,
-                product1.getPrice()
+                product,
+                orderItemQuantity,
+                product.getPrice()
         );
 
-        order.addOrderItem(item1);
+        order.addOrderItem(item);
 
         when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
 
         orderService.cancelOrder(orderId, userId);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(product1.getQuantity()).isEqualTo(initialQuantity1 + quantity1);
+        assertThat(product.getQuantity()).isEqualTo(stockQuantity + orderItemQuantity);
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderRepository);
@@ -723,24 +721,24 @@ public class OrderServiceImplTest {
     void cancelOrder_whenProductOutOfStockGotCancel_productUpdateToActive() {
         Long userId = 1L;
         Long orderId = 2L;
-        Long productId1 = 3L;
-        Long orderItemId1 = 5L;
-        int initialQuantity1 = 0;
-        int quantity1 = 2;
+        Long productId = 3L;
+        Long orderItemId = 5L;
+        int stockQuantity = 0;
+        int quantity = 2;
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity1
+        Product product = createProduct(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                stockQuantity
         );
 
-        product1.updateStatusBasedOnQuantity();
+        product.updateStatusBasedOnQuantity();
 
-        assertThat(product1.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
+        assertThat(product.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         User user = createUser(userId);
-        BigDecimal total = product1.getPrice().multiply(BigDecimal.valueOf(quantity1));
+        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(quantity));
 
         Order order = createOrder(
                 orderId,
@@ -749,30 +747,30 @@ public class OrderServiceImplTest {
                 user
         );
 
-        OrderItem item1 = createOrderItem(
-                orderItemId1,
+        OrderItem item = createOrderItem(
+                orderItemId,
                 order,
-                product1,
-                quantity1,
-                product1.getPrice()
+                product,
+                quantity,
+                product.getPrice()
         );
 
-        order.addOrderItem(item1);
+        order.addOrderItem(item);
 
         when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
 
         orderService.cancelOrder(orderId, userId);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(product1.getQuantity()).isEqualTo(initialQuantity1 + quantity1);
-        assertThat(product1.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(product.getQuantity()).isEqualTo(stockQuantity + quantity);
+        assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderRepository);
     }
 
     @Test
-    void cancelOrder_whenOrderOrUserNotExists_throwNoResourceFoundException() {
+    void cancelOrder_whenOrderNotFoundForUser_throwsNoResourceFoundException() {
         Long userId = 1L;
         Long orderId = 2L;
 
@@ -794,20 +792,20 @@ public class OrderServiceImplTest {
     void cancelOrder_whenOrderIsInDeliveredStatus_throwInvalidOrderStateException() {
         Long userId = 1L;
         Long orderId = 2L;
-        Long productId1 = 3L;
-        Long orderItemId1 = 5L;
-        int initialQuantity1 = 10;
-        int quantity1 = 2;
+        Long productId = 3L;
+        Long orderItemId = 5L;
+        int initialQuantity = 10;
+        int quantity = 2;
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity1
+        Product product = createProduct(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                initialQuantity
         );
 
         User user = createUser(userId);
-        BigDecimal total = product1.getPrice().multiply(BigDecimal.valueOf(quantity1));
+        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(quantity));
 
         Order order = createOrder(
                 orderId,
@@ -816,15 +814,15 @@ public class OrderServiceImplTest {
                 user
         );
 
-        OrderItem item1 = createOrderItem(
-                orderItemId1,
+        OrderItem item = createOrderItem(
+                orderItemId,
                 order,
-                product1,
-                quantity1,
-                product1.getPrice()
+                product,
+                quantity,
+                product.getPrice()
         );
 
-        order.addOrderItem(item1);
+        order.addOrderItem(item);
 
         when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
 
@@ -835,7 +833,7 @@ public class OrderServiceImplTest {
 
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(DELIVERED_ORDER_CANNOT_BE_CANCELLED);
-        assertThat(product1.getQuantity()).isEqualTo(initialQuantity1);
+        assertThat(product.getQuantity()).isEqualTo(initialQuantity);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
@@ -846,20 +844,20 @@ public class OrderServiceImplTest {
     void cancelOrder_whenOrderIsInCancelledStatus_throwInvalidOrderStateException() {
         Long userId = 1L;
         Long orderId = 2L;
-        Long productId1 = 3L;
-        Long orderItemId1 = 5L;
-        int initialQuantity1 = 10;
-        int quantity1 = 2;
+        Long productId = 3L;
+        Long orderItemId = 5L;
+        int stockQuantity = 10;
+        int quantity = 2;
 
-        Product product1 = createProduct(
-                productId1,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity1
+        Product product = createProduct(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                stockQuantity
         );
 
         User user = createUser(userId);
-        BigDecimal total = product1.getPrice().multiply(BigDecimal.valueOf(quantity1));
+        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(quantity));
 
         Order order = createOrder(
                 orderId,
@@ -868,15 +866,15 @@ public class OrderServiceImplTest {
                 user
         );
 
-        OrderItem item1 = createOrderItem(
-                orderItemId1,
+        OrderItem orderItem = createOrderItem(
+                orderItemId,
                 order,
-                product1,
-                quantity1,
-                product1.getPrice()
+                product,
+                quantity,
+                product.getPrice()
         );
 
-        order.addOrderItem(item1);
+        order.addOrderItem(orderItem);
 
         when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
 
@@ -887,7 +885,7 @@ public class OrderServiceImplTest {
 
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(ORDER_ALREADY_CANCELLED);
-        assertThat(product1.getQuantity()).isEqualTo(initialQuantity1);
+        assertThat(product.getQuantity()).isEqualTo(stockQuantity);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
         verify(orderRepository).findByIdAndUserId(orderId, userId);
@@ -933,14 +931,14 @@ public class OrderServiceImplTest {
         Long cartItemId = 4L;
         Long orderId = 5L;
         int quantity = 2;
-        int initialQuantity = 10;
+        int stockQuantity = 10;
 
         User user = createUser(userId);
         Product product = createProduct(
                 productId,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                stockQuantity
         );
 
         Cart cart = createCart(cartId, user);
@@ -963,30 +961,30 @@ public class OrderServiceImplTest {
             return order;
         });
 
-        OrderResponse response = orderService.checkoutCart(userId);
+        OrderResponse orderResponse = orderService.checkoutCart(userId);
 
-        assertThat(response).isNotNull();
-        assertThat(response.orderId()).isEqualTo(orderId);
-        assertThat(response.userId()).isEqualTo(userId);
-        assertThat(response.total()).isEqualByComparingTo(total);
-        assertThat(response.items()).hasSize(1);
-        assertThat(response.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+        assertThat(orderResponse).isNotNull();
+        assertThat(orderResponse.orderId()).isEqualTo(orderId);
+        assertThat(orderResponse.userId()).isEqualTo(userId);
+        assertThat(orderResponse.total()).isEqualByComparingTo(total);
+        assertThat(orderResponse.items()).hasSize(1);
+        assertThat(orderResponse.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
 
-        assertThat(product.getQuantity()).isEqualTo(initialQuantity - quantity);
+        assertThat(product.getQuantity()).isEqualTo(stockQuantity - quantity);
         assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
         assertThat(item.getCart()).isNull();
 
-        OrderItemResponse itemResponse1 = response.items().getFirst();
-        assertThat(itemResponse1.productId()).isEqualTo(productId);
-        assertThat(itemResponse1.productName()).isEqualTo(product.getName());
-        assertThat(itemResponse1.quantity()).isEqualTo(quantity);
-        assertThat(itemResponse1.price()).isEqualByComparingTo(product.getPrice());
+        OrderItemResponse itemResponse = orderResponse.items().getFirst();
+        assertThat(itemResponse.productId()).isEqualTo(productId);
+        assertThat(itemResponse.productName()).isEqualTo(product.getName());
+        assertThat(itemResponse.quantity()).isEqualTo(quantity);
+        assertThat(itemResponse.price()).isEqualByComparingTo(product.getPrice());
 
-        ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
-        verify(orderRepository).save(captor.capture());
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
 
-        Order savedOrder = captor.getValue();
+        Order savedOrder = orderCaptor.getValue();
         assertThat(savedOrder.getId()).isEqualTo(orderId);
         assertThat(savedOrder.getUser()).isEqualTo(user);
         assertThat(savedOrder.getUser().getId()).isEqualTo(userId);
@@ -996,11 +994,11 @@ public class OrderServiceImplTest {
         assertThat(savedOrder.getTotal()).isEqualTo(total);
         assertThat(cart.getItems()).isEmpty();
 
-        OrderItem savedOrderItem1 = savedOrder.getOrderItems().getFirst();
-        assertThat(savedOrderItem1.getOrder()).isEqualTo(savedOrder);
-        assertThat(savedOrderItem1.getProduct()).isEqualTo(product);
-        assertThat(savedOrderItem1.getQuantity()).isEqualTo(quantity);
-        assertThat(savedOrderItem1.getPrice()).isEqualByComparingTo(product.getPrice());
+        OrderItem savedOrderItem = savedOrder.getOrderItems().getFirst();
+        assertThat(savedOrderItem.getOrder()).isEqualTo(savedOrder);
+        assertThat(savedOrderItem.getProduct()).isEqualTo(product);
+        assertThat(savedOrderItem.getQuantity()).isEqualTo(quantity);
+        assertThat(savedOrderItem.getPrice()).isEqualByComparingTo(product.getPrice());
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoMoreInteractions(cartLookupService);
@@ -1008,7 +1006,7 @@ public class OrderServiceImplTest {
     }
 
     @Test
-    void checkoutCart_whenCartOrUserNotFound_throwNoResourceFoundException() {
+    void checkoutCart_whenCartNotFound_throwsNoResourceFoundException() {
         Long userId = 999L;
 
         when(cartLookupService.getCartByUserId(userId))
@@ -1055,14 +1053,14 @@ public class OrderServiceImplTest {
         Long productId = 3L;
         Long cartItemId = 4L;
         int quantity = 11;
-        int initialQuantity = 10;
+        int stockQuantity = 10;
 
         User user = createUser(userId);
         Product product = createProduct(
                 productId,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                stockQuantity
         );
 
         Cart cart = createCart(cartId, user);
@@ -1083,13 +1081,11 @@ public class OrderServiceImplTest {
                 () -> orderService.checkoutCart(userId)
         );
 
-        assertThat(ex).isNotNull();
-        assertThat(ex.getMessage()).isEqualTo(insufficientStock(product.getName()));
-        assertThat(product.getQuantity()).isEqualTo(initialQuantity);
-        assertThat(cart.getItems()).hasSize(1);
+        assertThat(product.getQuantity()).isEqualTo(stockQuantity);
+        assertThat(cart.getItems()).containsExactly(item);
+        assertThat(item.getCart()).isEqualTo(cart);
 
         verify(cartLookupService).getCartByUserId(userId);
-        verify(orderRepository, never()).save(any(Order.class));
         verifyNoMoreInteractions(cartLookupService);
         verifyNoInteractions(orderRepository);
     }
@@ -1101,14 +1097,14 @@ public class OrderServiceImplTest {
         Long productId = 3L;
         Long cartItemId = 4L;
         int quantity = -1;
-        int initialQuantity = 10;
+        int stockQuantity = 10;
 
         User user = createUser(userId);
         Product product = createProduct(
                 productId,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                stockQuantity
         );
 
         Cart cart = createCart(cartId, user);
@@ -1132,6 +1128,57 @@ public class OrderServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
 
+        assertThat(product.getQuantity()).isEqualTo(stockQuantity);
+        assertThat(cart.getItems()).contains(item);
+        assertThat(item.getCart()).isEqualTo(cart);
+
+        verify(cartLookupService).getCartByUserId(userId);
+        verifyNoMoreInteractions(cartLookupService);
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    void checkoutCart_whenQuantityIsZero_throwsInvalidOrderException() {
+        Long userId = 1L;
+        Long cartId = 2L;
+        Long productId = 3L;
+        Long cartItemId = 4L;
+        int quantity = 0;
+        int stockQuantity = 10;
+
+        User user = createUser(userId);
+        Product product = createProduct(
+                productId,
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                stockQuantity
+        );
+
+        Cart cart = createCart(cartId, user);
+
+        CartItem item = createCartItem(
+                cartItemId,
+                cart,
+                product,
+                quantity
+        );
+
+        cart.addItem(item);
+
+        when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
+
+        InvalidOrderException ex = assertThrows(
+                InvalidOrderException.class,
+                () -> orderService.checkoutCart(userId)
+        );
+
+        assertThat(ex).isNotNull();
+        assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
+
+        assertThat(product.getQuantity()).isEqualTo(stockQuantity);
+        assertThat(cart.getItems()).contains(item);
+        assertThat(item.getCart()).isEqualTo(cart);
+
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoMoreInteractions(cartLookupService);
         verifyNoInteractions(orderRepository);
@@ -1145,14 +1192,14 @@ public class OrderServiceImplTest {
         Long cartItemId = 4L;
         Long orderId = 5L;
         int quantity = 10;
-        int initialQuantity = 10;
+        int stockQuantity = 10;
 
         User user = createUser(userId);
         Product product = createProduct(
                 productId,
-                "PS5",
-                BigDecimal.valueOf(499.99),
-                initialQuantity
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_PRICE,
+                stockQuantity
         );
 
         Cart cart = createCart(cartId, user);

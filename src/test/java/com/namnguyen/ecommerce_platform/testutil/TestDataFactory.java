@@ -23,6 +23,7 @@ public final class TestDataFactory {
     public static final String CART_URI = "/api/cart";
     public static final String CART_ITEM_URI = "/api/cart/items";
     public static final String ORDER_URI = "/api/orders";
+    public static final String CHECKOUT_URI = "/api/orders/checkout";
     public static final String REGISTER_URI = "/api/auth/register";
     public static final String PRODUCT_URI = "/api/products";
     public static final String USER_URI = "/api/users";
@@ -67,6 +68,18 @@ public final class TestDataFactory {
     }
 
     public static String orderUri(Long orderId) {
+        return ORDER_URI + "/" + orderId;
+    }
+
+    public static String cancelOrderUri(Long orderId) {
+        return ORDER_URI + "/" + orderId + "/cancel";
+    }
+
+    public static String cancelOrderUri(String orderId) {
+        return ORDER_URI + "/" + orderId + "/cancel";
+    }
+
+    public static String orderUri(String orderId) {
         return ORDER_URI + "/" + orderId;
     }
 
