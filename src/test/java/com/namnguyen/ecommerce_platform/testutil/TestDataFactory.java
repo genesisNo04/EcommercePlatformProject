@@ -52,6 +52,7 @@ public final class TestDataFactory {
     public static final String INVALID_PRODUCT_DESCRIPTION_LESS_THAN_LIMIT = "test";
     public static final BigDecimal INVALID_PRODUCT_PRICE_ZERO = BigDecimal.ZERO;
     public static final Integer INVALID_PRODUCT_NEGATIVE_QUANTITY = -1;
+    public static final String INVALID_ENUM_VALUE = "TESTING";
 
     public static final String ENCODED_PASSWORD = "encodedPassword";
     public static final String MOCK_JWT_TOKEN = "fake-jwt-token";
@@ -84,6 +85,18 @@ public final class TestDataFactory {
     }
 
     public static String paymentUri(Long orderId) {
+        return orderUri(orderId) + "/payments";
+    }
+
+    public static String paymentConfirmUri(Long orderId) {
+        return orderUri(orderId) + "/payments/confirm";
+    }
+
+    public static String paymentConfirmUri(String orderId) {
+        return orderUri(orderId) + "/payments/confirm";
+    }
+
+    public static String paymentUri(String orderId) {
         return orderUri(orderId) + "/payments";
     }
 
