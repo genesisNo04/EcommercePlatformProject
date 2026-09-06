@@ -72,6 +72,7 @@ public class OrderServiceImplTest {
         Product firstProduct = createProduct(
                 firstProductId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 firstStockQuantity
         );
@@ -79,6 +80,7 @@ public class OrderServiceImplTest {
         Product secondProduct = createProduct(
                 secondProductId,
                 "XBOX",
+                VALID_PRODUCT_DESCRIPTION,
                 BigDecimal.valueOf(450.99),
                 secondStockQuantity
         );
@@ -180,6 +182,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 10
         );
@@ -417,6 +420,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 quantity
         );
@@ -466,6 +470,7 @@ public class OrderServiceImplTest {
         Product firstProduct = createProduct(
                 firstProductId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 firstProductStockQuantity
         );
@@ -473,6 +478,7 @@ public class OrderServiceImplTest {
         Product secondProduct = createProduct(
                 secondProductId,
                 "XBOX",
+                VALID_PRODUCT_DESCRIPTION,
                 BigDecimal.valueOf(450.99),
                 secondProductStockQuantity
         );
@@ -570,6 +576,7 @@ public class OrderServiceImplTest {
         Product firstProduct = createProduct(
                 firstProductId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 firstProductStockQuantity
         );
@@ -577,6 +584,7 @@ public class OrderServiceImplTest {
         Product secondProduct = createProduct(
                 secondProductId,
                 "XBOX",
+                VALID_PRODUCT_DESCRIPTION,
                 BigDecimal.valueOf(450.99),
                 secondProductStockQuantity
         );
@@ -682,6 +690,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 stockQuantity
         );
@@ -729,6 +738,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 stockQuantity
         );
@@ -800,6 +810,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 initialQuantity
         );
@@ -852,6 +863,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 stockQuantity
         );
@@ -937,6 +949,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 stockQuantity
         );
@@ -1059,6 +1072,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 stockQuantity
         );
@@ -1103,6 +1117,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 stockQuantity
         );
@@ -1150,6 +1165,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 stockQuantity
         );
@@ -1198,6 +1214,7 @@ public class OrderServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 stockQuantity
         );

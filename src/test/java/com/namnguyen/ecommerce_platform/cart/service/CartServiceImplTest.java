@@ -357,6 +357,7 @@ public class CartServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 availableStock
         );
@@ -405,6 +406,7 @@ public class CartServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 availableStock
         );
@@ -677,6 +679,7 @@ public class CartServiceImplTest {
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 availableStock
         );

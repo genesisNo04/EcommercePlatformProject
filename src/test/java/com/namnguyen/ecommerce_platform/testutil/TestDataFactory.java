@@ -10,6 +10,9 @@ import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.payment.entity.Payment;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentMethod;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
+import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
+import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
+import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
@@ -39,6 +42,10 @@ public final class TestDataFactory {
     public static final String VALID_PRODUCT_DESCRIPTION = "Test Product Description";
     public static final BigDecimal VALID_PRODUCT_PRICE = BigDecimal.valueOf(10.99);
     public static final Integer VALID_PRODUCT_QUANTITY = 50;
+    public static final String VALID_UPDATE_PRODUCT_NAME = "Test Product update";
+    public static final String VALID_UPDATE_PRODUCT_DESCRIPTION = "Test Product Description update";
+    public static final BigDecimal VALID_UPDATE_PRODUCT_PRICE = BigDecimal.valueOf(20.99);
+    public static final Integer VALID_UPDATE_PRODUCT_QUANTITY = 20;
 
     public static final String INVALID_ID = "test";
     public static final String INVALID_EMAIL = "testgmail.com";
@@ -61,6 +68,10 @@ public final class TestDataFactory {
     }
 
     public static String productUri(Long productId) {
+        return PRODUCT_URI + "/" + productId;
+    }
+
+    public static String productUri(String productId) {
         return PRODUCT_URI + "/" + productId;
     }
 
@@ -124,12 +135,14 @@ public final class TestDataFactory {
     public static Product createProduct(
             Long productId,
             String name,
+            String description,
             BigDecimal price,
             Integer quantity
     ) {
         Product product = new Product();
         product.setId(productId);
         product.setName(name);
+        product.setDescription(description);
         product.setPrice(price);
         product.setQuantity(quantity);
         product.updateStatusBasedOnQuantity();
@@ -140,6 +153,7 @@ public final class TestDataFactory {
         return createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY
         );
@@ -247,6 +261,75 @@ public final class TestDataFactory {
         return new LoginRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD
+        );
+    }
+
+    public static ProductCreateRequest createDefaultProductCreateRequest() {
+        return new ProductCreateRequest(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY
+        );
+    }
+
+    public static ProductCreateRequest createProductCreateRequest(
+            String productName,
+            String productDescription,
+            BigDecimal productPrice,
+            int productQuantity
+    ) {
+        return new ProductCreateRequest(
+                productName,
+                productDescription,
+                productPrice,
+                productQuantity
+        );
+    }
+
+    public static ProductPutRequest createProductPutRequest(
+            String productName,
+            String productDescription,
+            BigDecimal productPrice,
+            int productQuantity
+    ) {
+        return new ProductPutRequest(
+                productName,
+                productDescription,
+                productPrice,
+                productQuantity
+        );
+    }
+
+    public static ProductPutRequest createDefaultProductPutRequest() {
+        return new ProductPutRequest(
+                VALID_UPDATE_PRODUCT_NAME,
+                VALID_UPDATE_PRODUCT_DESCRIPTION,
+                VALID_UPDATE_PRODUCT_PRICE,
+                VALID_UPDATE_PRODUCT_QUANTITY
+        );
+    }
+
+    public static ProductPatchRequest createDefaultProductPatchRequest() {
+        return new ProductPatchRequest(
+                VALID_UPDATE_PRODUCT_NAME,
+                VALID_UPDATE_PRODUCT_DESCRIPTION,
+                VALID_UPDATE_PRODUCT_PRICE,
+                VALID_UPDATE_PRODUCT_QUANTITY
+        );
+    }
+
+    public static ProductPatchRequest createProductPatchRequest(
+            String productName,
+            String productDescription,
+            BigDecimal productPrice,
+            Integer productQuantity
+    ) {
+        return new ProductPatchRequest(
+                productName,
+                productDescription,
+                productPrice,
+                productQuantity
         );
     }
 }

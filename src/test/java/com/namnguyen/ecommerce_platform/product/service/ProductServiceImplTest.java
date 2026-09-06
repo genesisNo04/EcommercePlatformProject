@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.ProductTestMessages.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,33 +36,11 @@ public class ProductServiceImplTest {
     @InjectMocks
     private ProductServiceImpl productService;
 
-    private Product createProduct(
-            Long id,
-            String name,
-            String description,
-            BigDecimal price,
-            Integer quantity
-    ) {
-        Product product = new Product();
-        product.setId(id);
-        product.setName(name);
-        product.setDescription(description);
-        product.setPrice(price);
-        product.setQuantity(quantity);
-        product.updateStatusBasedOnQuantity();
-        return product;
-    }
-
     @Test
     void createProduct_returnsProductResponse() {
         Long productId = 1L;
 
-        ProductCreateRequest request = new ProductCreateRequest(
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10
-        );
+        ProductCreateRequest productCreateRequest = createDefaultProductCreateRequest();
 
         when(productRepository.save(any(Product.class)))
                 .thenAnswer(inv -> {
@@ -70,25 +49,25 @@ public class ProductServiceImplTest {
                     return productToSave;
                 });
 
-        ProductResponse response = productService.createProduct(request);
+        ProductResponse productResponse = productService.createProduct(productCreateRequest);
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(productId);
-        assertThat(response.name()).isEqualTo("PS5");
-        assertThat(response.description()).isEqualTo("Playstation 5 console");
-        assertThat(response.price()).isEqualByComparingTo(BigDecimal.valueOf(499.9));
-        assertThat(response.quantity()).isEqualTo(10);
-        assertThat(response.status()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(productResponse).isNotNull();
+        assertThat(productResponse.id()).isEqualTo(productId);
+        assertThat(productResponse.name()).isEqualTo(productCreateRequest.name());
+        assertThat(productResponse.description()).isEqualTo(productCreateRequest.description());
+        assertThat(productResponse.price()).isEqualByComparingTo(productCreateRequest.price());
+        assertThat(productResponse.quantity()).isEqualTo(productCreateRequest.quantity());
+        assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
         verify(productRepository).save(productCaptor.capture());
 
         Product savedProduct = productCaptor.getValue();
 
-        assertThat(savedProduct.getName()).isEqualTo("PS5");
-        assertThat(savedProduct.getDescription()).isEqualTo("Playstation 5 console");
-        assertThat(savedProduct.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(499.9));
-        assertThat(savedProduct.getQuantity()).isEqualTo(10);
+        assertThat(savedProduct.getName()).isEqualTo(productCreateRequest.name());
+        assertThat(savedProduct.getDescription()).isEqualTo(productCreateRequest.description());
+        assertThat(savedProduct.getPrice()).isEqualByComparingTo(productCreateRequest.price());
+        assertThat(savedProduct.getQuantity()).isEqualTo(productCreateRequest.quantity());
         assertThat(savedProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
         verifyNoMoreInteractions(productRepository);
@@ -98,10 +77,10 @@ public class ProductServiceImplTest {
     void createProduct_whenQuantityIsZero_returnsOutOfStockProductResponse() {
         Long productId = 1L;
 
-        ProductCreateRequest request = new ProductCreateRequest(
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
+        ProductCreateRequest productCreateRequest = createProductCreateRequest(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
                 0
         );
 
@@ -112,21 +91,21 @@ public class ProductServiceImplTest {
                     return productToSave;
                 });
 
-        ProductResponse response = productService.createProduct(request);
+        ProductResponse productResponse = productService.createProduct(productCreateRequest);
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(productId);
-        assertThat(response.name()).isEqualTo("PS5");
-        assertThat(response.quantity()).isEqualTo(0);
-        assertThat(response.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
+        assertThat(productResponse).isNotNull();
+        assertThat(productResponse.id()).isEqualTo(productId);
+        assertThat(productResponse.name()).isEqualTo(productCreateRequest.name());
+        assertThat(productResponse.quantity()).isEqualTo(0);
+        assertThat(productResponse.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
         verify(productRepository).save(productCaptor.capture());
 
-        Product savedProduct = productCaptor.getValue();
+        Product capturedProduct = productCaptor.getValue();
 
-        assertThat(savedProduct.getQuantity()).isEqualTo(0);
-        assertThat(savedProduct.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
+        assertThat(capturedProduct.getQuantity()).isEqualTo(0);
+        assertThat(capturedProduct.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         verifyNoMoreInteractions(productRepository);
     }
@@ -135,25 +114,20 @@ public class ProductServiceImplTest {
     void getProductById_whenProductExists_returnsProductResponse() {
         Long productId = 1L;
 
-        Product product = createProduct(
-                productId,
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10);
+        Product product = createDefaultProduct(productId);
 
         when(productRepository.findById(productId))
                 .thenReturn(Optional.of(product));
 
-        ProductResponse response = productService.getProductById(productId);
+        ProductResponse productResponse = productService.getProductById(productId);
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(productId);
-        assertThat(response.name()).isEqualTo("PS5");
-        assertThat(response.description()).isEqualTo("Playstation 5 console");
-        assertThat(response.price()).isEqualByComparingTo(BigDecimal.valueOf(499.9));
-        assertThat(response.quantity()).isEqualTo(10);
-        assertThat(response.status()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(productResponse).isNotNull();
+        assertThat(productResponse.id()).isEqualTo(productId);
+        assertThat(productResponse.name()).isEqualTo(product.getName());
+        assertThat(productResponse.description()).isEqualTo(product.getDescription());
+        assertThat(productResponse.price()).isEqualByComparingTo(product.getPrice());
+        assertThat(productResponse.quantity()).isEqualTo(product.getQuantity());
+        assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
@@ -179,24 +153,13 @@ public class ProductServiceImplTest {
 
     @Test
     void getAllProducts_whenProductsExist_returnsPagedProductResponses() {
-        Long productId = 1L;
-        Product product = createProduct(
-                productId,
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10);
-
-        Long productId2 = 2L;
-        Product product1 = createProduct(
-                productId2,
-                "XBOX",
-                "XBOX console",
-                BigDecimal.valueOf(499.9),
-                15);
+        Long firstProductId = 1L;
+        Long secondProductId = 2L;
+        Product firstProduct = createDefaultProduct(firstProductId);
+        Product secondProduct = createDefaultProduct(secondProductId);
 
         List<Product> products = List.of(
-                product, product1
+                firstProduct, secondProduct
         );
         Pageable pageable = PageRequest.of(0, 10);
         Page<Product> productPage = new PageImpl<>(products, pageable, products.size());
@@ -204,36 +167,36 @@ public class ProductServiceImplTest {
         when(productRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(productPage);
 
-        ProductFilterRequest request = new ProductFilterRequest(null, null, null, null);
+        ProductFilterRequest productFilterRequest = new ProductFilterRequest(null, null, null, null);
 
-        Page<ProductResponse> response = productService.getAllProducts(request, pageable);
+        Page<ProductResponse> productResponses = productService.getAllProducts(productFilterRequest, pageable);
 
-        assertThat(response).isNotNull();
-        assertThat(response.getTotalElements()).isEqualTo(2);
-        assertThat(response.getNumberOfElements()).isEqualTo(2);
-        assertThat(response.getTotalPages()).isEqualTo(1);
-        assertThat(response.getSize()).isEqualTo(10);
-        assertThat(response.getNumber()).isEqualTo(0);
+        assertThat(productResponses).isNotNull();
+        assertThat(productResponses.getTotalElements()).isEqualTo(2);
+        assertThat(productResponses.getNumberOfElements()).isEqualTo(2);
+        assertThat(productResponses.getTotalPages()).isEqualTo(1);
+        assertThat(productResponses.getSize()).isEqualTo(10);
+        assertThat(productResponses.getNumber()).isEqualTo(0);
 
-        assertThat(response.getContent()).hasSize(2);
+        assertThat(productResponses.getContent()).hasSize(2);
 
-        ProductResponse firstProduct = response.getContent().getFirst();
+        ProductResponse firstProductResponse = productResponses.getContent().getFirst();
 
-        assertThat(firstProduct.id()).isEqualTo(productId);
-        assertThat(firstProduct.name()).isEqualTo("PS5");
-        assertThat(firstProduct.description()).isEqualTo("Playstation 5 console");
-        assertThat(firstProduct.price()).isEqualByComparingTo(BigDecimal.valueOf(499.9));
-        assertThat(firstProduct.quantity()).isEqualTo(10);
-        assertThat(firstProduct.status()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(firstProductResponse.id()).isEqualTo(firstProductId);
+        assertThat(firstProductResponse.name()).isEqualTo(firstProduct.getName());
+        assertThat(firstProductResponse.description()).isEqualTo(firstProduct.getDescription());
+        assertThat(firstProductResponse.price()).isEqualByComparingTo(firstProduct.getPrice());
+        assertThat(firstProductResponse.quantity()).isEqualTo(firstProduct.getQuantity());
+        assertThat(firstProductResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
-        ProductResponse secondProduct = response.getContent().get(1);
+        ProductResponse secondProductResponse = productResponses.getContent().get(1);
 
-        assertThat(secondProduct.id()).isEqualTo(productId2);
-        assertThat(secondProduct.name()).isEqualTo("XBOX");
-        assertThat(secondProduct.description()).isEqualTo("XBOX console");
-        assertThat(secondProduct.price()).isEqualByComparingTo(BigDecimal.valueOf(499.9));
-        assertThat(secondProduct.quantity()).isEqualTo(15);
-        assertThat(secondProduct.status()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(secondProductResponse.id()).isEqualTo(secondProductId);
+        assertThat(secondProductResponse.name()).isEqualTo(secondProduct.getName());
+        assertThat(secondProductResponse.description()).isEqualTo(secondProduct.getDescription());
+        assertThat(secondProductResponse.price()).isEqualByComparingTo(secondProduct.getPrice());
+        assertThat(secondProductResponse.quantity()).isEqualTo(secondProduct.getQuantity());
+        assertThat(secondProductResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(productRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoMoreInteractions(productRepository);
@@ -241,7 +204,6 @@ public class ProductServiceImplTest {
 
     @Test
     void getAllProducts_whenNoProductsExist_returnsEmptyPage() {
-
         List<Product> products = List.of();
         Pageable pageable = PageRequest.of(0, 10);
         Page<Product> productPage = new PageImpl<>(products, pageable, products.size());
@@ -249,107 +211,109 @@ public class ProductServiceImplTest {
         when(productRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(productPage);
 
-        ProductFilterRequest request = new ProductFilterRequest(null, null, null, null);
+        ProductFilterRequest productFilterRequest = new ProductFilterRequest(null, null, null, null);
 
-        Page<ProductResponse> response = productService.getAllProducts(request, pageable);
+        Page<ProductResponse> productResponses = productService.getAllProducts(productFilterRequest, pageable);
 
-        assertThat(response).isNotNull();
-        assertThat(response.getTotalElements()).isEqualTo(0);
-        assertThat(response.getNumberOfElements()).isEqualTo(0);
-        assertThat(response.getTotalPages()).isEqualTo(0);
-        assertThat(response.getSize()).isEqualTo(10);
-        assertThat(response.getNumber()).isEqualTo(0);
+        assertThat(productResponses).isNotNull();
+        assertThat(productResponses.getTotalElements()).isEqualTo(0);
+        assertThat(productResponses.getNumberOfElements()).isEqualTo(0);
+        assertThat(productResponses.getTotalPages()).isEqualTo(0);
+        assertThat(productResponses.getSize()).isEqualTo(10);
+        assertThat(productResponses.getNumber()).isEqualTo(0);
 
-        assertThat(response.getContent()).hasSize(0);
+        assertThat(productResponses.getContent()).hasSize(0);
 
         verify(productRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoMoreInteractions(productRepository);
     }
 
     @Test
-    void putProduct_productExists_returnsProductResponse() {
+    void putProduct_whenProductExists_returnsProductResponse() {
         Long productId = 1L;
 
-        Product product = createProduct(
-                productId,
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10);
+        Product product = createDefaultProduct(productId);
 
-        ProductPutRequest request = new ProductPutRequest(
-                "PS5 update",
-                "Playstation 5 console update",
-                BigDecimal.valueOf(400),
-                20
-        );
+        ProductPutRequest productPutRequest = createDefaultProductPutRequest();
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        ProductResponse response = productService.putProduct(productId, request);
+        ProductResponse productResponse = productService.putProduct(productId, productPutRequest);
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(productId);
-        assertThat(response.name()).isEqualTo("PS5 update");
-        assertThat(response.description()).isEqualTo("Playstation 5 console update");
-        assertThat(response.price()).isEqualByComparingTo(BigDecimal.valueOf(400));
-        assertThat(response.quantity()).isEqualTo(20);
-        assertThat(response.status()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(productResponse).isNotNull();
+        assertThat(productResponse.id()).isEqualTo(productId);
+        assertThat(productResponse.name()).isEqualTo(productPutRequest.name());
+        assertThat(productResponse.description()).isEqualTo(productPutRequest.description());
+        assertThat(productResponse.price()).isEqualByComparingTo(productPutRequest.price());
+        assertThat(productResponse.quantity()).isEqualTo(productPutRequest.quantity());
+        assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
+
+        assertThat(product.getName())
+                .isEqualTo(productPutRequest.name());
+        assertThat(product.getDescription())
+                .isEqualTo(productPutRequest.description());
+        assertThat(product.getPrice())
+                .isEqualByComparingTo(productPutRequest.price());
+        assertThat(product.getQuantity())
+                .isEqualTo(productPutRequest.quantity());
+        assertThat(product.getStatus())
+                .isEqualTo(ProductStatus.ACTIVE);
     }
 
     @Test
     void putProduct_whenQuantityIsZero_returnsOutOfStockProductResponse() {
         Long productId = 1L;
 
-        Product product = createProduct(
-                productId,
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10);
+        Product product = createDefaultProduct(productId);
 
-        ProductPutRequest request = new ProductPutRequest(
-                "PS5 update",
-                "Playstation 5 console update",
-                BigDecimal.valueOf(400),
+        ProductPutRequest productPutRequest = createProductPutRequest(
+                VALID_UPDATE_PRODUCT_NAME,
+                VALID_UPDATE_PRODUCT_DESCRIPTION,
+                VALID_UPDATE_PRODUCT_PRICE,
                 0
         );
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        ProductResponse response = productService.putProduct(productId, request);
+        ProductResponse productResponse = productService.putProduct(productId, productPutRequest);
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(productId);
-        assertThat(response.name()).isEqualTo("PS5 update");
-        assertThat(response.description()).isEqualTo("Playstation 5 console update");
-        assertThat(response.price()).isEqualByComparingTo(BigDecimal.valueOf(400));
-        assertThat(response.quantity()).isEqualTo(0);
-        assertThat(response.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
+        assertThat(productResponse).isNotNull();
+        assertThat(productResponse.id()).isEqualTo(productId);
+        assertThat(productResponse.name()).isEqualTo(productPutRequest.name());
+        assertThat(productResponse.description()).isEqualTo(productPutRequest.description());
+        assertThat(productResponse.price()).isEqualByComparingTo(productPutRequest.price());
+        assertThat(productResponse.quantity()).isEqualTo(productPutRequest.quantity());
+        assertThat(productResponse.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
+
+        assertThat(product.getName())
+                .isEqualTo(productPutRequest.name());
+        assertThat(product.getDescription())
+                .isEqualTo(productPutRequest.description());
+        assertThat(product.getPrice())
+                .isEqualByComparingTo(productPutRequest.price());
+        assertThat(product.getQuantity())
+                .isEqualTo(0);
+        assertThat(product.getStatus())
+                .isEqualTo(ProductStatus.OUT_OF_STOCK);
     }
 
     @Test
-    void putProduct_productNotExists_throwsNoResourceFoundException() {
+    void putProduct_whenProductDoesNotExist_throwsNoResourceFoundException() {
         Long productId = 999L;
 
-        ProductPutRequest request = new ProductPutRequest(
-                "PS5 update",
-                "Playstation 5 console update",
-                BigDecimal.valueOf(400),
-                20
-        );
+        ProductPutRequest productPutRequest = createDefaultProductPutRequest();
 
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
-                () -> productService.putProduct(productId, request));
+                () -> productService.putProduct(productId, productPutRequest));
 
         assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
@@ -358,123 +322,147 @@ public class ProductServiceImplTest {
     }
 
     @Test
-    void patchProduct_productExists_returnsProductResponse() {
+    void patchProduct_whenProductExists_returnsProductResponse() {
         Long productId = 1L;
 
-        Product product = createProduct(
-                productId,
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10);
+        Product product = createDefaultProduct(productId);
 
-        ProductPatchRequest request = new ProductPatchRequest(
+        ProductPatchRequest productPatchRequest = createProductPatchRequest(
                 null,
-                "Playstation 5 console update",
+                VALID_UPDATE_PRODUCT_DESCRIPTION,
                 null,
-                20
+                VALID_UPDATE_PRODUCT_QUANTITY
         );
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        ProductResponse response = productService.patchProduct(productId, request);
+        String originalName = product.getName();
+        BigDecimal originalPrice = product.getPrice();
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(productId);
-        assertThat(response.name()).isEqualTo("PS5");
-        assertThat(response.description()).isEqualTo("Playstation 5 console update");
-        assertThat(response.price()).isEqualByComparingTo(BigDecimal.valueOf(499.9));
-        assertThat(response.quantity()).isEqualTo(20);
-        assertThat(response.status()).isEqualTo(ProductStatus.ACTIVE);
+        ProductResponse productResponse = productService.patchProduct(productId, productPatchRequest);
+
+        assertThat(productResponse).isNotNull();
+        assertThat(productResponse.id()).isEqualTo(productId);
+        assertThat(productResponse.name()).isEqualTo(originalName);
+        assertThat(productResponse.description()).isEqualTo(productPatchRequest.description());
+        assertThat(productResponse.price()).isEqualByComparingTo(originalPrice);
+        assertThat(productResponse.quantity()).isEqualTo(productPatchRequest.quantity());
+        assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
+
+        assertThat(product.getName())
+                .isEqualTo(originalName);
+        assertThat(product.getDescription())
+                .isEqualTo(VALID_UPDATE_PRODUCT_DESCRIPTION);
+        assertThat(product.getPrice())
+                .isEqualByComparingTo(originalPrice);
+        assertThat(product.getQuantity())
+                .isEqualTo(VALID_UPDATE_PRODUCT_QUANTITY);
+        assertThat(product.getStatus())
+                .isEqualTo(ProductStatus.ACTIVE);
     }
 
     @Test
     void patchProduct_whenAllFieldsAreNull_returnsProductResponse() {
         Long productId = 1L;
 
-        Product product = createProduct(
-                productId,
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10);
+        Product product = createDefaultProduct(productId);
 
-        ProductPatchRequest request = new ProductPatchRequest(
+        ProductPatchRequest productPatchRequest = createProductPatchRequest(
                 null,
                 null,
                 null,
                 null
         );
 
+        String originalName = product.getName();
+        String originalDescription = product.getDescription();
+        BigDecimal originalPrice = product.getPrice();
+        Integer originalQuantity = product.getQuantity();
+
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        ProductResponse response = productService.patchProduct(productId, request);
+        ProductResponse productResponse = productService.patchProduct(productId, productPatchRequest);
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(productId);
-        assertThat(response.name()).isEqualTo("PS5");
-        assertThat(response.description()).isEqualTo("Playstation 5 console");
-        assertThat(response.price()).isEqualByComparingTo(BigDecimal.valueOf(499.9));
-        assertThat(response.quantity()).isEqualTo(10);
-        assertThat(response.status()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(productResponse).isNotNull();
+        assertThat(productResponse.id()).isEqualTo(productId);
+        assertThat(productResponse.name()).isEqualTo(originalName);
+        assertThat(productResponse.description()).isEqualTo(originalDescription);
+        assertThat(productResponse.price()).isEqualByComparingTo(originalPrice);
+        assertThat(productResponse.quantity()).isEqualTo(originalQuantity);
+        assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
+
+        assertThat(product.getName())
+                .isEqualTo(originalName);
+        assertThat(product.getDescription())
+                .isEqualTo(originalDescription);
+        assertThat(product.getPrice())
+                .isEqualByComparingTo(originalPrice);
+        assertThat(product.getQuantity())
+                .isEqualTo(originalQuantity);
+        assertThat(product.getStatus())
+                .isEqualTo(ProductStatus.ACTIVE);
     }
 
     @Test
-    void patchProduct_productExists_zeroQuantity_returnsProductResponse() {
+    void patchProduct_whenQuantityIsZero_returnsOutOfStockProductResponse() {
         Long productId = 1L;
 
-        Product product = createProduct(
-                productId,
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10);
+        Product product = createDefaultProduct(productId);
 
-        ProductPatchRequest request = new ProductPatchRequest(
+        ProductPatchRequest productPatchRequest = createProductPatchRequest(
                 null,
-                "Playstation 5 console update",
+                VALID_UPDATE_PRODUCT_DESCRIPTION,
                 null,
                 0
         );
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        ProductResponse response = productService.patchProduct(productId, request);
+        String originalName = product.getName();
+        BigDecimal originalPrice = product.getPrice();
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(productId);
-        assertThat(response.name()).isEqualTo("PS5");
-        assertThat(response.description()).isEqualTo("Playstation 5 console update");
-        assertThat(response.price()).isEqualByComparingTo(BigDecimal.valueOf(499.9));
-        assertThat(response.quantity()).isEqualTo(0);
-        assertThat(response.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
+        ProductResponse productResponse = productService.patchProduct(productId, productPatchRequest);
+
+        assertThat(productResponse).isNotNull();
+        assertThat(productResponse.id()).isEqualTo(productId);
+        assertThat(productResponse.name()).isEqualTo(originalName);
+        assertThat(productResponse.description()).isEqualTo(productPatchRequest.description());
+        assertThat(productResponse.price()).isEqualByComparingTo(originalPrice);
+        assertThat(productResponse.quantity()).isEqualTo(0);
+        assertThat(productResponse.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
+
+        assertThat(product.getName())
+                .isEqualTo(originalName);
+        assertThat(product.getDescription())
+                .isEqualTo(VALID_UPDATE_PRODUCT_DESCRIPTION);
+        assertThat(product.getPrice())
+                .isEqualByComparingTo(originalPrice);
+        assertThat(product.getQuantity())
+                .isEqualTo(0);
+        assertThat(product.getStatus())
+                .isEqualTo(ProductStatus.OUT_OF_STOCK);
     }
 
     @Test
-    void patchProduct_productNotExists_throwsNoResourceFoundException() {
+    void patchProduct_whenProductDoesNotExist_throwsNoResourceFoundException() {
         Long productId = 999L;
 
-        ProductPatchRequest request = new ProductPatchRequest(
-                null,
-                "Playstation 5 console update",
-                null,
-                20
-        );
+        ProductPatchRequest productPatchRequest = createDefaultProductPatchRequest();
 
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
-                () -> productService.patchProduct(productId, request));
+                () -> productService.patchProduct(productId, productPatchRequest));
 
         assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
@@ -486,12 +474,7 @@ public class ProductServiceImplTest {
     void deleteProduct_whenProductExists_deletesProduct() {
         Long productId = 1L;
 
-        Product product = createProduct(
-                productId,
-                "PS5",
-                "Playstation 5 console",
-                BigDecimal.valueOf(499.9),
-                10);
+        Product product = createDefaultProduct(productId);
 
         when(productRepository.findById(productId))
                 .thenReturn(Optional.of(product));
@@ -518,7 +501,6 @@ public class ProductServiceImplTest {
         assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
         verify(productRepository).findById(productId);
-        verify(productRepository, never()).delete(any(Product.class));
         verifyNoMoreInteractions(productRepository);
     }
 }
