@@ -26,7 +26,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getProductById_whenProductExists_returnsProductFromDataBase() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        Product savedProduct = persistDefaultProduct();
 
         mockMvc.perform(get(PRODUCT_URI + "/" + savedProduct.getId()))
                 .andExpect(status().isOk())
@@ -53,9 +53,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenProductsExistsWithDefaultPagination_returnsListOfProductsFromDatabase() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        Product savedProduct = persistDefaultProduct();
 
-        Product savedProduct1 = createProduct(
+        Product savedProduct1 = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -63,7 +63,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.ACTIVE);
 
         Product savedProduct2 =
-                createProduct(
+                persistProduct(
                         "XBOX",
                         "XBox",
                         BigDecimal.valueOf(499.99),
@@ -109,9 +109,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenProductsExistsWithCustomPaginationGetSecondPage_returnsListOfProductsFromDatabase() throws Exception {
-        createDefaultProduct();
+        persistDefaultProduct();
 
-        createProduct(
+        persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -119,7 +119,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.ACTIVE);
 
         Product savedProduct2 =
-                createProduct(
+                persistProduct(
                         "XBOX",
                         "XBox",
                         BigDecimal.valueOf(499.99),
@@ -149,9 +149,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenStatusFilterProvided_returnsOnlyThatStatus() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        Product savedProduct = persistDefaultProduct();
 
-        createProduct(
+        persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(399.99),
@@ -159,7 +159,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.INACTIVE);
 
         Product savedProduct2 =
-                createProduct(
+                persistProduct(
                         "XBOX",
                         "XBox",
                         BigDecimal.valueOf(499.99),
@@ -197,9 +197,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenKeywordMatchesName_returnsMatchingProducts() throws Exception {
-        createDefaultProduct();
+        persistDefaultProduct();
 
-        Product savedProduct1 = createProduct(
+        Product savedProduct1 = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -207,7 +207,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.OUT_OF_STOCK);
 
         Product savedProduct2 =
-                createProduct(
+                persistProduct(
                         "XBOX",
                         "XBox",
                         BigDecimal.valueOf(499.99),
@@ -236,9 +236,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenKeywordMatchesDescription_returnsMatchingProducts() throws Exception {
-        createDefaultProduct();
+        persistDefaultProduct();
 
-        createProduct(
+        persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -246,7 +246,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.OUT_OF_STOCK);
 
         Product savedProduct2 =
-                createProduct(
+                persistProduct(
                         "console",
                         "XBox gaming console",
                         BigDecimal.valueOf(499.99),
@@ -275,9 +275,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenPriceRangeProvided_returnsProductsInsideRange() throws Exception {
-        createDefaultProduct();
+        persistDefaultProduct();
 
-        Product savedProduct1 = createProduct(
+        Product savedProduct1 = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(399.99),
@@ -285,7 +285,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.ACTIVE);
 
         Product savedProduct2 =
-                createProduct(
+                persistProduct(
                         "XBOX",
                         "XBox",
                         BigDecimal.valueOf(499.99),
@@ -324,9 +324,9 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenProductsExistsWithSortDesc_returnsListOfProductsFromDatabase() throws Exception {
-        Product savedProduct = createDefaultProduct();
+        Product savedProduct = persistDefaultProduct();
 
-        Product savedProduct1 = createProduct(
+        Product savedProduct1 = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -334,7 +334,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.ACTIVE);
 
         Product savedProduct2 =
-                createProduct(
+                persistProduct(
                         "XBOX",
                         "XBox",
                         BigDecimal.valueOf(499.99),
@@ -381,16 +381,16 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getAllProducts_whenMultipleFiltersProvided_returnsListOfProductsFromDatabase() throws Exception {
-        createDefaultProduct();
+        persistDefaultProduct();
 
-        Product savedProduct1 = createProduct(
+        Product savedProduct1 = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(399.99),
                 12,
                 ProductStatus.ACTIVE);
 
-        createProduct(
+        persistProduct(
                         "XBOX",
                         "XBox",
                         BigDecimal.valueOf(499.99),
@@ -487,7 +487,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void putProduct_whenPutRequestIsValid_saveProductToDatabase() throws Exception {
-        Product savedProduct = createProduct(
+        Product savedProduct = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -529,7 +529,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void putProduct_whenQuantityIsZero_savesProductAsOutOfStock() throws Exception {
-        Product product = createProduct(
+        Product product = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -585,7 +585,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void patchProduct_whenPartiallyPatch_saveProductToDatabase() throws Exception {
-        Product savedProduct = createProduct(
+        Product savedProduct = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -632,7 +632,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void patchProduct_whenQuantityIsZero_savesProductAsOutOfStock() throws Exception {
-        Product product = createProduct(
+        Product product = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),
@@ -688,7 +688,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void deleteProduct_whenProductFound_productDeletedFromDatabase() throws Exception {
-        Product savedProduct = createProduct(
+        Product savedProduct = persistProduct(
                 "PS5",
                 "Playstation",
                 BigDecimal.valueOf(499.99),

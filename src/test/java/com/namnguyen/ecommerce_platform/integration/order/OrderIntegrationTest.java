@@ -32,15 +32,15 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void createOrder_withValidRequest_createOrderInDatabase() throws Exception {
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
         int originalQuantity = product.getQuantity();
         int boughtQuantity = 10;
-        User user = createDefaultCustomer();
-        CreateOrderItemRequest itemRequest = createCreateOrderItemRequest(product.getId(), boughtQuantity);
+        
+        CreateOrderItemRequest itemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
+        BigDecimal subtotal = product.getPrice().multiply(BigDecimal.valueOf(boughtQuantity));
 
-        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(boughtQuantity));
-
-        CreateOrderRequest request = new CreateOrderRequest(
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(
                 List.of(itemRequest)
         );
 
@@ -48,7 +48,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         MvcResult result = mockMvc.perform(post(ORDER_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(createOrderRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").exists())
                 .andExpect(jsonPath("$.userId").value(user.getId()))
@@ -58,22 +58,22 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.items[0].productName").value(product.getName()))
                 .andExpect(jsonPath("$.items[0].quantity").value(boughtQuantity))
                 .andExpect(jsonPath("$.items[0].price").value(product.getPrice().doubleValue()))
-                .andExpect(jsonPath("$.total").value(total.doubleValue()))
+                .andExpect(jsonPath("$.total").value(subtotal.doubleValue()))
                 .andExpect(jsonPath("$.status").value(OrderStatus.PENDING_PAYMENT.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists())
                 .andReturn();
 
-        OrderResponse response = objectMapper.readValue(
+        OrderResponse orderResponse = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
                 OrderResponse.class
         );
 
-        Order order = orderRepository.findById(response.orderId()).orElseThrow();
+        Order savedOrder = orderRepository.findById(orderResponse.orderId()).orElseThrow();
 
-        assertThat(order.getUser().getId()).isEqualTo(user.getId());
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
-        assertThat(order.getTotal()).isEqualByComparingTo(total);
+        assertThat(savedOrder.getUser().getId()).isEqualTo(user.getId());
+        assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+        assertThat(savedOrder.getTotal()).isEqualByComparingTo(subtotal);
 
         Product savedProduct = productRepository.findById(product.getId()).orElseThrow();
 
@@ -82,7 +82,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void createOrder_whenItemsAreNull_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         authenticateUser(user.getId());
 
         CreateOrderRequest request = new CreateOrderRequest(
@@ -101,20 +101,21 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void createOrder_whenItemQuantityIsNegative_returnsBadRequest() throws Exception {
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
         int boughtQuantity = -1;
-        User user = createDefaultCustomer();
-        CreateOrderItemRequest itemRequest = createCreateOrderItemRequest(product.getId(), boughtQuantity);
+        
+        CreateOrderItemRequest itemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
 
         authenticateUser(user.getId());
 
-        CreateOrderRequest request = new CreateOrderRequest(
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(
                 List.of(itemRequest)
         );
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createOrderRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']").value(ORDER_ITEM_QUANTITY_IS_INVALID));
@@ -124,7 +125,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void createOrder_whenItemsAreEmpty_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         authenticateUser(user.getId());
 
         CreateOrderRequest request = new CreateOrderRequest(
@@ -143,7 +144,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void createOrder_withoutRequestBody_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         authenticateUser(user.getId());
 
         mockMvc.perform(post(ORDER_URI))
@@ -156,9 +157,9 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void createOrder_whenOneProductOutOfStock_returnsBadRequest() throws Exception {
-        Product product = createDefaultProduct();
+        Product firstProduct = persistDefaultProduct();
 
-        Product product1 = createProduct(
+        Product secondProduct = persistProduct(
                 "testproduct",
                 "testing product",
                 BigDecimal.valueOf(15.99),
@@ -166,21 +167,21 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.ACTIVE
         );
 
-        int originalProductQuantity = product.getQuantity();
-        int originalProduct1Quantity = product1.getQuantity();
+        int originalFirstProductQuantity = firstProduct.getQuantity();
+        int originalSecondProductQuantity = secondProduct.getQuantity();
 
         int boughtQuantity = 10;
 
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         CreateOrderRequest request = new CreateOrderRequest(
                 List.of(
-                        createCreateOrderItemRequest(
-                                product.getId(),
+                        createOrderItemRequest(
+                                firstProduct.getId(),
                                 boughtQuantity
                         ),
-                        createCreateOrderItemRequest(
-                                product1.getId(),
+                        createOrderItemRequest(
+                                secondProduct.getId(),
                                 boughtQuantity
                         )
                 )
@@ -193,42 +194,42 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message")
-                        .value(insufficientStock(product1.getName())));
+                        .value(insufficientStock(secondProduct.getName())));
 
         assertThat(orderRepository.count()).isZero();
 
         Product savedProduct = productRepository
-                .findById(product.getId())
+                .findById(firstProduct.getId())
                 .orElseThrow();
 
         Product savedProduct1 = productRepository
-                .findById(product1.getId())
+                .findById(secondProduct.getId())
                 .orElseThrow();
 
         assertThat(savedProduct.getQuantity())
-                .isEqualTo(originalProductQuantity);
+                .isEqualTo(originalFirstProductQuantity);
 
         assertThat(savedProduct1.getQuantity())
-                .isEqualTo(originalProduct1Quantity);
+                .isEqualTo(originalSecondProductQuantity);
     }
 
     @Test
     void createOrder_whenProductNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         long nonExistingProductId = 999_999L;
 
-        CreateOrderItemRequest itemRequest =
-                createCreateOrderItemRequest(nonExistingProductId, 10);
+        CreateOrderItemRequest orderItemRequest =
+                createOrderItemRequest(nonExistingProductId, 10);
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(itemRequest)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(orderItemRequest)
         );
 
         authenticateUser(user.getId());
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isNotFound());
 
         assertThat(orderRepository.count()).isZero();
@@ -236,20 +237,20 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getOrders_whenOrdersExist_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        BigDecimal total = BigDecimal.valueOf(299.99);
-        BigDecimal total1 = BigDecimal.valueOf(399.99);
+        User user = persistDefaultCustomer();
+        BigDecimal firstOrderTotal = BigDecimal.valueOf(299.99);
+        BigDecimal secondOrderTotal = BigDecimal.valueOf(399.99);
 
-        Order order = createOrder(
-                total,
+        Order firstOrder = persistOrder(
+                firstOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 user,
                 List.of(),
                 null
         );
 
-        Order order1 = createOrder(
-                total1,
+        Order SecondOrder = persistOrder(
+                secondOrderTotal,
                 OrderStatus.PAID,
                 user,
                 List.of(),
@@ -262,32 +263,32 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].orderId").value(order1.getId()))
+                .andExpect(jsonPath("$.content[0].orderId").value(SecondOrder.getId()))
                 .andExpect(jsonPath("$.content[0].userId").value(user.getId()))
-                .andExpect(jsonPath("$.content[0].total").value(order1.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[0].status").value(order1.getStatus().name()))
-                .andExpect(jsonPath("$.content[1].orderId").value(order.getId()))
+                .andExpect(jsonPath("$.content[0].total").value(SecondOrder.getTotal().doubleValue()))
+                .andExpect(jsonPath("$.content[0].status").value(SecondOrder.getStatus().name()))
+                .andExpect(jsonPath("$.content[1].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[1].userId").value(user.getId()))
-                .andExpect(jsonPath("$.content[1].total").value(order.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[1].status").value(order.getStatus().name()));
+                .andExpect(jsonPath("$.content[1].total").value(firstOrder.getTotal().doubleValue()))
+                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()));
     }
 
     @Test
     void getOrders_withFilter_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        BigDecimal total = BigDecimal.valueOf(299.99);
-        BigDecimal total1 = BigDecimal.valueOf(399.99);
+        User user = persistDefaultCustomer();
+        BigDecimal firstOrderTotal = BigDecimal.valueOf(299.99);
+        BigDecimal secondOrderTotal = BigDecimal.valueOf(399.99);
 
-        Order order = createOrder(
-                total,
+        Order firstOrder = persistOrder(
+                firstOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 user,
                 List.of(),
                 null
         );
 
-        Order order1 = createOrder(
-                total1,
+        persistOrder(
+                secondOrderTotal,
                 OrderStatus.PAID,
                 user,
                 List.of(),
@@ -301,38 +302,38 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].orderId").value(order.getId()))
+                .andExpect(jsonPath("$.content[0].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[0].userId").value(user.getId()))
-                .andExpect(jsonPath("$.content[0].total").value(order.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[0].status").value(order.getStatus().name()));
+                .andExpect(jsonPath("$.content[0].total").value(firstOrder.getTotal().doubleValue()))
+                .andExpect(jsonPath("$.content[0].status").value(firstOrder.getStatus().name()));
     }
 
     @Test
     void getOrders_withCombineFilter_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
-        BigDecimal total = BigDecimal.valueOf(299.99);
-        BigDecimal total1 = BigDecimal.valueOf(399.99);
-        BigDecimal total2 = BigDecimal.valueOf(499.99);
+        BigDecimal firstOrderTotal = BigDecimal.valueOf(299.99);
+        BigDecimal secondOrderTotal = BigDecimal.valueOf(399.99);
+        BigDecimal thirdOrderTotal = BigDecimal.valueOf(499.99);
 
-        Order order = createOrder(
-                total,
+        Order order = persistOrder(
+                firstOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 user,
                 List.of(),
                 null
         );
 
-        Order order1 = createOrder(
-                total1,
+        Order order1 = persistOrder(
+                secondOrderTotal,
                 OrderStatus.PAID,
                 user,
                 List.of(),
                 null
         );
 
-        createOrder(
-                total2,
+        persistOrder(
+                thirdOrderTotal,
                 OrderStatus.PAID,
                 user,
                 List.of(),
@@ -359,37 +360,37 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getOrders_onlyReturnsOrderOfLoginUser_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        User otherUser = createUser(
+        User user = persistDefaultCustomer();
+        User otherUser = persistUser(
                 "otheruser@gmail.com",
-                "test123456789",
-                "other",
-                "user",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
                 "1234567892",
                 Role.CUSTOMER
         );
 
-        BigDecimal total = BigDecimal.valueOf(299.99);
-        BigDecimal total1 = BigDecimal.valueOf(399.99);
+        BigDecimal firstOrderTotal = BigDecimal.valueOf(299.99);
+        BigDecimal secondOrderTotal = BigDecimal.valueOf(399.99);
 
-        Order order = createOrder(
-                total,
+        Order firstOrder = persistOrder(
+                firstOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 user,
                 List.of(),
                 null
         );
 
-        Order order1 = createOrder(
-                total1,
+        Order secondOrder = persistOrder(
+                secondOrderTotal,
                 OrderStatus.PAID,
                 user,
                 List.of(),
                 null
         );
 
-        createOrder(
-                total1,
+        persistOrder(
+                secondOrderTotal,
                 OrderStatus.PAID,
                 otherUser,
                 List.of(),
@@ -402,19 +403,19 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].orderId").value(order1.getId()))
+                .andExpect(jsonPath("$.content[0].orderId").value(secondOrder.getId()))
                 .andExpect(jsonPath("$.content[0].userId").value(user.getId()))
-                .andExpect(jsonPath("$.content[0].total").value(order1.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[0].status").value(order1.getStatus().name()))
-                .andExpect(jsonPath("$.content[1].orderId").value(order.getId()))
+                .andExpect(jsonPath("$.content[0].total").value(secondOrder.getTotal().doubleValue()))
+                .andExpect(jsonPath("$.content[0].status").value(secondOrder.getStatus().name()))
+                .andExpect(jsonPath("$.content[1].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[1].userId").value(user.getId()))
-                .andExpect(jsonPath("$.content[1].total").value(order.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[1].status").value(order.getStatus().name()));
+                .andExpect(jsonPath("$.content[1].total").value(firstOrder.getTotal().doubleValue()))
+                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()));
     }
 
     @Test
     void getOrders_whenUserHasNoOrders_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         authenticateUser(user.getId());
 
@@ -426,10 +427,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getOrderById_whenOrderExists_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -439,7 +440,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(get(ORDER_URI + "/" + order.getId()))
+        mockMvc.perform(get(orderUri(order.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(order.getId()))
                 .andExpect(jsonPath("$.userId").value(user.getId()))
@@ -449,11 +450,11 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getOrderById_whenOrdersNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         authenticateUser(user.getId());
         long nonExistingOrderId = 999_999L;
 
-        mockMvc.perform(get(ORDER_URI + "/" + nonExistingOrderId))
+        mockMvc.perform(get(orderUri(nonExistingOrderId)))
                 .andExpect(status().isNotFound());
     }
 
@@ -461,17 +462,17 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
     void getOrderById_whenOrderBelongsToDifferentUser_returnsNotFound()
             throws Exception {
 
-        User owner = createDefaultCustomer();
-        User otherUser = createUser(
+        User owner = persistDefaultCustomer();
+        User otherUser = persistUser(
                 "otheruser@gmail.com",
-                "test123456789",
-                "other",
-                "user",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
                 "1234567892",
                 Role.CUSTOMER
         );
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 BigDecimal.valueOf(299.99),
                 OrderStatus.PENDING_PAYMENT,
                 owner,
@@ -481,7 +482,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(otherUser.getId());
 
-        mockMvc.perform(get(ORDER_URI + "/" + order.getId()))
+        mockMvc.perform(get(orderUri(order.getId())))
                 .andExpect(status().isNotFound());
     }
 
@@ -489,8 +490,8 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
     void cancelOrder_whenValid_restoresStockAndCancelsOrder()
             throws Exception {
 
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
         int originalStock = product.getQuantity();
 
@@ -499,7 +500,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
         CreateOrderRequest request =
                 new CreateOrderRequest(
                         List.of(
-                                createCreateOrderItemRequest(
+                                createOrderItemRequest(
                                         product.getId(),
                                         10
                                 )
@@ -514,19 +515,16 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        OrderResponse created = objectMapper.readValue(
+        OrderResponse orderResponse = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
                 OrderResponse.class
         );
 
-        mockMvc.perform(
-                        patch(ORDER_URI + "/" +
-                                created.orderId() + "/cancel")
-                )
+        mockMvc.perform(patch(cancelOrderUri(orderResponse.orderId())))
                 .andExpect(status().isNoContent());
 
         Order order = orderRepository
-                .findById(created.orderId())
+                .findById(orderResponse.orderId())
                 .orElseThrow();
 
         Product updatedProduct = productRepository
@@ -542,21 +540,21 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void cancelOrder_whenOrderNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         long nonExistingOrderId = 999_999L;
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(ORDER_URI + "/" + nonExistingOrderId + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(nonExistingOrderId)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void cancelOrder_whenOrderCannotBeCancelled_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.DELIVERED,
                 user,
@@ -566,7 +564,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(order.getId())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(DELIVERED_ORDER_CANNOT_BE_CANCELLED));
 
@@ -579,10 +577,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void cancelOrder_whenOrderAlreadyCancelled_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.CANCELLED,
                 user,
@@ -592,7 +590,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(order.getId())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(ORDER_ALREADY_CANCELLED));
 
@@ -605,10 +603,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void cancelOrder_whenOrderIsPaid_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PAID,
                 user,
@@ -618,7 +616,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(order.getId())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(ORDER_CANNOT_BE_CANCELLED));
 
@@ -631,10 +629,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void cancelOrder_whenOrderIsShipped_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.SHIPPED,
                 user,
@@ -644,7 +642,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(order.getId())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(ORDER_CANNOT_BE_CANCELLED));
 
@@ -657,10 +655,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void cancelOrder_whenOrderIsInProcess_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PROCESSING,
                 user,
@@ -670,7 +668,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(ORDER_URI + "/"+ order.getId() + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(order.getId())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(ORDER_CANNOT_BE_CANCELLED));
 
@@ -685,9 +683,9 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
     void cancelOrder_whenOrderBelongsToDifferentUser_returnsNotFound()
             throws Exception {
 
-        User owner = createDefaultCustomer();
+        User owner = persistDefaultCustomer();
 
-        User otherUser = createUser(
+        User otherUser = persistUser(
                 "otheruser@gmail.com",
                 "test123456789",
                 "other",
@@ -696,7 +694,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 Role.CUSTOMER
         );
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 BigDecimal.valueOf(299.99),
                 OrderStatus.PENDING_PAYMENT,
                 owner,
@@ -706,9 +704,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(otherUser.getId());
 
-        mockMvc.perform(
-                        patch(ORDER_URI + "/" + order.getId() + "/cancel")
-                )
+        mockMvc.perform(patch(cancelOrderUri(order.getId())))
                 .andExpect(status().isNotFound());
 
         Order savedOrder = orderRepository.findById(order.getId())
@@ -720,20 +716,20 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void checkoutCart_whenCartHasItem_returnsOrderResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         int quantity = 2;
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
         int originalProductQuantity = product.getQuantity();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, quantity);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, quantity);
 
         BigDecimal expectedSubtotal = product.getPrice().multiply(BigDecimal.valueOf(quantity));
 
         authenticateUser(user.getId());
 
-        MvcResult result = mockMvc.perform(post(ORDER_URI + "/checkout"))
+        MvcResult result = mockMvc.perform(post(CHECKOUT_URI))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").exists())
                 .andExpect(jsonPath("$.userId").value(user.getId()))
@@ -774,14 +770,14 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void checkoutCart_whenCheckoutFailed_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         int quantity = 2;
         int exceedQuantity = 10;
 
-        Product product = createDefaultProduct();
+        Product firstProduct = persistDefaultProduct();
 
-        Product product1 = createProduct(
+        Product secondProduct = persistProduct(
                 "testproduct",
                 "testing product",
                 BigDecimal.valueOf(15.99),
@@ -789,20 +785,20 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.ACTIVE
         );
 
-        int originalProductQuantity = product.getQuantity();
-        int originalProduct1Quantity = product1.getQuantity();
+        int originalProductQuantity = firstProduct.getQuantity();
+        int originalProduct1Quantity = secondProduct.getQuantity();
 
-        Cart cart = createCart(user);
+        Cart cart = persistCart(user);
 
-        createCartItem(cart, product, quantity);
-        createCartItem(cart, product1, exceedQuantity);
+        persistCartItem(cart, firstProduct, quantity);
+        persistCartItem(cart, secondProduct, exceedQuantity);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(ORDER_URI + "/checkout"))
+        mockMvc.perform(post(CHECKOUT_URI))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message")
-                        .value(insufficientStock(product1.getName())));
+                        .value(insufficientStock(secondProduct.getName())));
 
         assertThat(orderRepository.count()).isZero();
 
@@ -810,10 +806,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(2)));
 
-        Product savedProduct = productRepository.findById(product.getId())
+        Product savedProduct = productRepository.findById(firstProduct.getId())
                 .orElseThrow();
 
-        Product savedProduct1 = productRepository.findById(product1.getId())
+        Product savedProduct1 = productRepository.findById(secondProduct.getId())
                 .orElseThrow();
 
         assertThat(savedProduct.getQuantity())
@@ -825,12 +821,12 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void checkoutCart_whenCartIsEmpty_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
-        createCart(user);
+        User user = persistDefaultCustomer();
+        persistCart(user);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(ORDER_URI + "/checkout"))
+        mockMvc.perform(post(CHECKOUT_URI))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(EMPTY_CART));
 

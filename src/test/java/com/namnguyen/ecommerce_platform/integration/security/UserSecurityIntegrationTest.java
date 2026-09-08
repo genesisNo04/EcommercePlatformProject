@@ -16,7 +16,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     @Test
     void getAllUsers_withCustomerJwt_returnsForbidden() throws Exception {
 
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
@@ -28,7 +28,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     @Test
     void getAllUsers_withAdminJwt_returnsOk() throws Exception {
 
-        User user = createDefaultAdmin();
+        User user = persistDefaultAdmin();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
@@ -45,7 +45,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void getUserById_withCustomerJwt_returnsUserResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
@@ -65,11 +65,11 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void getUserById_withDifferentCustomerJwt_returnsForbidden() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        User otherUser = createUser(
+        User otherUser = persistUser(
                 "seconduser@gmail.com",
                 "test123456789",
                 "firstName",
@@ -85,11 +85,11 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void getUserById_withAdminJwt_returnsUserResponse() throws Exception {
-        User adminUser = createDefaultAdmin();
+        User adminUser = persistDefaultAdmin();
 
         String token = loginAndGetToken(adminUser.getEmail(), VALID_PASSWORD);
 
-        User customerUser = createDefaultCustomer();
+        User customerUser = persistDefaultCustomer();
 
         mockMvc.perform(get(USER_URI + "/" + customerUser.getId())
                         .header("Authorization", "Bearer " + token))
@@ -99,7 +99,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void putUser_withCustomerJwt_returnsUserResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         UserPutRequest request = createDefaultPutUserRequest();
 
@@ -115,13 +115,13 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void putUser_withDifferentCustomerJwt_returnsForbidden() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         UserPutRequest request = createDefaultPutUserRequest();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        User otherUser = createUser(
+        User otherUser = persistUser(
                 "seconduser@gmail.com",
                 "test123456789",
                 "firstName",
@@ -139,13 +139,13 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void putUser_withAdminJwt_returnsUserResponse() throws Exception {
-        User adminUser = createDefaultAdmin();
+        User adminUser = persistDefaultAdmin();
 
         UserPutRequest request = createDefaultPutUserRequest();
 
         String token = loginAndGetToken(adminUser.getEmail(), VALID_PASSWORD);
 
-        User customerUser = createDefaultCustomer();
+        User customerUser = persistDefaultCustomer();
 
         mockMvc.perform(put(USER_URI + "/" + customerUser.getId())
                         .header("Authorization", "Bearer " + token)
@@ -167,7 +167,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void patchUser_withCustomerJwt_returnsUserResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         UserPatchRequest request = createDefaultPatchUserRequest();
 
@@ -183,13 +183,13 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void patchUser_withDifferentCustomerJwt_returnsForbidden() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
         UserPatchRequest request = createDefaultPatchUserRequest();
 
-        User otherUser = createUser(
+        User otherUser = persistUser(
                 "seconduser@gmail.com",
                 "test123456789",
                 "firstName",
@@ -207,13 +207,13 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void patchUser_withAdminJwt_returnsUserResponse() throws Exception {
-        User adminUser = createDefaultAdmin();
+        User adminUser = persistDefaultAdmin();
 
         UserPatchRequest request = createDefaultPatchUserRequest();
 
         String token = loginAndGetToken(adminUser.getEmail(), VALID_PASSWORD);
 
-        User customerUser = createDefaultCustomer();
+        User customerUser = persistDefaultCustomer();
 
         mockMvc.perform(patch(USER_URI + "/" + customerUser.getId())
                         .header("Authorization", "Bearer " + token)
@@ -235,7 +235,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void deleteUser_withCustomerJwt_returnsForbidden() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
@@ -246,9 +246,9 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void deleteUser_withAdminJwt_returnsNoContent() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
-        User adminUser = createDefaultAdmin();
+        User adminUser = persistDefaultAdmin();
 
         String token = loginAndGetToken(adminUser.getEmail(), VALID_PASSWORD);
 

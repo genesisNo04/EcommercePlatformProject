@@ -22,7 +22,7 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void getCart_withUserJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
@@ -43,8 +43,8 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void addItem_withUserJwt_returnsCreated() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
         CartItemRequest request = createCartItemRequest(product.getId(), 10);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
@@ -65,11 +65,11 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void updateItem_withUserJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, 2);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, 2);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
@@ -87,11 +87,11 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void deleteItem_withUserJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, 2);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, 2);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
@@ -108,11 +108,11 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void clearCart_withUserJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, 2);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, 2);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 

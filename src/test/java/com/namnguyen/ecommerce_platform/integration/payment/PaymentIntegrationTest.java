@@ -18,7 +18,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
 import static com.namnguyen.ecommerce_platform.testutil.messages.PaymentTestMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,11 +28,11 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void submitPayment_withValidRequest_returnsPaymentResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -73,11 +72,11 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void submitPayment_whenPaymentAlreadyExists_returnsConflict() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -85,7 +84,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -107,10 +106,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void submitPayment_whenOrderNotPendingPayment_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PAID,
                 user,
@@ -133,7 +132,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void submitPayment_whenOrderNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         long orderId = 999_999L;
 
         PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
@@ -151,10 +150,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void submitPayment_whenPaymentMethodIsInvalid_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -184,10 +183,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void submitPayment_whenPaymentMethodIsNull_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -215,10 +214,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getPayment_whenPaymentExists_returnsPaymentResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -226,7 +225,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -248,8 +247,8 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getPayment_whenOrderBelongsToDifferentUser_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
-        User otherUser = createUser(
+        User user = persistDefaultCustomer();
+        User otherUser = persistUser(
                 "email@gmail.com",
                 "test123456789",
                 "userother",
@@ -259,7 +258,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
         );
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -267,7 +266,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -282,10 +281,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getPayment_whenPaymentNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -302,10 +301,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void updatePayment_whenPaymentExists_returnsPaymentResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -313,7 +312,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -344,10 +343,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void updatePayment_whenPaymentNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -368,10 +367,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void updatePayment_whenPaymentMethodIsInvalid_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -379,7 +378,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -410,10 +409,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void updatePayment_whenPaymentIsNotPending_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -421,7 +420,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.SUCCESS,
                 order,
@@ -446,8 +445,8 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void updatePayment_whenOrderBelongsToDifferentUser_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
-        User otherUser = createUser(
+        User user = persistDefaultCustomer();
+        User otherUser = persistUser(
                 "email@gmail.com",
                 "test123456789",
                 "userother",
@@ -457,7 +456,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
         );
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -465,7 +464,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -493,10 +492,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void confirmPayment_whenRequestIsValid_returnsPaymentResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -504,7 +503,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -536,10 +535,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void confirmPayment_whenPaymentFails_updatesPaymentButDoesNotMarkOrderPaid() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -547,7 +546,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -579,10 +578,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void confirmPayment_whenPaymentStatusIsInvalid_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -590,7 +589,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -614,10 +613,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void confirmPayment_whenPaymentIsNotPending_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -625,7 +624,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.SUCCESS,
                 order,
@@ -652,10 +651,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void confirmPayment_whenPaymentNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -673,11 +672,11 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void confirmPayment_whenRequestedStatusIsPending_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -685,7 +684,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -714,11 +713,11 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void confirmPayment_whenOrderNotPendingPayment_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PAID,
                 user,
@@ -726,7 +725,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,

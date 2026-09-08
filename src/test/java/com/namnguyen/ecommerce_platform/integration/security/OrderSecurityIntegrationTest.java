@@ -24,9 +24,9 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void createOrder_withJwt_returnsOrderResponse() throws Exception {
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
         int boughtQuantity = 10;
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         CreateOrderItemRequest itemRequest = createCreateOrderItemRequest(product.getId(), boughtQuantity);
 
         CreateOrderRequest request = new CreateOrderRequest(
@@ -45,9 +45,9 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void createOrder_withInvalidJwt_returnsUnauthorized() throws Exception {
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
         int boughtQuantity = 10;
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         CreateOrderItemRequest itemRequest = createCreateOrderItemRequest(product.getId(), boughtQuantity);
 
         CreateOrderRequest request = new CreateOrderRequest(
@@ -65,7 +65,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void createOrder_withoutJwt_returnsUnauthorized() throws Exception {
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
         int boughtQuantity = 10;
         CreateOrderItemRequest itemRequest = createCreateOrderItemRequest(product.getId(), boughtQuantity);
 
@@ -81,11 +81,11 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void getOrders_withJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
         BigDecimal total1 = BigDecimal.valueOf(399.99);
 
-        createOrder(
+        persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -93,7 +93,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
                 null
         );
 
-        createOrder(
+        persistOrder(
                 total1,
                 OrderStatus.PAID,
                 user,
@@ -119,10 +119,10 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void getOrderById_withJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -151,9 +151,9 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void getOrderById_withDifferentUsersJwt_returnsNotFound()
             throws Exception {
 
-        User owner = createDefaultCustomer();
+        User owner = persistDefaultCustomer();
 
-        User otherUser = createUser(
+        User otherUser = persistUser(
                 "otheruser@gmail.com",
                 VALID_PASSWORD,
                 "Other",
@@ -162,7 +162,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
                 Role.CUSTOMER
         );
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 BigDecimal.valueOf(299.99),
                 OrderStatus.PENDING_PAYMENT,
                 owner,
@@ -182,10 +182,10 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void cancelOrder_withJwt_returnsNoContent() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -210,13 +210,13 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void checkoutCart_withJwt_returnsOrderResponse() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
         int quantity = 2;
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, quantity);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, quantity);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 

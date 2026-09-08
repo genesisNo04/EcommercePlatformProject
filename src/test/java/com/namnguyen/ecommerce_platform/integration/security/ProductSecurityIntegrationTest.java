@@ -29,7 +29,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void createProduct_withCustomerJwt_returnsForbidden() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(
                 user.getEmail(),
@@ -47,7 +47,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void createProduct_withAdminJWT_returnsCreated() throws Exception {
-        User admin = createDefaultAdmin();
+        User admin = persistDefaultAdmin();
 
         String token = loginAndGetToken(
                 admin.getEmail(),
@@ -71,7 +71,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void getProductById_whenUnauthenticated_returnsOk() throws Exception {
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         mockMvc.perform(get(PRODUCT_URI + "/" + product.getId()))
                 .andExpect(status().isOk());
@@ -79,7 +79,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void putProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         ProductPutRequest request = createDefaultPutProductRequest();
 
@@ -91,14 +91,14 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void putProduct_withCustomerJWT_returnsForbidden() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(
                 user.getEmail(),
                 VALID_PASSWORD
         );
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         ProductPutRequest request = createDefaultPutProductRequest();
 
@@ -111,14 +111,14 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void putProduct_withAdminJWT_returnsOk() throws Exception {
-        User admin = createDefaultAdmin();
+        User admin = persistDefaultAdmin();
 
         String token = loginAndGetToken(
                 admin.getEmail(),
                 VALID_PASSWORD
         );
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         ProductPutRequest request = createDefaultPutProductRequest();
 
@@ -131,7 +131,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void patchProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
@@ -148,14 +148,14 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void patchProduct_withCustomerJWT_returnsForbidden() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(
                 user.getEmail(),
                 VALID_PASSWORD
         );
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
@@ -173,14 +173,14 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void patchProduct_withAdminJWT_returnsOk() throws Exception {
-        User admin = createDefaultAdmin();
+        User admin = persistDefaultAdmin();
 
         String token = loginAndGetToken(
                 admin.getEmail(),
                 VALID_PASSWORD
         );
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         ProductPatchRequest request = createPatchProductRequest(
                 "PS5",
@@ -198,7 +198,7 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void deleteProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId()))
                 .andExpect(status().isUnauthorized());
@@ -206,14 +206,14 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void deleteProduct_withCustomerJWT_returnsForbidden() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(
                 user.getEmail(),
                 VALID_PASSWORD
         );
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId())
                         .header("Authorization", "Bearer " + token))
@@ -222,14 +222,14 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void deleteProduct_withAdminJWT_returnsNoContent() throws Exception {
-        User admin = createDefaultAdmin();
+        User admin = persistDefaultAdmin();
 
         String token = loginAndGetToken(
                 admin.getEmail(),
                 VALID_PASSWORD
         );
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
         mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId())
                         .header("Authorization", "Bearer " + token))

@@ -22,11 +22,11 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void getPayment_withJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -34,7 +34,7 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -50,11 +50,11 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void getPayment_withoutJwt_returnsUnauthorized() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -62,7 +62,7 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -75,11 +75,11 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void getPayment_withInvalidJwt_returnsUnauthorized() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -87,7 +87,7 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -103,9 +103,9 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void getPayment_withOtherUserJwt_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
-        User otherUser = createUser(
+        User otherUser = persistUser(
                 "userother@gmail.com",
                 "test123456789",
                 "other",
@@ -116,7 +116,7 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -124,7 +124,7 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -140,11 +140,11 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void updatePayment_withJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -152,7 +152,7 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -172,11 +172,11 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void updatePayment_withoutJwt_returnsUnauthorized() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -184,7 +184,7 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,
@@ -201,11 +201,11 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void submitPayment_withJwt_returnsCreated() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -226,11 +226,11 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void submitPayment_withoutJwt_returnsUnauthorized() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -248,11 +248,11 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void confirmPayment_withJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
 
-        Order order = createOrder(
+        Order order = persistOrder(
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -260,7 +260,7 @@ public class PaymentSecurityIntegrationTest extends BaseSecurityIntegrationTest 
                 null
         );
 
-        createPayment(
+        persistPayment(
                 PaymentMethod.CARD,
                 PaymentStatus.PENDING,
                 order,

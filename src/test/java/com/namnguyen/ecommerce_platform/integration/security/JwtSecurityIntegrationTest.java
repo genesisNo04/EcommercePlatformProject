@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     @Test
     void login_withValidCredentials_returnsJwtToken() throws Exception {
-        createDefaultCustomer();
+        persistDefaultCustomer();
 
         LoginRequest request = new LoginRequest (
                 "customer@gmail.com",
@@ -28,7 +28,7 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void login_withInvalidPassword_returnsUnauthorized() throws Exception {
-        createDefaultAdmin();
+        persistDefaultAdmin();
 
         LoginRequest request = new LoginRequest(
                 "admin@gmail.com",
@@ -43,7 +43,7 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void createProduct_whenAdminJwt_returnsCreated() throws Exception {
-        createDefaultAdmin();
+        persistDefaultAdmin();
 
         String token = loginAndGetToken("admin@gmail.com", "test123456789");
 
@@ -58,7 +58,7 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void createProduct_whenInvalidToken_returnsUnauthorized() throws Exception {
         String rawPassword = "test123456789";
 
-        createDefaultAdmin();
+        persistDefaultAdmin();
 
         String validToken = loginAndGetToken("admin@gmail.com", rawPassword);
 
@@ -81,7 +81,7 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void createProduct_whenCustomerJwt_returnsForbidden() throws Exception {
-        createDefaultCustomer();
+        persistDefaultCustomer();
 
         String token = loginAndGetToken("customer@gmail.com", "test123456789");
 

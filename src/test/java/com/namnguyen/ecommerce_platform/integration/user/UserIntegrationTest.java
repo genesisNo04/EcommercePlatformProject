@@ -21,7 +21,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     void getAllUsers_withAdminRole_returnsPageOfUsers() throws Exception {
 
-        User user = createUser(
+        User user = persistUser(
                 "test@gmail.com",
                 "test123456789",
                 "test",
@@ -30,7 +30,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 Role.CUSTOMER
         );
 
-        User user1 = createUser(
+        User user1 = persistUser(
                 "test1@gmail.com",
                 "test123456789",
                 "test1",
@@ -71,7 +71,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     void getAllUsers_withFilters_returnsPageOfUsers() throws Exception {
 
-        createUser(
+        persistUser(
                 "test@gmail.com",
                 "test123456789",
                 "test",
@@ -80,7 +80,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 Role.CUSTOMER
         );
 
-        User user1 = createUser(
+        User user1 = persistUser(
                 "test1@gmail.com",
                 "test123456789",
                 "test1",
@@ -112,7 +112,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void getUserById_withAdminRole_returnsUser() throws Exception {
-        User user = createUser(
+        User user = persistUser(
                 "test@gmail.com",
                 "test123456789",
                 "test",
@@ -143,7 +143,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getUserById_whenSameCustomer_returnsUser() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         MockAuthentication.authenticateUser(user.getId());
 
@@ -160,7 +160,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void putUser_whenSameCustomer_updatesUser() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         UserPutRequest request = createDefaultPutUserRequest();
 
@@ -190,9 +190,9 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void putUser_whenEmailAlreadyExists_returnsConflictAndKeepsUserUnchanged() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
-        User otherUser = createUser(
+        User otherUser = persistUser(
                 "other@gmail.com",
                 "test123456789",
                 "Other",
@@ -245,7 +245,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void patchUser_whenSameCustomer_patchesUser() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         UserPatchRequest request = createPatchUserRequest(
                 null,
@@ -283,9 +283,9 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     void patchUser_whenPhoneNumberAlreadyExists_returnsConflictAndKeepsUserUnchanged()
             throws Exception {
 
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
-        User otherUser = createUser(
+        User otherUser = persistUser(
                 "other@gmail.com",
                 "test123456789",
                 "Other",
@@ -340,7 +340,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void deleteUser_withAdminRole_deletesUser() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         mockMvc.perform(delete(USER_URI + "/" + user.getId()))
                 .andExpect(status().isNoContent());

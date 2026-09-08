@@ -1,13 +1,9 @@
 package com.namnguyen.ecommerce_platform.integration;
 
-import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
-import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
-import com.namnguyen.ecommerce_platform.cart.dto.CartItemRequest;
 import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
 import com.namnguyen.ecommerce_platform.cart.repository.CartItemRepository;
 import com.namnguyen.ecommerce_platform.cart.repository.CartRepository;
-import com.namnguyen.ecommerce_platform.order.dto.CreateOrderItemRequest;
 import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
@@ -16,14 +12,9 @@ import com.namnguyen.ecommerce_platform.payment.entity.Payment;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentMethod;
 import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
 import com.namnguyen.ecommerce_platform.payment.repository.PaymentRepository;
-import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
-import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
-import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
-import com.namnguyen.ecommerce_platform.user.dto.UserPatchRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserPutRequest;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 import com.namnguyen.ecommerce_platform.user.repository.UserRepository;
@@ -121,84 +112,15 @@ public abstract class AbstractIntegrationTestSupport {
         }
     }
 
-    protected ProductCreateRequest createDefaultProductCreateRequest() {
-        return new ProductCreateRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
-    }
-
-    protected ProductCreateRequest createProductCreateRequest(
-            String productName,
-            String productDescription,
-            BigDecimal productPrice,
-            int productQuantit
-    ) {
-        return new ProductCreateRequest(
-                "PS5",
-                "Playstation",
-                BigDecimal.valueOf(399.99),
-                12
-        );
-    }
-
-    protected ProductPutRequest createDefaultPutProductRequest() {
-        return new ProductPutRequest(
-                "PS5 update",
-                "Playstation update",
-                BigDecimal.valueOf(499.99),
-                20
-        );
-    }
-
-    protected ProductPutRequest createPutProductRequest(
-            String productName,
-            String productDescription,
-            BigDecimal price,
-            int quantity
-    ) {
-        return new ProductPutRequest(
-                productName,
-                productDescription,
-                price,
-                quantity
-        );
-    }
-
-    protected ProductPatchRequest createDefaultPatchProductRequest() {
-        return new ProductPatchRequest(
-                "PS5 update",
-                "Playstation update",
-                BigDecimal.valueOf(499.99),
-                20
-        );
-    }
-
-    protected ProductPatchRequest createPatchProductRequest(
-            String productName,
-            String productDescription,
-            BigDecimal price,
-            Integer quantity
-    ) {
-        return new ProductPatchRequest(
-                productName,
-                productDescription,
-                price,
-                quantity
-        );
-    }
-
-    protected User createUser(String email,
-                              String password,
-                              String firstName,
-                              String lastName,
-                              String phoneNumber,
-                              Role role) {
+    protected User persistUser(String email,
+                               String rawPassword,
+                               String firstName,
+                               String lastName,
+                               String phoneNumber,
+                               Role role) {
         User user = User.builder()
                 .email(email)
-                .passwordHash(passwordEncoder.encode(password))
+                .passwordHash(passwordEncoder.encode(rawPassword))
                 .firstName(firstName)
                 .lastName(lastName)
                 .role(role)
@@ -208,85 +130,33 @@ public abstract class AbstractIntegrationTestSupport {
         return userRepository.save(user);
     }
 
-    protected User createDefaultCustomer() {
-        return createUser(
-                "customer@gmail.com",
+    protected User persistDefaultCustomer() {
+        return persistUser(
+                VALID_EMAIL,
                 VALID_PASSWORD,
-                "test",
-                "customer",
-                "1234567891",
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER,
                 Role.CUSTOMER
         );
     }
 
-    protected User createDefaultAdmin() {
-        return createUser(
-                "admin@gmail.com",
+    protected User persistDefaultAdmin() {
+        return persistUser(
+                VALID_ADMIN_EMAIL,
                 VALID_PASSWORD,
-                "test",
-                "admin",
-                "1234567892",
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_ADMIN_PHONE_NUMBER,
                 Role.ADMIN
         );
     }
 
-    protected UserPutRequest createDefaultPutUserRequest() {
-        return new UserPutRequest(
-                "testupdate@gmail.com",
-                VALID_PASSWORD,
-                "testupdate",
-                "userupdate",
-                "1234567801"
-        );
-    }
-
-    protected UserPutRequest createPutUserRequest(
-            String email,
-            String password,
-            String firstName,
-            String lastName,
-            String phoneNumber
-    ) {
-        return new UserPutRequest(
-                email,
-                password,
-                firstName,
-                lastName,
-                phoneNumber
-        );
-    }
-
-    protected UserPatchRequest createDefaultPatchUserRequest() {
-        return new UserPatchRequest(
-                "testupdate@gmail.com",
-                VALID_PASSWORD,
-                "testupdate",
-                "userupdate",
-                "1234567801"
-        );
-    }
-
-    protected UserPatchRequest createPatchUserRequest(
-            String email,
-            String password,
-            String firstName,
-            String lastName,
-            String phoneNumber
-    ) {
-        return new UserPatchRequest(
-                email,
-                password,
-                firstName,
-                lastName,
-                phoneNumber
-        );
-    }
-
-    protected Product createProduct(String productName,
-                                    String productDescription,
-                                    BigDecimal unitPrice,
-                                    int quantity,
-                                    ProductStatus status) {
+    protected Product persistProduct(String productName,
+                                     String productDescription,
+                                     BigDecimal unitPrice,
+                                     int quantity,
+                                     ProductStatus status) {
 
         Product product = Product.builder()
                 .name(productName)
@@ -299,81 +169,24 @@ public abstract class AbstractIntegrationTestSupport {
         return productRepository.save(product);
     }
 
-    protected Product createDefaultProduct() {
-
-        Product product = Product.builder()
-                .name("Keyboard")
-                .description("Mechanical keyboard")
-                .price(BigDecimal.valueOf(99.99))
-                .quantity(50)
-                .status(ProductStatus.ACTIVE)
-                .build();
-
-        return productRepository.save(product);
-    }
-
-    protected RegisterRequest createRegisterRequest(
-            String email,
-            String password,
-            String firstName,
-            String lastName,
-            String phoneNumber
-    ) {
-        return new RegisterRequest(
-                email,
-                password,
-                firstName,
-                lastName,
-                phoneNumber
+    protected Product persistDefaultProduct() {
+        return persistProduct(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                VALID_PRODUCT_QUANTITY,
+                ProductStatus.ACTIVE
         );
     }
 
-    protected RegisterRequest createDefaultRegisterRequest() {
-        return new RegisterRequest(
-                VALID_EMAIL,
-                VALID_PASSWORD,
-                VALID_FIRST_NAME,
-                VALID_LAST_NAME,
-                VALID_PHONE_NUMBER
-        );
-    }
-
-    protected LoginRequest createLoginRequest(String email, String password) {
-        return new LoginRequest(
-                email,
-                password
-        );
-    }
-
-    protected LoginRequest createDefaultLoginRequest() {
-        return new LoginRequest(
-                "customer@gmail.com",
-                VALID_PASSWORD
-        );
-    }
-
-    protected CartItemRequest createCartItemRequest(Long productId, int quantity) {
-        return new CartItemRequest(
-                productId,
-                quantity
-        );
-    }
-
-    protected CreateOrderItemRequest createCreateOrderItemRequest(Long productId, int quantity) {
-        return new CreateOrderItemRequest(
-                productId,
-                quantity
-        );
-    }
-
-    protected Cart createCart(User user) {
+    protected Cart persistCart(User user) {
         return cartRepository.save(Cart
                 .builder()
                 .user(user)
                 .build());
     }
 
-    protected CartItem createCartItem(Cart cart, Product product, int quantity) {
+    protected CartItem persistCartItem(Cart cart, Product product, int quantity) {
         return cartItemRepository.save(CartItem
                 .builder()
                 .cart(cart)
@@ -382,7 +195,7 @@ public abstract class AbstractIntegrationTestSupport {
                 .build());
     }
 
-    protected Order createOrder(
+    protected Order persistOrder(
             BigDecimal total,
             OrderStatus status,
             User user,
@@ -399,21 +212,7 @@ public abstract class AbstractIntegrationTestSupport {
                 .build());
     }
 
-    protected OrderItem createOrderItem(
-            Order order,
-            Product product,
-            int quantity,
-            BigDecimal price
-    ) {
-        return OrderItem
-                .builder()
-                .order(order)
-                .quantity(quantity)
-                .price(price)
-                .build();
-    }
-
-    protected Payment createPayment(
+    protected Payment persistPayment(
             PaymentMethod method,
             PaymentStatus status,
             Order order,

@@ -26,7 +26,7 @@ public class AuthSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void loginUser_withoutToken_returnsToken() throws Exception {
-        createDefaultCustomer();
+        persistDefaultCustomer();
 
         LoginRequest request = createDefaultLoginRequest();
 
@@ -39,7 +39,7 @@ public class AuthSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void loginUser_withInvalidTokenStillUsesPublicEndpoint_returnsOk() throws Exception {
-        createDefaultCustomer();
+        persistDefaultCustomer();
 
         LoginRequest request = createDefaultLoginRequest();
 

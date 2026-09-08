@@ -22,15 +22,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class CartIntegrationTest extends BaseIntegrationTest {
 
     @Test
-    void getCart_whenUserAuthenticated_returnsCartResponse() throws Exception {
-        User user = createDefaultCustomer();
+    void getCart_whenCartDoesNotExist_createsAndReturnsEmptyCart() throws Exception {
+        User user = persistDefaultCustomer();
 
         authenticateUser(user.getId());
 
         mockMvc.perform(get(CART_URI))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items").exists())
-                .andExpect(jsonPath("$.total").exists());
+                .andExpect(jsonPath("$.items", hasSize(0)))
+                .andExpect(jsonPath("$.total").value(0));
 
         Cart cart = cartRepository.findByUserId(user.getId()).orElseThrow();
 
@@ -39,11 +39,11 @@ public class CartIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void getCart_whenCartHasItems_returnsItemsAndTotal() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, 2);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, 2);
 
         BigDecimal expectedSubtotal = product.getPrice().multiply(BigDecimal.valueOf(2));
 
@@ -62,67 +62,62 @@ public class CartIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void addItem_whenUserAuthenticated_savesItemToDatabase() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
+        int addQuantity = 10;
 
         authenticateUser(user.getId());
 
-        CartItemRequest request = createCartItemRequest(product.getId(), 10);
+        CartItemRequest cartItemRequest = createCartItemRequest(product.getId(), addQuantity);
 
-        BigDecimal expectedSubtotal = product.getPrice().multiply(BigDecimal.valueOf(10));
+        BigDecimal expectedSubtotal = product.getPrice().multiply(BigDecimal.valueOf(addQuantity));
 
-        mockMvc.perform(post(CART_URI + "/items")
+        mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(cartItemRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.productId").value(product.getId()))
                 .andExpect(jsonPath("$.productName").value(product.getName()))
                 .andExpect(jsonPath("$.unitPrice").value(product.getPrice().doubleValue()))
-                .andExpect(jsonPath("$.quantity").value(10))
+                .andExpect(jsonPath("$.quantity").value(addQuantity))
                 .andExpect(jsonPath("$.subtotal").value(expectedSubtotal.doubleValue()));
 
-        Cart cart = cartRepository.findByUserId(user.getId()).orElseThrow();
+        Cart savedCart = cartRepository.findByUserId(user.getId()).orElseThrow();
 
-        CartItem item = cartItemRepository.findByCartIdAndProductId(cart.getId(), request.productId()).orElseThrow();
+        CartItem savedItem = cartItemRepository.findByCartIdAndProductId(savedCart.getId(), cartItemRequest.productId()).orElseThrow();
 
-        assertThat(item.getProduct().getId()).isEqualTo(product.getId());
-        assertThat(item.getQuantity()).isEqualTo(10);
-        assertThat(item.getCart().getId()).isEqualTo(cart.getId());
-        assertThat(cart.getUser().getId()).isEqualTo(user.getId());
+        assertThat(savedItem.getProduct().getId()).isEqualTo(product.getId());
+        assertThat(savedItem.getQuantity()).isEqualTo(addQuantity);
+        assertThat(savedItem.getCart().getId()).isEqualTo(savedCart.getId());
+        assertThat(savedCart.getUser().getId()).isEqualTo(user.getId());
     }
 
     @Test
     void addItem_whenItemAlreadyInCart_updatesQuantity() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createProduct(
-                "Keyboard",
-                "Mechanical keyboard",
-                BigDecimal.valueOf(99.99),
-                20,
-                ProductStatus.ACTIVE
-        );
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
         int initialQuantity = 10;
         int addQuantity = 2;
 
-        Cart cart = createCart(user);
+        Cart cart = persistCart(user);
 
-        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(initialQuantity + addQuantity));
+        BigDecimal expectedSubtotal = product.getPrice().multiply(BigDecimal.valueOf(initialQuantity + addQuantity));
 
         authenticateUser(user.getId());
 
-        createCartItem(cart, product, initialQuantity);
+        persistCartItem(cart, product, initialQuantity);
 
-        CartItemRequest request = createCartItemRequest(product.getId(), addQuantity);
+        CartItemRequest cartItemRequest = createCartItemRequest(product.getId(), addQuantity);
 
-        mockMvc.perform(post(CART_URI + "/items")
+        mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(cartItemRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.productId").value(product.getId()))
                 .andExpect(jsonPath("$.productName").value(product.getName()))
                 .andExpect(jsonPath("$.unitPrice").value(product.getPrice().doubleValue()))
                 .andExpect(jsonPath("$.quantity").value(initialQuantity + addQuantity))
-                .andExpect(jsonPath("$.subtotal").value(total.doubleValue()));
+                .andExpect(jsonPath("$.subtotal").value(expectedSubtotal    .doubleValue()));
 
         CartItem updatedItem = cartItemRepository
                 .findByCartIdAndProductId(cart.getId(), product.getId())
@@ -135,11 +130,11 @@ public class CartIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void addItem_whenQuantityExceedStock_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createProduct(
-                "Keyboard",
-                "Mechanical keyboard",
-                BigDecimal.valueOf(99.99),
+        User user = persistDefaultCustomer();
+        Product product = persistProduct(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
                 10,
                 ProductStatus.ACTIVE
         );
@@ -147,11 +142,11 @@ public class CartIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        CartItemRequest request = createCartItemRequest(product.getId(), quantity);
+        CartItemRequest cartItemRequest = createCartItemRequest(product.getId(), quantity);
 
-        mockMvc.perform(post(CART_URI + "/items")
+        mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(cartItemRequest)))
                 .andExpect(status().isBadRequest());
 
         assertThat(cartItemRepository.findAll()).isEmpty();
@@ -159,102 +154,95 @@ public class CartIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void addItem_whenProductNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         authenticateUser(user.getId());
 
-        CartItemRequest request = createCartItemRequest(1L, 10);
+        CartItemRequest cartItemRequest = createCartItemRequest(1L, 10);
 
-        mockMvc.perform(post(CART_URI + "/items")
+        mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(cartItemRequest)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void addItem_whenProductOutOfStock_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
-        Product product = createProduct(
-                "Keyboard",
-                "Mechanical keyboard",
-                BigDecimal.valueOf(99.99),
+        Product product = persistProduct(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
                 0,
-                ProductStatus.ACTIVE
+                ProductStatus.OUT_OF_STOCK
         );
 
         authenticateUser(user.getId());
 
-        CartItemRequest request = createCartItemRequest(product.getId(), 1);
+        CartItemRequest cartItemRequest = createCartItemRequest(product.getId(), 1);
 
-        mockMvc.perform(post(CART_URI + "/items")
+        mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(cartItemRequest)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void updateItem_whenItemExistsInCart_updatesQuantityInDatabase() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createProduct(
-                "Keyboard",
-                "Mechanical keyboard",
-                BigDecimal.valueOf(99.99),
-                20,
-                ProductStatus.ACTIVE
-        );
-
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
         int initialQuantity = 10;
-        int quantity = 2;
+        int updateQuantity = 2;
 
-        Cart cart = createCart(user);
+        Cart cart = persistCart(user);
 
-        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(quantity));
+        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(updateQuantity));
 
         authenticateUser(user.getId());
 
-        createCartItem(cart, product, initialQuantity);
+        persistCartItem(cart, product, initialQuantity);
 
-        mockMvc.perform(patch(CART_URI + "/items/" + product.getId())
-                        .param("quantity", String.valueOf(quantity)))
+        mockMvc.perform(patch(cartItemUri(product.getId()))
+                        .param("quantity", String.valueOf(updateQuantity)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].productId").value(product.getId()))
                 .andExpect(jsonPath("$.items[0].productName").value(product.getName()))
                 .andExpect(jsonPath("$.items[0].unitPrice").value(product.getPrice().doubleValue()))
-                .andExpect(jsonPath("$.items[0].quantity").value(quantity))
+                .andExpect(jsonPath("$.items[0].quantity").value(updateQuantity))
                 .andExpect(jsonPath("$.items[0].subtotal").value(total.doubleValue()))
                 .andExpect(jsonPath("$.total").value(total.doubleValue()));
 
-        CartItem item = cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId()).orElseThrow();
+        CartItem savedItem = cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId()).orElseThrow();
 
-        assertThat(item.getProduct().getId()).isEqualTo(product.getId());
-        assertThat(item.getQuantity()).isEqualTo(2);
-        assertThat(item.getCart().getId()).isEqualTo(cart.getId());
+        assertThat(savedItem.getProduct().getId()).isEqualTo(product.getId());
+        assertThat(savedItem.getQuantity()).isEqualTo(updateQuantity);
+        assertThat(savedItem.getCart().getId()).isEqualTo(cart.getId());
         assertThat(cart.getUser().getId()).isEqualTo(user.getId());
     }
 
     @Test
     void updateItem_whenQuantityExceedStock_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createProduct(
-                "Keyboard",
-                "Mechanical keyboard",
-                BigDecimal.valueOf(99.99),
+        User user = persistDefaultCustomer();
+        Product product = persistProduct(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
                 11,
                 ProductStatus.ACTIVE
         );
 
         int initialQuantity = 10;
-        int quantity = 12;
+        int updateQuantity = 12;
 
-        Cart cart = createCart(user);
+        Cart cart = persistCart(user);
 
         authenticateUser(user.getId());
 
-        createCartItem(cart, product, initialQuantity);
+        persistCartItem(cart, product, initialQuantity);
 
-        mockMvc.perform(patch(CART_URI + "/items/" + product.getId())
-                        .param("quantity", String.valueOf(quantity)))
+        mockMvc.perform(patch(cartItemUri(product.getId()))
+                        .param("quantity", String.valueOf(updateQuantity)))
                 .andExpect(status().isBadRequest());
 
         CartItem savedItem = cartItemRepository
@@ -266,25 +254,19 @@ public class CartIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void updateItem_whenQuantityIsNegative_returnsBadRequest() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createProduct(
-                "Keyboard",
-                "Mechanical keyboard",
-                BigDecimal.valueOf(99.99),
-                11,
-                ProductStatus.ACTIVE
-        );
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
         int initialQuantity = 10;
         int quantity = -1;
 
-        Cart cart = createCart(user);
+        Cart cart = persistCart(user);
 
         authenticateUser(user.getId());
 
-        createCartItem(cart, product, initialQuantity);
+        persistCartItem(cart, product, initialQuantity);
 
-        mockMvc.perform(patch(CART_URI + "/items/" + product.getId())
+        mockMvc.perform(patch(cartItemUri(product.getId()))
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isBadRequest());
 
@@ -296,26 +278,19 @@ public class CartIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void updateItem_whenUpdateQuantityToZero_updatesQuantityInDatabase() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createProduct(
-                "Keyboard",
-                "Mechanical keyboard",
-                BigDecimal.valueOf(99.99),
-                20,
-                ProductStatus.ACTIVE
-        );
-
+    void updateItem_whenQuantityIsZero_removesItemFromCart() throws Exception {
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
         int initialQuantity = 10;
         int quantity = 0;
 
-        Cart cart = createCart(user);
+        Cart cart = persistCart(user);
 
         authenticateUser(user.getId());
 
-        createCartItem(cart, product, initialQuantity);
+        persistCartItem(cart, product, initialQuantity);
 
-        mockMvc.perform(patch(CART_URI + "/items/" + product.getId())
+        mockMvc.perform(patch(cartItemUri(product.getId()))
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(0)))
@@ -326,58 +301,61 @@ public class CartIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void updateItem_whenProductNotFound_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
-        createCart(user);
+    void updateItem_whenItemNotInCart_returnsNotFound() throws Exception {
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
+        persistCart(user);
 
-        Long productId = 999L;
         int quantity = 2;
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(CART_URI + "/items/" + productId)
+        mockMvc.perform(patch(cartItemUri(product.getId()))
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void removeItem_whenItemExistsInCart_removesItemFromDatabase() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
         int initialQuantity = 10;
 
-        Cart cart = createCart(user);
+        Cart cart = persistCart(user);
 
         authenticateUser(user.getId());
 
-        createCartItem(cart, product, initialQuantity);
+        persistCartItem(cart, product, initialQuantity);
 
-        mockMvc.perform(delete(CART_URI + "/items/" + product.getId()))
+        mockMvc.perform(delete(cartItemUri(product.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(0)))
                 .andExpect(jsonPath("$.total").value(0));
 
-        CartItem item = cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId()).orElse(null);
-
-        assertThat(item).isNull();
+        assertThat(
+                cartItemRepository.findByCartIdAndProductId(
+                        cart.getId(),
+                        product.getId()
+                )
+        ).isEmpty();
     }
 
     @Test
     void removeItem_whenProductExistsButItemNotInCart_returnsNotFound() throws Exception {
-        User user = createDefaultCustomer();
-        createCart(user);
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        persistCart(user);
+        Product product = persistDefaultProduct();
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(delete(CART_URI + "/items/" + product.getId()))
+        mockMvc.perform(delete(cartItemUri(product.getId())))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void clearCart_whenCartIsEmpty_returnsEmptyCartResponse() throws Exception {
-        User user = createDefaultCustomer();
-        createCart(user);
+        User user = persistDefaultCustomer();
+        persistCart(user);
 
         authenticateUser(user.getId());
 
@@ -389,13 +367,13 @@ public class CartIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void clearCart_whenCartHasItems_removesAllItemsFromDatabase() throws Exception {
-        User user = createDefaultCustomer();
-        Cart cart = createCart(user);
+        User user = persistDefaultCustomer();
+        Cart cart = persistCart(user);
         int initialQuantity = 10;
 
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
-        createCartItem(cart, product, initialQuantity);
+        persistCartItem(cart, product, initialQuantity);
 
         authenticateUser(user.getId());
 
