@@ -156,7 +156,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void createOrder_whenOneProductOutOfStock_returnsBadRequest() throws Exception {
+    void createOrder_whenOneProductHasInsufficientStock_returnsBadRequest() throws Exception {
         Product firstProduct = persistDefaultProduct();
 
         Product secondProduct = persistProduct(
@@ -198,18 +198,18 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         assertThat(orderRepository.count()).isZero();
 
-        Product savedProduct = productRepository
+        Product firstSavedProduct = productRepository
                 .findById(firstProduct.getId())
                 .orElseThrow();
 
-        Product savedProduct1 = productRepository
+        Product secondSavedProduct = productRepository
                 .findById(secondProduct.getId())
                 .orElseThrow();
 
-        assertThat(savedProduct.getQuantity())
+        assertThat(firstSavedProduct.getQuantity())
                 .isEqualTo(originalFirstProductQuantity);
 
-        assertThat(savedProduct1.getQuantity())
+        assertThat(secondSavedProduct.getQuantity())
                 .isEqualTo(originalSecondProductQuantity);
     }
 
@@ -249,7 +249,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        Order SecondOrder = persistOrder(
+        Order secondOrder = persistOrder(
                 secondOrderTotal,
                 OrderStatus.PAID,
                 user,
@@ -263,10 +263,10 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].orderId").value(SecondOrder.getId()))
+                .andExpect(jsonPath("$.content[0].orderId").value(secondOrder.getId()))
                 .andExpect(jsonPath("$.content[0].userId").value(user.getId()))
-                .andExpect(jsonPath("$.content[0].total").value(SecondOrder.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[0].status").value(SecondOrder.getStatus().name()))
+                .andExpect(jsonPath("$.content[0].total").value(secondOrder.getTotal().doubleValue()))
+                .andExpect(jsonPath("$.content[0].status").value(secondOrder.getStatus().name()))
                 .andExpect(jsonPath("$.content[1].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[1].userId").value(user.getId()))
                 .andExpect(jsonPath("$.content[1].total").value(firstOrder.getTotal().doubleValue()))
@@ -316,7 +316,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
         BigDecimal secondOrderTotal = BigDecimal.valueOf(399.99);
         BigDecimal thirdOrderTotal = BigDecimal.valueOf(499.99);
 
-        Order order = persistOrder(
+        Order firstOrder = persistOrder(
                 firstOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 user,
@@ -324,7 +324,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        Order order1 = persistOrder(
+        Order secondOrder = persistOrder(
                 secondOrderTotal,
                 OrderStatus.PAID,
                 user,
@@ -348,14 +348,14 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].orderId").value(order1.getId()))
+                .andExpect(jsonPath("$.content[0].orderId").value(secondOrder.getId()))
                 .andExpect(jsonPath("$.content[0].userId").value(user.getId()))
-                .andExpect(jsonPath("$.content[0].total").value(order1.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[0].status").value(order1.getStatus().name()))
-                .andExpect(jsonPath("$.content[1].orderId").value(order.getId()))
+                .andExpect(jsonPath("$.content[0].total").value(secondOrder.getTotal().doubleValue()))
+                .andExpect(jsonPath("$.content[0].status").value(secondOrder.getStatus().name()))
+                .andExpect(jsonPath("$.content[1].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[1].userId").value(user.getId()))
-                .andExpect(jsonPath("$.content[1].total").value(order.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[1].status").value(order.getStatus().name()));
+                .andExpect(jsonPath("$.content[1].total").value(firstOrder.getTotal().doubleValue()))
+                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()));
     }
 
     @Test
@@ -550,7 +550,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void cancelOrder_whenOrderCannotBeCancelled_returnsBadRequest() throws Exception {
+    void cancelOrder_whenOrderIsDelivered_returnsBadRequest() throws Exception {
         User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
@@ -654,7 +654,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void cancelOrder_whenOrderIsInProcess_returnsBadRequest() throws Exception {
+    void cancelOrder_whenOrderIsProcessing_returnsBadRequest() throws Exception {
         User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
@@ -687,9 +687,9 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         User otherUser = persistUser(
                 "otheruser@gmail.com",
-                "test123456789",
-                "other",
-                "user",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
                 "1234567892",
                 Role.CUSTOMER
         );
@@ -766,6 +766,7 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
         assertThat(savedProduct.getQuantity())
                 .isEqualTo(originalProductQuantity - quantity);
 
+        assertThat(cartItemRepository.findAll()).isEmpty();
     }
 
     @Test
@@ -785,8 +786,8 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 ProductStatus.ACTIVE
         );
 
-        int originalProductQuantity = firstProduct.getQuantity();
-        int originalProduct1Quantity = secondProduct.getQuantity();
+        int firstOriginalProductQuantity = firstProduct.getQuantity();
+        int secondOriginalProductQuantity = secondProduct.getQuantity();
 
         Cart cart = persistCart(user);
 
@@ -806,17 +807,19 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(2)));
 
-        Product savedProduct = productRepository.findById(firstProduct.getId())
+        Product firstSavedProduct = productRepository.findById(firstProduct.getId())
                 .orElseThrow();
 
-        Product savedProduct1 = productRepository.findById(secondProduct.getId())
+        Product secondSavedProduct = productRepository.findById(secondProduct.getId())
                 .orElseThrow();
 
-        assertThat(savedProduct.getQuantity())
-                .isEqualTo(originalProductQuantity);
+        assertThat(firstSavedProduct.getQuantity())
+                .isEqualTo(firstOriginalProductQuantity);
 
-        assertThat(savedProduct1.getQuantity())
-                .isEqualTo(originalProduct1Quantity);
+        assertThat(secondSavedProduct.getQuantity())
+                .isEqualTo(secondOriginalProductQuantity);
+
+        assertThat(cartItemRepository.findAll()).hasSize(2);
     }
 
     @Test

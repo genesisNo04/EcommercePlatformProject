@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
+import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
 import static com.namnguyen.ecommerce_platform.testutil.messages.PaymentTestMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class PaymentIntegrationTest extends BaseIntegrationTest {
 
     @Test
-    void submitPayment_withValidRequest_returnsPaymentResponse() throws Exception {
+    void submitPayment_whenRequestIsValid_createsPaymentInDatabase() throws Exception {
         User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
@@ -40,13 +41,13 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
+        PaymentRequest paymentRequest = new PaymentRequest(PaymentMethod.CARD);
 
         authenticateUser(user.getId());
 
-        MvcResult result = mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()))
+        MvcResult result = mockMvc.perform(post(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.paymentId").exists())
                 .andExpect(jsonPath("$.orderId").value(order.getId()))
@@ -57,14 +58,14 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.updatedAt").exists())
                 .andReturn();
 
-        PaymentResponse response = objectMapper.readValue(
+        PaymentResponse paymentResponse = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
                 PaymentResponse.class
         );
 
-        Payment savedPayment = paymentRepository.findById(response.paymentId()).orElseThrow();
+        Payment savedPayment = paymentRepository.findById(paymentResponse.paymentId()).orElseThrow();
 
-        assertThat(response.orderId()).isEqualTo(order.getId());
+        assertThat(paymentResponse.orderId()).isEqualTo(order.getId());
         assertThat(savedPayment.getAmount()).isEqualByComparingTo(total);
         assertThat(savedPayment.getPaymentMethod()).isEqualTo(PaymentMethod.CARD);
         assertThat(savedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.PENDING);
@@ -91,13 +92,13 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 total
         );
 
-        PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
+        PaymentRequest paymentRequest = new PaymentRequest(PaymentMethod.CARD);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(post(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value(PAYMENT_ALREADY_EXISTS));
 
@@ -105,7 +106,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void submitPayment_whenOrderNotPendingPayment_returnsBadRequest() throws Exception {
+    void submitPayment_whenOrderIsNotPendingPayment_returnsBadRequest() throws Exception {
         User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
@@ -117,13 +118,13 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
+        PaymentRequest paymentRequest = new PaymentRequest(PaymentMethod.CARD);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(post(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(ORDER_NOT_PENDING_PAYMENT));
 
@@ -135,13 +136,13 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
         User user = persistDefaultCustomer();
         long orderId = 999_999L;
 
-        PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
+        PaymentRequest paymentRequest = new PaymentRequest(PaymentMethod.CARD);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, orderId))
+        mockMvc.perform(post(paymentUri(orderId))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, user.getId())));
 
@@ -161,22 +162,20 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        String method = "TESTING";
-
         String requestBody = """
             {
                 "paymentMethod": "%s"
             }
-            """.formatted(method);
+            """.formatted(INVALID_ENUM_VALUE);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(post(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
-                .andExpect(jsonPath("$.fieldErrors.paymentMethod").value(paymentMethodIsInvalid(method)));
+                .andExpect(jsonPath("$.fieldErrors.paymentMethod").value(paymentMethodIsInvalid(INVALID_ENUM_VALUE)));
 
         assertThat(paymentRepository.count()).isZero();
     }
@@ -202,12 +201,48 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(post(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.fieldErrors.paymentMethod").value(PAYMENT_METHOD_IS_REQUIRED));
+
+        assertThat(paymentRepository.count()).isZero();
+    }
+
+    @Test
+    void submitPayment_whenOrderBelongsToDifferentUser_returnsNotFound() throws Exception {
+        User owner = persistDefaultCustomer();
+
+        User otherUser = persistUser(
+                "otheruser@gmail.com",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543212",
+                Role.CUSTOMER
+        );
+
+        BigDecimal total = BigDecimal.valueOf(299.99);
+
+        Order order = persistOrder(
+                total,
+                OrderStatus.PENDING_PAYMENT,
+                owner,
+                List.of(),
+                null
+        );
+
+        PaymentRequest paymentRequest =
+                new PaymentRequest(PaymentMethod.CARD);
+
+        authenticateUser(otherUser.getId());
+
+        mockMvc.perform(post(paymentUri(order.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
+                .andExpect(status().isNotFound());
 
         assertThat(paymentRepository.count()).isZero();
     }
@@ -234,7 +269,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(get(String.format(PAYMENT_URI, order.getId())))
+        mockMvc.perform(get(paymentUri(order.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paymentId").exists())
                 .andExpect(jsonPath("$.orderId").value(order.getId()))
@@ -249,11 +284,11 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
     void getPayment_whenOrderBelongsToDifferentUser_returnsNotFound() throws Exception {
         User user = persistDefaultCustomer();
         User otherUser = persistUser(
-                "email@gmail.com",
-                "test123456789",
-                "userother",
-                "testother",
-                "user",
+                "secondemail@gmail.com",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543212",
                 Role.CUSTOMER
         );
 
@@ -275,7 +310,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(otherUser.getId());
 
-        mockMvc.perform(get(String.format(PAYMENT_URI, order.getId())))
+        mockMvc.perform(get(paymentUri(order.getId())))
                 .andExpect(status().isNotFound());
     }
 
@@ -294,7 +329,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(get(String.format(PAYMENT_URI, order.getId())))
+        mockMvc.perform(get(paymentUri(order.getId())))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(paymentNotFoundWithOrderId(order.getId())));
     }
@@ -319,13 +354,13 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 total
         );
 
-        PaymentRequest request = new PaymentRequest(PaymentMethod.PAYPAL);
+        PaymentRequest paymentRequest = new PaymentRequest(PaymentMethod.PAYPAL);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(patch(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paymentId").exists())
                 .andExpect(jsonPath("$.orderId").value(order.getId()))
@@ -354,13 +389,13 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 null
         );
 
-        PaymentRequest request = new PaymentRequest(PaymentMethod.PAYPAL);
+        PaymentRequest paymentRequest = new PaymentRequest(PaymentMethod.PAYPAL);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(patch(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(paymentNotFoundWithOrderId(order.getId())));
     }
@@ -384,22 +419,21 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 order,
                 total
         );
-
-        String invalidValue = "TESTING";
+        
         String requestBody = """
                 {
                     "paymentMethod": "%s"
                 }
-                """.formatted(invalidValue);
+                """.formatted(INVALID_ENUM_VALUE);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(patch(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
-                .andExpect(jsonPath("$.fieldErrors.paymentMethod").value(paymentMethodIsInvalid(invalidValue)));
+                .andExpect(jsonPath("$.fieldErrors.paymentMethod").value(paymentMethodIsInvalid(INVALID_ENUM_VALUE)));
 
         Payment savedPayment = paymentRepository.findByOrderId(order.getId()).orElseThrow();
 
@@ -427,13 +461,13 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 total
         );
 
-        PaymentRequest request = new PaymentRequest(PaymentMethod.PAYPAL);
+        PaymentRequest paymentRequest = new PaymentRequest(PaymentMethod.PAYPAL);
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(patch(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(patch(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(PAYMENT_NOT_PENDING));
 
@@ -448,10 +482,10 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
         User user = persistDefaultCustomer();
         User otherUser = persistUser(
                 "email@gmail.com",
-                "test123456789",
-                "userother",
-                "testother",
-                "user",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "98765432123",
                 Role.CUSTOMER
         );
 
@@ -471,13 +505,13 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 total
         );
 
-        PaymentRequest request = new PaymentRequest(PaymentMethod.CARD);
+        PaymentRequest paymentRequest = new PaymentRequest(PaymentMethod.CARD);
 
         authenticateUser(otherUser.getId());
 
-        mockMvc.perform(patch(String.format(PAYMENT_URI, order.getId()))
+        mockMvc.perform(patch(paymentUri(order.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isNotFound());
 
         Payment savedPayment =
@@ -512,7 +546,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()) + "/confirm")
+        mockMvc.perform(post(paymentConfirmUri(order.getId()))
                         .param("paymentStatus", PaymentStatus.SUCCESS.name()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paymentId").exists())
@@ -555,7 +589,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()) + "/confirm")
+        mockMvc.perform(post(paymentConfirmUri(order.getId()))
                         .param("paymentStatus", PaymentStatus.FAILED.name()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paymentId").exists())
@@ -596,11 +630,11 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
                 total
         );
 
-        String invalidValue = "TESTING";
+        String invalidValue = INVALID_ENUM_VALUE;
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()) + "/confirm")
+        mockMvc.perform(post(paymentConfirmUri(order.getId()))
                         .param("paymentStatus", invalidValue))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(paymentStatusIsInvalid(invalidValue)));
@@ -633,7 +667,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()) + "/confirm")
+        mockMvc.perform(post(paymentConfirmUri(order.getId()))
                         .param("paymentStatus", PaymentStatus.FAILED.name()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(PAYMENT_CANNOT_BE_CONFIRMED));
@@ -664,7 +698,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()) + "/confirm")
+        mockMvc.perform(post(paymentConfirmUri(order.getId()))
                         .param("paymentStatus", PaymentStatus.SUCCESS.name()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(paymentNotFoundWithOrderId(order.getId())));
@@ -693,7 +727,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()) + "/confirm")
+        mockMvc.perform(post(paymentConfirmUri(order.getId()))
                         .param("paymentStatus", PaymentStatus.PENDING.name()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(INVALID_PAYMENT_STATUS));
@@ -712,7 +746,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void confirmPayment_whenOrderNotPendingPayment_returnsBadRequest() throws Exception {
+    void confirmPayment_whenOrderIsNotPendingPayment_returnsBadRequest() throws Exception {
         User user = persistDefaultCustomer();
 
         BigDecimal total = BigDecimal.valueOf(299.99);
@@ -734,7 +768,7 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         authenticateUser(user.getId());
 
-        mockMvc.perform(post(String.format(PAYMENT_URI, order.getId()) + "/confirm")
+        mockMvc.perform(post(paymentConfirmUri(order.getId()))
                         .param("paymentStatus", PaymentStatus.SUCCESS.name()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(ORDER_NOT_PENDING_PAYMENT));
@@ -750,5 +784,54 @@ public class PaymentIntegrationTest extends BaseIntegrationTest {
 
         assertThat(savedOrder.getStatus())
                 .isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    void confirmPayment_whenOrderBelongsToDifferentUser_returnsNotFound() throws Exception {
+        User owner = persistDefaultCustomer();
+
+        User otherUser = persistUser(
+                "otheruser@gmail.com",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543212",
+                Role.CUSTOMER
+        );
+
+        BigDecimal total = BigDecimal.valueOf(299.99);
+
+        Order order = persistOrder(
+                total,
+                OrderStatus.PENDING_PAYMENT,
+                owner,
+                List.of(),
+                null
+        );
+
+        persistPayment(
+                PaymentMethod.CARD,
+                PaymentStatus.PENDING,
+                order,
+                total
+        );
+
+        authenticateUser(otherUser.getId());
+
+        mockMvc.perform(post(paymentConfirmUri(order.getId()))
+                        .param("paymentStatus", PaymentStatus.SUCCESS.name()))
+                .andExpect(status().isNotFound());
+
+        Payment savedPayment =
+                paymentRepository.findByOrderId(order.getId()).orElseThrow();
+
+        Order savedOrder =
+                orderRepository.findById(order.getId()).orElseThrow();
+
+        assertThat(savedPayment.getPaymentStatus())
+                .isEqualTo(PaymentStatus.PENDING);
+
+        assertThat(savedOrder.getStatus())
+                .isEqualTo(OrderStatus.PENDING_PAYMENT);
     }
 }
