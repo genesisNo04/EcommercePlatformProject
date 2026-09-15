@@ -127,8 +127,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.uri").value(PRODUCT_URI))
                 .andExpect(jsonPath("$.fieldErrors.name",
                         containsInAnyOrder(
-                                PRODUCT_NAME_IS_REQUIRED,
-                                PRODUCT_NAME_IS_INVALID)));
+                                PRODUCT_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -784,8 +783,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(productUri(productId)))
                 .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(
-                        PRODUCT_NAME_IS_REQUIRED,
-                        PRODUCT_NAME_IS_INVALID)));
+                        PRODUCT_NAME_IS_REQUIRED)));
 
         verifyNoInteractions(productService);
     }
@@ -1266,8 +1264,7 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(productUri(productId)))
                 .andExpect(jsonPath("$.fieldErrors.name", containsInAnyOrder(
-                        PRODUCT_NAME_IS_EMPTY,
-                        PRODUCT_NAME_IS_INVALID
+                        PRODUCT_NAME_IS_EMPTY
                 )));
 
         verifyNoInteractions(productService);

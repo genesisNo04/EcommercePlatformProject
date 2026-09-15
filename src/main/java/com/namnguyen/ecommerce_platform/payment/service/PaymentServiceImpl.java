@@ -86,7 +86,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
-            throw new InvalidPaymentStateException(PAYMENT_NOT_PENDING);
+            throw new InvalidPaymentStateException(PAYMENT_CANNOT_BE_CONFIRMED);
         }
 
         if (status == PaymentStatus.SUCCESS) {

@@ -39,6 +39,9 @@ public class PaymentServiceImplTest {
     @Mock
     private PaymentRepository paymentRepository;
 
+    @Mock
+    private PaymentLookupService paymentLookupService;
+
     @InjectMocks
     private PaymentServiceImpl paymentService;
 
@@ -51,7 +54,7 @@ public class PaymentServiceImplTest {
         PaymentMethod paymentMethod = PaymentMethod.CARD;
         PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -125,7 +128,7 @@ public class PaymentServiceImplTest {
         BigDecimal total = BigDecimal.valueOf(500);
         PaymentMethod paymentMethod = PaymentMethod.CARD;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -159,7 +162,7 @@ public class PaymentServiceImplTest {
         PaymentMethod paymentMethod = PaymentMethod.CARD;
         OrderStatus orderStatus = OrderStatus.PENDING_PAYMENT;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -197,7 +200,7 @@ public class PaymentServiceImplTest {
         PaymentStatus paymentStatus = PaymentStatus.PENDING;
         PaymentMethod paymentMethod = PaymentMethod.CARD;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -213,7 +216,7 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.of(payment));
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         PaymentResponse paymentResponse = paymentService.getPaymentByOrderId(orderId, userId);
 
@@ -225,9 +228,9 @@ public class PaymentServiceImplTest {
         assertThat(paymentResponse.paymentMethod()).isEqualTo(paymentMethod);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -258,7 +261,7 @@ public class PaymentServiceImplTest {
         BigDecimal total = BigDecimal.valueOf(500);
         OrderStatus orderStatus = OrderStatus.PENDING_PAYMENT;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -267,7 +270,9 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenThrow(
+                new NoResourceFoundException(paymentNotFoundWithOrderId(orderId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -278,9 +283,9 @@ public class PaymentServiceImplTest {
         assertThat(ex.getMessage()).isEqualTo(paymentNotFoundWithOrderId(orderId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -296,7 +301,7 @@ public class PaymentServiceImplTest {
 
         PaymentRequest paymentRequest = new PaymentRequest(updatePaymentMethod);
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -312,7 +317,7 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.of(payment));
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         PaymentResponse paymentResponse = paymentService.updatePayment(orderId, userId, paymentRequest);
 
@@ -327,9 +332,9 @@ public class PaymentServiceImplTest {
         assertThat(order.getStatus()).isEqualTo(orderStatus);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -345,7 +350,7 @@ public class PaymentServiceImplTest {
 
         PaymentRequest paymentRequest = new PaymentRequest(updatePaymentMethod);
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -361,7 +366,7 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.of(payment));
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         InvalidPaymentStateException ex = assertThrows(
                 InvalidPaymentStateException.class,
@@ -376,9 +381,9 @@ public class PaymentServiceImplTest {
         assertThat(order.getStatus()).isEqualTo(orderStatus);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -415,7 +420,7 @@ public class PaymentServiceImplTest {
 
         PaymentRequest paymentRequest = new PaymentRequest(updatePaymentMethod);
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -424,7 +429,9 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenThrow(
+                new NoResourceFoundException(paymentNotFoundWithOrderId(orderId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -435,9 +442,9 @@ public class PaymentServiceImplTest {
         assertThat(ex.getMessage()).isEqualTo(paymentNotFoundWithOrderId(orderId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -451,7 +458,7 @@ public class PaymentServiceImplTest {
         PaymentMethod paymentMethod = PaymentMethod.CARD;
         PaymentStatus confirmationStatus = PaymentStatus.SUCCESS;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -467,7 +474,7 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.of(payment));
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         PaymentResponse paymentResponse = paymentService.confirmPayment(orderId, userId, confirmationStatus);
 
@@ -482,9 +489,9 @@ public class PaymentServiceImplTest {
         assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -498,7 +505,7 @@ public class PaymentServiceImplTest {
         PaymentMethod paymentMethod = PaymentMethod.CARD;
         PaymentStatus confirmationStatus = PaymentStatus.FAILED;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -514,7 +521,7 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.of(payment));
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         PaymentResponse paymentResponse = paymentService.confirmPayment(orderId, userId, confirmationStatus);
 
@@ -529,9 +536,9 @@ public class PaymentServiceImplTest {
         assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.FAILED);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -545,7 +552,7 @@ public class PaymentServiceImplTest {
         PaymentMethod paymentMethod = PaymentMethod.CARD;
         PaymentStatus confirmationStatus = PaymentStatus.PENDING;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Order order = createOrder(
                 orderId,
                 total,
@@ -561,7 +568,7 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.of(payment));
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         InvalidPaymentStateException ex = assertThrows(
                 InvalidPaymentStateException.class,
@@ -578,9 +585,9 @@ public class PaymentServiceImplTest {
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -609,7 +616,7 @@ public class PaymentServiceImplTest {
     void confirmPayment_whenPaymentDoesNotExist_throwsNoResourceFoundException() {
         Long userId = 2L;
         Long orderId = 3L;
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal total = BigDecimal.valueOf(500);
         OrderStatus orderStatus = OrderStatus.PENDING_PAYMENT;
         Order order = createOrder(
@@ -621,7 +628,9 @@ public class PaymentServiceImplTest {
         PaymentStatus paymentStatus = PaymentStatus.SUCCESS;
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenThrow(
+                new NoResourceFoundException(paymentNotFoundWithOrderId(orderId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -632,9 +641,9 @@ public class PaymentServiceImplTest {
         assertThat(ex.getMessage()).isEqualTo(paymentNotFoundWithOrderId(orderId));
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -642,7 +651,7 @@ public class PaymentServiceImplTest {
         Long paymentId = 1L;
         Long userId = 2L;
         Long orderId = 3L;
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal total = BigDecimal.valueOf(500);
         OrderStatus orderStatus = OrderStatus.PENDING_PAYMENT;
         PaymentMethod paymentMethod = PaymentMethod.CARD;
@@ -665,7 +674,7 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.of(payment));
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         InvalidPaymentStateException ex = assertThrows(
                 InvalidPaymentStateException.class,
@@ -678,9 +687,9 @@ public class PaymentServiceImplTest {
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 
     @Test
@@ -688,7 +697,7 @@ public class PaymentServiceImplTest {
         Long paymentId = 1L;
         Long userId = 2L;
         Long orderId = 3L;
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal total = BigDecimal.valueOf(500);
         OrderStatus orderStatus = OrderStatus.SHIPPED;
         PaymentMethod paymentMethod = PaymentMethod.CARD;
@@ -711,7 +720,7 @@ public class PaymentServiceImplTest {
         );
 
         when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.of(payment));
+        when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         InvalidOrderStateException ex = assertThrows(
                 InvalidOrderStateException.class,
@@ -724,8 +733,8 @@ public class PaymentServiceImplTest {
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verify(paymentRepository).findByOrderId(orderId);
+        verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoMoreInteractions(paymentRepository);
+        verifyNoMoreInteractions(paymentLookupService);
     }
 }

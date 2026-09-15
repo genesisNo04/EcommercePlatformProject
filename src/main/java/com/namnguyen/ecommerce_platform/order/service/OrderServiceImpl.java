@@ -107,6 +107,14 @@ public class OrderServiceImpl implements OrderService {
         if (request == null || request.items() == null || request.items().isEmpty()) {
             throw new InvalidOrderException(ORDER_IS_EMPTY);
         }
+
+        boolean hasInvalidQuantity = request.items()
+                .stream()
+                .anyMatch(item -> item.quantity() <= 0);
+
+        if (hasInvalidQuantity) {
+            throw new InvalidOrderException(ORDER_ITEM_QUANTITY_IS_INVALID);
+        }
     }
 
     @Override

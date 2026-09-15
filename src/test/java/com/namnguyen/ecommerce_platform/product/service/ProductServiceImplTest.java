@@ -33,6 +33,9 @@ public class ProductServiceImplTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private ProductLookupService productLookupService;
+
     @InjectMocks
     private ProductServiceImpl productService;
 
@@ -116,8 +119,8 @@ public class ProductServiceImplTest {
 
         Product product = createDefaultProduct(productId);
 
-        when(productRepository.findById(productId))
-                .thenReturn(Optional.of(product));
+        when(productLookupService.getProductById(productId))
+                .thenReturn(product);
 
         ProductResponse productResponse = productService.getProductById(productId);
 
@@ -129,15 +132,15 @@ public class ProductServiceImplTest {
         assertThat(productResponse.quantity()).isEqualTo(product.getQuantity());
         assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
     }
 
     @Test
     void getProductById_whenProductDoesNotExist_throwsNoResourceFoundException() {
         Long productId = 999L;
-        when(productRepository.findById(productId))
-                .thenReturn(Optional.empty());
+        when(productLookupService.getProductById(productId))
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -147,7 +150,7 @@ public class ProductServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
-        verify(productRepository).findById(productId);
+        verify(productLookupService).getProductById(productId);
         verifyNoMoreInteractions(productRepository);
     }
 
@@ -236,7 +239,7 @@ public class ProductServiceImplTest {
 
         ProductPutRequest productPutRequest = createDefaultProductPutRequest();
 
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(productLookupService.getProductById(productId)).thenReturn(product);
 
         ProductResponse productResponse = productService.putProduct(productId, productPutRequest);
 
@@ -248,8 +251,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.quantity()).isEqualTo(productPutRequest.quantity());
         assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
                 .isEqualTo(productPutRequest.name());
@@ -276,7 +279,7 @@ public class ProductServiceImplTest {
                 0
         );
 
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(productLookupService.getProductById(productId)).thenReturn(product);
 
         ProductResponse productResponse = productService.putProduct(productId, productPutRequest);
 
@@ -288,8 +291,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.quantity()).isEqualTo(productPutRequest.quantity());
         assertThat(productResponse.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
                 .isEqualTo(productPutRequest.name());
@@ -309,7 +312,9 @@ public class ProductServiceImplTest {
 
         ProductPutRequest productPutRequest = createDefaultProductPutRequest();
 
-        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+        when(productLookupService.getProductById(productId)).thenThrow(
+                new NoResourceFoundException(productNotFoundWithId(productId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -317,8 +322,8 @@ public class ProductServiceImplTest {
 
         assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
     }
 
     @Test
@@ -334,7 +339,7 @@ public class ProductServiceImplTest {
                 VALID_UPDATE_PRODUCT_QUANTITY
         );
 
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(productLookupService.getProductById(productId)).thenReturn(product);
 
         String originalName = product.getName();
         BigDecimal originalPrice = product.getPrice();
@@ -349,8 +354,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.quantity()).isEqualTo(productPatchRequest.quantity());
         assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
                 .isEqualTo(originalName);
@@ -382,7 +387,7 @@ public class ProductServiceImplTest {
         BigDecimal originalPrice = product.getPrice();
         Integer originalQuantity = product.getQuantity();
 
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(productLookupService.getProductById(productId)).thenReturn(product);
 
         ProductResponse productResponse = productService.patchProduct(productId, productPatchRequest);
 
@@ -394,8 +399,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.quantity()).isEqualTo(originalQuantity);
         assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
                 .isEqualTo(originalName);
@@ -422,7 +427,7 @@ public class ProductServiceImplTest {
                 0
         );
 
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(productLookupService.getProductById(productId)).thenReturn(product);
 
         String originalName = product.getName();
         BigDecimal originalPrice = product.getPrice();
@@ -437,8 +442,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.quantity()).isEqualTo(0);
         assertThat(productResponse.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
                 .isEqualTo(originalName);
@@ -458,7 +463,9 @@ public class ProductServiceImplTest {
 
         ProductPatchRequest productPatchRequest = createDefaultProductPatchRequest();
 
-        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+        when(productLookupService.getProductById(productId)).thenThrow(
+                new NoResourceFoundException(productNotFoundWithId(productId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -466,8 +473,8 @@ public class ProductServiceImplTest {
 
         assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
     }
 
     @Test
@@ -476,13 +483,14 @@ public class ProductServiceImplTest {
 
         Product product = createDefaultProduct(productId);
 
-        when(productRepository.findById(productId))
-                .thenReturn(Optional.of(product));
+        when(productLookupService.getProductById(productId))
+                .thenReturn(product);
 
         productService.deleteProduct(productId);
 
-        verify(productRepository).findById(productId);
+        verify(productLookupService).getProductById(productId);
         verify(productRepository).delete(product);
+        verifyNoMoreInteractions(productLookupService);
         verifyNoMoreInteractions(productRepository);
     }
 
@@ -490,8 +498,8 @@ public class ProductServiceImplTest {
     void deleteProduct_whenProductDoesNotExist_throwsNoResourceFoundException() {
         Long productId = 999L;
 
-        when(productRepository.findById(productId))
-                .thenReturn(Optional.empty());
+        when(productLookupService.getProductById(productId))
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -500,7 +508,7 @@ public class ProductServiceImplTest {
 
         assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
-        verify(productRepository).findById(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
     }
 }

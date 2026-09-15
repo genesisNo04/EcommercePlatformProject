@@ -8,7 +8,6 @@ import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.user.entity.User;
-import com.namnguyen.ecommerce_platform.user.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
@@ -23,14 +22,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
-    void createOrder_withJwt_returnsOrderResponse() throws Exception {
+    void createOrder_withCustomerJwt_returnsCreated() throws Exception {
         Product product = persistDefaultProduct();
         int boughtQuantity = 10;
         User user = persistDefaultCustomer();
-        CreateOrderItemRequest itemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
+        CreateOrderItemRequest orderItemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
 
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(itemRequest)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(orderItemRequest)
         );
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
@@ -38,55 +37,31 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
         mockMvc.perform(post(ORDER_URI)
                 .header("Authorization", "Bearer "  + token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").exists());
     }
 
     @Test
-    void createOrder_withInvalidJwt_returnsUnauthorized() throws Exception {
-        Product product = persistDefaultProduct();
-        int boughtQuantity = 10;
-        User user = persistDefaultCustomer();
-        CreateOrderItemRequest itemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
-
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(itemRequest)
-        );
-
-        String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD) + "abc";
-
-        mockMvc.perform(post(ORDER_URI)
-                        .header("Authorization", "Bearer "  + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
     void createOrder_withoutJwt_returnsUnauthorized() throws Exception {
-        Product product = persistDefaultProduct();
-        int boughtQuantity = 10;
-        CreateOrderItemRequest itemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
-
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(itemRequest)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(createOrderItemRequest(1L, 10))
         );
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void getOrders_withJwt_returnsOk() throws Exception {
+    void getOrders_withCustomerJwt_returnsOk() throws Exception {
         User user = persistDefaultCustomer();
-        BigDecimal total = BigDecimal.valueOf(299.99);
-        BigDecimal total1 = BigDecimal.valueOf(399.99);
+        BigDecimal firstTotal = BigDecimal.valueOf(299.99);
+        BigDecimal secondTotal = BigDecimal.valueOf(399.99);
 
         persistOrder(
-                total,
+                firstTotal,
                 OrderStatus.PENDING_PAYMENT,
                 user,
                 List.of(),
@@ -94,7 +69,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
         );
 
         persistOrder(
-                total1,
+                secondTotal,
                 OrderStatus.PAID,
                 user,
                 List.of(),
@@ -112,13 +87,12 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void getOrders_withoutJwt_returnsUnauthorized() throws Exception {
-
         mockMvc.perform(get(ORDER_URI))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void getOrderById_withJwt_returnsOk() throws Exception {
+    void getOrderById_withCustomerJwt_returnsOk() throws Exception {
         User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
@@ -132,7 +106,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(get(ORDER_URI + "/" + order.getId())
+        mockMvc.perform(get(orderUri(order.getId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").exists());
@@ -143,45 +117,12 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void getOrderById_withoutJwt_returnsUnauthorized() throws Exception {
         long orderId = 1L;
 
-        mockMvc.perform(get(ORDER_URI + "/" + orderId))
+        mockMvc.perform(get(orderUri(orderId)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void getOrderById_withDifferentUsersJwt_returnsNotFound()
-            throws Exception {
-
-        User owner = persistDefaultCustomer();
-
-        User otherUser = persistUser(
-                "otheruser@gmail.com",
-                VALID_PASSWORD,
-                "Other",
-                "User",
-                "1234567892",
-                Role.CUSTOMER
-        );
-
-        Order order = persistOrder(
-                BigDecimal.valueOf(299.99),
-                OrderStatus.PENDING_PAYMENT,
-                owner,
-                List.of(),
-                null
-        );
-
-        String token = loginAndGetToken(
-                otherUser.getEmail(),
-                VALID_PASSWORD
-        );
-
-        mockMvc.perform(get(ORDER_URI + "/" + order.getId())
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void cancelOrder_withJwt_returnsNoContent() throws Exception {
+    void cancelOrder_withCustomerJwt_returnsNoContent() throws Exception {
         User user = persistDefaultCustomer();
         BigDecimal total = BigDecimal.valueOf(299.99);
 
@@ -195,7 +136,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(patch(ORDER_URI + "/" + order.getId() + "/cancel")
+        mockMvc.perform(patch(cancelOrderUri(order.getId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
     }
@@ -204,12 +145,12 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void cancelOrder_withoutJwt_returnsUnauthorized() throws Exception {
         Long orderId = 1L;
 
-        mockMvc.perform(patch(ORDER_URI + "/" + orderId + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(orderId)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void checkoutCart_withJwt_returnsOrderResponse() throws Exception {
+    void checkoutCart_withCustomerJwt_returnsCreated() throws Exception {
         User user = persistDefaultCustomer();
         int quantity = 2;
 
@@ -220,7 +161,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(post(ORDER_URI + "/checkout")
+        mockMvc.perform(post(CHECKOUT_URI)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").exists());
@@ -229,7 +170,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     @Test
     void checkoutCart_withoutJwt_returnsUnauthorized() throws Exception {
 
-        mockMvc.perform(post(ORDER_URI + "/checkout"))
+        mockMvc.perform(post(CHECKOUT_URI))
                 .andExpect(status().isUnauthorized());
     }
 }

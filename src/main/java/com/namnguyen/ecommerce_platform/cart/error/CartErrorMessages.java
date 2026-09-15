@@ -27,6 +27,6 @@ public final class CartErrorMessages {
     }
 
     public static String cartItemNotFoundWithProductId(Long productId) {
-        return "No cart item found with product id: " + productId;
+        return "No cart item found with product id: " + productId + ".";
     }
 }

@@ -7,6 +7,6 @@ public final class CommonTestMessages {
     private CommonTestMessages() {}
 
     public static String invalidParameter(String parameter) {
-        return "Invalid parameter: " + parameter;
+        return "Invalid parameter: " + parameter + ".";
     }
 }

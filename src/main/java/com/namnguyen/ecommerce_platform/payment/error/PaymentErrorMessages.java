@@ -8,6 +8,9 @@ public final class PaymentErrorMessages {
     public static final String PAYMENT_NOT_PENDING =
             "Only pending payments can be modified.";
 
+    public static final String PAYMENT_CANNOT_BE_CONFIRMED =
+            "Only pending payments can be confirmed.";
+
     public static final String ORDER_NOT_PENDING_PAYMENT =
             "Payment cannot be submitted because this order is no longer pending.";
 

@@ -1,9 +1,8 @@
 package com.namnguyen.ecommerce_platform.integration.security;
 
 import com.namnguyen.ecommerce_platform.integration.BaseSecurityIntegrationTest;
-import com.namnguyen.ecommerce_platform.user.dto.UserPatchRequest;
-import com.namnguyen.ecommerce_platform.user.dto.UserPutRequest;
 import com.namnguyen.ecommerce_platform.user.entity.User;
+import com.namnguyen.ecommerce_platform.user.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
@@ -49,7 +48,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(get(USER_URI + "/" + user.getId())
+        mockMvc.perform(get(userUri(user.getId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(user.getId()));
@@ -59,7 +58,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void getUserById_whenUnauthenticated_returnsUnauthorized() throws Exception {
         Long userId = 999L;
 
-        mockMvc.perform(get(USER_URI + "/" + userId))
+        mockMvc.perform(get(userUri(userId)))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -71,14 +70,14 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         User otherUser = persistUser(
                 "seconduser@gmail.com",
-                "test123456789",
-                "firstName",
-                "lastName",
-                "12345678971",
-                ROLE_CUSTOMER
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543213",
+                Role.CUSTOMER
         );
 
-        mockMvc.perform(get(USER_URI + "/" + otherUser.getId())
+        mockMvc.perform(get(userUri(otherUser.getId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
     }
@@ -91,7 +90,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         User customerUser = persistDefaultCustomer();
 
-        mockMvc.perform(get(USER_URI + "/" + customerUser.getId())
+        mockMvc.perform(get(userUri(customerUser.getId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(customerUser.getId()));
@@ -101,14 +100,12 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void putUser_withCustomerJwt_returnsUserResponse() throws Exception {
         User user = persistDefaultCustomer();
 
-        UserPutRequest request = createDefaultPutUserRequest();
-
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(put(USER_URI + "/" + user.getId())
+        mockMvc.perform(put(userUri(user.getId()))
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createDefaultUserPutRequest())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(user.getId()));
     }
@@ -117,23 +114,21 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void putUser_withDifferentCustomerJwt_returnsForbidden() throws Exception {
         User user = persistDefaultCustomer();
 
-        UserPutRequest request = createDefaultPutUserRequest();
-
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
         User otherUser = persistUser(
                 "seconduser@gmail.com",
-                "test123456789",
-                "firstName",
-                "lastName",
-                "12345678971",
-                ROLE_CUSTOMER
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543212",
+                Role.CUSTOMER
         );
 
-        mockMvc.perform(put(USER_URI + "/" + otherUser.getId())
+        mockMvc.perform(put(userUri(otherUser.getId()))
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createDefaultUserPutRequest())))
                 .andExpect(status().isForbidden());
     }
 
@@ -141,16 +136,14 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void putUser_withAdminJwt_returnsUserResponse() throws Exception {
         User adminUser = persistDefaultAdmin();
 
-        UserPutRequest request = createDefaultPutUserRequest();
-
         String token = loginAndGetToken(adminUser.getEmail(), VALID_PASSWORD);
 
         User customerUser = persistDefaultCustomer();
 
-        mockMvc.perform(put(USER_URI + "/" + customerUser.getId())
+        mockMvc.perform(put(userUri(customerUser.getId()))
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createDefaultUserPutRequest())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(customerUser.getId()));
     }
@@ -159,9 +152,9 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void putUser_whenUnauthenticated_returnsUnauthorized() throws Exception {
         Long userId = 999L;
 
-        mockMvc.perform(put(USER_URI + "/" + userId)
+        mockMvc.perform(put(userUri(userId))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultPutUserRequest())))
+                        .content(objectMapper.writeValueAsString(createDefaultUserPutRequest())))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -169,14 +162,12 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void patchUser_withCustomerJwt_returnsUserResponse() throws Exception {
         User user = persistDefaultCustomer();
 
-        UserPatchRequest request = createDefaultPatchUserRequest();
-
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(patch(USER_URI + "/" + user.getId())
+        mockMvc.perform(patch(userUri(user.getId()))
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createDefaultUserPatchRequest())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(user.getId()));
     }
@@ -187,21 +178,19 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        UserPatchRequest request = createDefaultPatchUserRequest();
-
         User otherUser = persistUser(
                 "seconduser@gmail.com",
-                "test123456789",
-                "firstName",
-                "lastName",
-                "12345678971",
-                ROLE_CUSTOMER
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "98764532123",
+                Role.CUSTOMER
         );
 
-        mockMvc.perform(patch(USER_URI + "/" + otherUser.getId())
+        mockMvc.perform(patch(userUri(otherUser.getId()))
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createDefaultUserPatchRequest())))
                 .andExpect(status().isForbidden());
     }
 
@@ -209,16 +198,14 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void patchUser_withAdminJwt_returnsUserResponse() throws Exception {
         User adminUser = persistDefaultAdmin();
 
-        UserPatchRequest request = createDefaultPatchUserRequest();
-
         String token = loginAndGetToken(adminUser.getEmail(), VALID_PASSWORD);
 
         User customerUser = persistDefaultCustomer();
 
-        mockMvc.perform(patch(USER_URI + "/" + customerUser.getId())
+        mockMvc.perform(patch(userUri(customerUser.getId()))
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createDefaultUserPatchRequest())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(customerUser.getId()));
     }
@@ -227,9 +214,9 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void patchUser_whenUnauthenticated_returnsUnauthorized() throws Exception {
         Long userId = 999L;
 
-        mockMvc.perform(patch(USER_URI + "/" + userId)
+        mockMvc.perform(patch(userUri(userId))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultPatchUserRequest())))
+                        .content(objectMapper.writeValueAsString(createDefaultUserPatchRequest())))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -239,7 +226,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(delete(USER_URI + "/" + user.getId())
+        mockMvc.perform(delete(userUri(user.getId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
     }
@@ -252,7 +239,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
         String token = loginAndGetToken(adminUser.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(delete(USER_URI + "/" + user.getId())
+        mockMvc.perform(delete(userUri(user.getId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
     }
@@ -261,7 +248,7 @@ public class UserSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void deleteUser_whenUnauthenticated_returnsUnauthorized() throws Exception {
         Long userId = 999L;
 
-        mockMvc.perform(delete(USER_URI + "/" + userId))
+        mockMvc.perform(delete(userUri(userId)))
                 .andExpect(status().isUnauthorized());
     }
 }

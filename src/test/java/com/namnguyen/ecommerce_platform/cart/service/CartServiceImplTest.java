@@ -60,7 +60,7 @@ public class CartServiceImplTest {
         Long cartItemId = 11L;
         int quantity = 1;
 
-        User user = createUser(1L);
+        User user = createDefaultUser(1L);
         Product firstProduct = createDefaultProduct(firstProductId);
         Product secondProduct = createDefaultProduct(secondProductId);
 
@@ -111,7 +111,7 @@ public class CartServiceImplTest {
     void getCart_whenCartDoesNotExist_createsNewCartAndReturnsEmptyCartResponse() {
         Long userId = 1L;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
 
         when(userLookupService.getUserById(user.getId())).thenReturn(user);
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.empty());
@@ -174,7 +174,7 @@ public class CartServiceImplTest {
         Long productId = 12L;
         int quantity = 2;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createDefaultProduct(productId);
 
         Cart cart = createCart(cartId, user);
@@ -232,7 +232,7 @@ public class CartServiceImplTest {
         int initialQuantity = 2;
         int addQuantity = 3;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createDefaultProduct(productId);
 
         Cart cart = createCart(cartId, user);
@@ -318,7 +318,7 @@ public class CartServiceImplTest {
         Long productId = 999L;
         Long cartId = 2L;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
 
         CartItemRequest cartItemRequest = new CartItemRequest(
@@ -353,7 +353,7 @@ public class CartServiceImplTest {
         int availableStock = 10;
         int addQuantity = 11;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
@@ -402,7 +402,7 @@ public class CartServiceImplTest {
         int addQuantity = 9;
         int availableStock = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
@@ -456,7 +456,7 @@ public class CartServiceImplTest {
         Long cartItemId = 4L;
         int quantity = 2;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
 
         Product product = createDefaultProduct(productId);
 
@@ -526,7 +526,7 @@ public class CartServiceImplTest {
         Long productId = 3L;
         Long cartId = 4L;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createDefaultProduct(productId);
 
         Cart cart = createCart(cartId, user);
@@ -602,7 +602,7 @@ public class CartServiceImplTest {
         Long cartId = 4L;
         int updateQuantity = 4;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
         Product product = createDefaultProduct(productId);
 
@@ -642,7 +642,7 @@ public class CartServiceImplTest {
         Long cartId = 4L;
         int updateQuantity = 4;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
 
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
@@ -674,7 +674,7 @@ public class CartServiceImplTest {
         int updateQuantity = 11;
         int availableStock = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
         Product product = createProduct(
                 productId,
@@ -724,7 +724,7 @@ public class CartServiceImplTest {
         int initialQuantity = 2;
         int updatedQuantity = 0;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
         Product firstProduct = createDefaultProduct(firstProductId);
         Product secondProduct = createDefaultProduct(secondProductId);
@@ -801,7 +801,7 @@ public class CartServiceImplTest {
         Long secondCartItemId = 6L;
         int initialQuantity = 2;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
         Product firstProduct = createDefaultProduct(firstProductId);
         Product secondProduct = createDefaultProduct(secondProductId);
@@ -849,7 +849,7 @@ public class CartServiceImplTest {
         Long cartId = 2L;
         Long productId = 3L;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
 
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
@@ -904,7 +904,7 @@ public class CartServiceImplTest {
         Long secondCartItemId = 6L;
         int initialQuantity = 2;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
         Product firstProduct = createDefaultProduct(firstProductId);
         Product secondProduct = createDefaultProduct(secondProductId);

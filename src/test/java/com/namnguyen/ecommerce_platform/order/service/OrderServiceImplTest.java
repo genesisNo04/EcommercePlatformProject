@@ -53,6 +53,9 @@ public class OrderServiceImplTest {
     private UserLookupService userLookupService;
 
     @Mock
+    private OrderLookupService orderLookupService;
+
+    @Mock
     private ProductLookupService productLookupService;
 
     @InjectMocks
@@ -102,7 +105,7 @@ public class OrderServiceImplTest {
                 List.of(firstItemRequest, secondItemRequest)
         );
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
         when(productLookupService.getProductById(firstProductId)).thenReturn(firstProduct);
@@ -177,7 +180,7 @@ public class OrderServiceImplTest {
         Long orderId = 4L;
         int quantity = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
 
         Product product = createProduct(
                 productId,
@@ -257,7 +260,7 @@ public class OrderServiceImplTest {
         Long productId = 2L;
         int quantity = 2;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
 
         CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
                 productId,
@@ -350,7 +353,7 @@ public class OrderServiceImplTest {
         Long productId = 3L;
         int quantity = -1;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
 
         CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
                 productId,
@@ -361,8 +364,6 @@ public class OrderServiceImplTest {
                 List.of(orderItemRequest)
         );
 
-        when(userLookupService.getUserById(userId)).thenReturn(user);
-
         InvalidOrderException ex = assertThrows(
                 InvalidOrderException.class,
                 () -> orderService.createOrder(orderRequest, userId)
@@ -371,7 +372,7 @@ public class OrderServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
 
-        verify(userLookupService).getUserById(userId);
+        verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
     }
@@ -382,8 +383,6 @@ public class OrderServiceImplTest {
         Long productId = 3L;
         int quantity = 0;
 
-        User user = createUser(userId);
-
         CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
                 productId,
                 quantity
@@ -393,8 +392,6 @@ public class OrderServiceImplTest {
                 List.of(orderItemRequest)
         );
 
-        when(userLookupService.getUserById(userId)).thenReturn(user);
-
         InvalidOrderException ex = assertThrows(
                 InvalidOrderException.class,
                 () -> orderService.createOrder(orderRequest, userId)
@@ -403,7 +400,7 @@ public class OrderServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
 
-        verify(userLookupService).getUserById(userId);
+        verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
     }
@@ -415,7 +412,7 @@ public class OrderServiceImplTest {
         int requestQuantity = 11;
         int quantity = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
 
         Product product = createProduct(
                 productId,
@@ -483,7 +480,7 @@ public class OrderServiceImplTest {
                 secondProductStockQuantity
         );
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal total = firstProduct.getPrice().multiply(BigDecimal.valueOf(firstOrderItemQuantity))
                 .add(secondProduct.getPrice().multiply(BigDecimal.valueOf(secondOrderItemQuantity)));
 
@@ -513,7 +510,7 @@ public class OrderServiceImplTest {
         order.addOrderItem(firstOrderItem);
         order.addOrderItem(secondOrderItem);
 
-        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
+        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
 
         OrderResponse orderResponse = orderService.getOrderById(orderId, userId);
 
@@ -536,8 +533,8 @@ public class OrderServiceImplTest {
         assertThat(secondItemResponse.quantity()).isEqualTo(secondOrderItemQuantity);
         assertThat(secondItemResponse.price()).isEqualByComparingTo(secondProduct.getPrice());
 
-        verify(orderRepository).findByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderRepository);
+        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderLookupService);
     }
 
     @Test
@@ -545,7 +542,8 @@ public class OrderServiceImplTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.empty());
+        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenThrow(
+                new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -555,8 +553,8 @@ public class OrderServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
-        verify(orderRepository).findByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderRepository);
+        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderLookupService);
     }
 
     @Test
@@ -589,7 +587,7 @@ public class OrderServiceImplTest {
                 secondProductStockQuantity
         );
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal firstOrderTotal = firstProduct.getPrice().multiply(BigDecimal.valueOf(firstItemQuantity));
         BigDecimal secondOrderTotal = secondProduct.getPrice().multiply(BigDecimal.valueOf(secondItemQuantity));
 
@@ -695,7 +693,7 @@ public class OrderServiceImplTest {
                 stockQuantity
         );
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(orderItemQuantity));
 
         Order order = createOrder(
@@ -715,15 +713,15 @@ public class OrderServiceImplTest {
 
         order.addOrderItem(item);
 
-        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
+        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
 
         orderService.cancelOrder(orderId, userId);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(product.getQuantity()).isEqualTo(stockQuantity + orderItemQuantity);
 
-        verify(orderRepository).findByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderRepository);
+        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderLookupService);
     }
 
     @Test
@@ -747,7 +745,7 @@ public class OrderServiceImplTest {
 
         assertThat(product.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(quantity));
 
         Order order = createOrder(
@@ -767,7 +765,7 @@ public class OrderServiceImplTest {
 
         order.addOrderItem(item);
 
-        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
+        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
 
         orderService.cancelOrder(orderId, userId);
 
@@ -775,8 +773,8 @@ public class OrderServiceImplTest {
         assertThat(product.getQuantity()).isEqualTo(stockQuantity + quantity);
         assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
-        verify(orderRepository).findByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderRepository);
+        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderLookupService);
     }
 
     @Test
@@ -784,7 +782,8 @@ public class OrderServiceImplTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.empty());
+        when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -794,8 +793,8 @@ public class OrderServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
-        verify(orderRepository).findByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderRepository);
+        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderLookupService);
     }
 
     @Test
@@ -815,7 +814,7 @@ public class OrderServiceImplTest {
                 initialQuantity
         );
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(quantity));
 
         Order order = createOrder(
@@ -835,7 +834,7 @@ public class OrderServiceImplTest {
 
         order.addOrderItem(item);
 
-        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
+        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
 
         InvalidOrderStateException ex = assertThrows(
                 InvalidOrderStateException.class,
@@ -847,8 +846,8 @@ public class OrderServiceImplTest {
         assertThat(product.getQuantity()).isEqualTo(initialQuantity);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
 
-        verify(orderRepository).findByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderRepository);
+        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderLookupService);
     }
 
     @Test
@@ -868,7 +867,7 @@ public class OrderServiceImplTest {
                 stockQuantity
         );
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(quantity));
 
         Order order = createOrder(
@@ -888,7 +887,7 @@ public class OrderServiceImplTest {
 
         order.addOrderItem(orderItem);
 
-        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
+        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
 
         InvalidOrderStateException ex = assertThrows(
                 InvalidOrderStateException.class,
@@ -900,8 +899,8 @@ public class OrderServiceImplTest {
         assertThat(product.getQuantity()).isEqualTo(stockQuantity);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
-        verify(orderRepository).findByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderRepository);
+        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderLookupService);
     }
 
     @Test
@@ -909,7 +908,7 @@ public class OrderServiceImplTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
 
         Order order = createOrder(
                 orderId,
@@ -918,8 +917,8 @@ public class OrderServiceImplTest {
                 user
         );
 
-        when(orderRepository.findByIdAndUserId(orderId, userId))
-                .thenReturn(Optional.of(order));
+        when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
+                .thenReturn(order);
 
         InvalidOrderStateException ex = assertThrows(
                 InvalidOrderStateException.class,
@@ -931,8 +930,8 @@ public class OrderServiceImplTest {
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
 
-        verify(orderRepository).findByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderRepository);
+        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verifyNoMoreInteractions(orderLookupService);
     }
 
     @Test
@@ -945,7 +944,7 @@ public class OrderServiceImplTest {
         int quantity = 2;
         int stockQuantity = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
@@ -1042,7 +1041,7 @@ public class OrderServiceImplTest {
         Long userId = 1L;
         Long cartId = 2L;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Cart cart = createCart(cartId, user);
 
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
@@ -1068,7 +1067,7 @@ public class OrderServiceImplTest {
         int quantity = 11;
         int stockQuantity = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
@@ -1113,7 +1112,7 @@ public class OrderServiceImplTest {
         int quantity = -1;
         int stockQuantity = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
@@ -1161,7 +1160,7 @@ public class OrderServiceImplTest {
         int quantity = 0;
         int stockQuantity = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
@@ -1210,7 +1209,7 @@ public class OrderServiceImplTest {
         int quantity = 10;
         int stockQuantity = 10;
 
-        User user = createUser(userId);
+        User user = createDefaultUser(userId);
         Product product = createProduct(
                 productId,
                 VALID_PRODUCT_NAME,
