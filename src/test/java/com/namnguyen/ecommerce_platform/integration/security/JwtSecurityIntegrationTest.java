@@ -11,63 +11,40 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     @Test
-    void login_withValidCredentials_returnsJwtToken() throws Exception {
-        persistDefaultCustomer();
-
-        LoginRequest request = new LoginRequest (
-                "customer@gmail.com",
-                "test123456789"
-        );
-
-        mockMvc.perform(post(LOGIN_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists());
-    }
-
-    @Test
-    void login_withInvalidPassword_returnsUnauthorized() throws Exception {
-        persistDefaultAdmin();
-
-        LoginRequest request = new LoginRequest(
-                "admin@gmail.com",
-                "wrongpassword"
-        );
-
-        mockMvc.perform(post(LOGIN_URI)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
     void createProduct_whenAdminJwt_returnsCreated() throws Exception {
         persistDefaultAdmin();
 
-        String token = loginAndGetToken("admin@gmail.com", "test123456789");
+        String token = loginAndGetToken(
+                VALID_ADMIN_EMAIL,
+                VALID_PASSWORD
+        );
 
         mockMvc.perform(post(PRODUCT_URI)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
+                        .content(objectMapper.writeValueAsString(
+                                createDefaultProductCreateRequest()
+                        )))
                 .andExpect(status().isCreated());
     }
 
     @Test
     void createProduct_whenInvalidToken_returnsUnauthorized() throws Exception {
-        String rawPassword = "test123456789";
-
         persistDefaultAdmin();
 
-        String validToken = loginAndGetToken("admin@gmail.com", rawPassword);
+        String validToken = loginAndGetToken(
+                VALID_ADMIN_EMAIL,
+                VALID_PASSWORD
+        );
 
-        String invalidToken = validToken + "abc";
+        String tamperedToken = validToken + "abc";
 
         mockMvc.perform(post(PRODUCT_URI)
-                        .header("Authorization", "Bearer " + invalidToken)
+                        .header("Authorization", "Bearer " + tamperedToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
+                        .content(objectMapper.writeValueAsString(
+                                createDefaultProductCreateRequest()
+                        )))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -75,7 +52,9 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void createProduct_whenMissingToken_returnsUnauthorized() throws Exception {
         mockMvc.perform(post(PRODUCT_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
+                        .content(objectMapper.writeValueAsString(
+                                createDefaultProductCreateRequest()
+                        )))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -83,12 +62,17 @@ public class JwtSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void createProduct_whenCustomerJwt_returnsForbidden() throws Exception {
         persistDefaultCustomer();
 
-        String token = loginAndGetToken("customer@gmail.com", "test123456789");
+        String token = loginAndGetToken(
+                VALID_EMAIL,
+                VALID_PASSWORD
+        );
 
         mockMvc.perform(post(PRODUCT_URI)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDefaultProductCreateRequest())))
+                        .content(objectMapper.writeValueAsString(
+                                createDefaultProductCreateRequest()
+                        )))
                 .andExpect(status().isForbidden());
     }
 }

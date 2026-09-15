@@ -1,14 +1,14 @@
 package com.namnguyen.ecommerce_platform.integration.user;
 
 import com.namnguyen.ecommerce_platform.integration.BaseIntegrationTest;
-import com.namnguyen.ecommerce_platform.testutil.MockAuthentication;
 import com.namnguyen.ecommerce_platform.user.dto.UserPatchRequest;
 import com.namnguyen.ecommerce_platform.user.dto.UserPutRequest;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+
+import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.authenticateUser;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -18,45 +18,109 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void getAllUsers_withAdminRole_returnsPageOfUsers() throws Exception {
-
-        User user = persistUser(
-                "test@gmail.com",
-                "test123456789",
-                "test",
-                "user",
-                "123456789",
+        User adminUser = persistDefaultAdmin();
+        
+        User firstUser = persistUser(
+                "firstuser@gmail.com",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "4561237891",
                 Role.CUSTOMER
         );
 
-        User user1 = persistUser(
-                "test1@gmail.com",
-                "test123456789",
-                "test1",
-                "user1",
-                "123456780",
+        User secondUser = persistUser(
+                "seconduser@gmail.com",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543212",
                 Role.ADMIN
         );
+
+        authenticateUser(adminUser.getId());
 
         mockMvc.perform(get(USER_URI))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].id").value(user.getId()))
-                .andExpect(jsonPath("$.content[0].email").value("test@gmail.com"))
-                .andExpect(jsonPath("$.content[0].firstName").value("test"))
-                .andExpect(jsonPath("$.content[0].lastName").value("user"))
-                .andExpect(jsonPath("$.content[0].phoneNumber").value("123456789"))
-                .andExpect(jsonPath("$.content[0].role").value(Role.CUSTOMER.name()))
+                .andExpect(jsonPath("$.content", hasSize(3)))
+                .andExpect(jsonPath("$.content[0].id").value(adminUser.getId()))
+                .andExpect(jsonPath("$.content[0].email").value(adminUser.getEmail()))
+                .andExpect(jsonPath("$.content[0].firstName").value(adminUser.getFirstName()))
+                .andExpect(jsonPath("$.content[0].lastName").value(adminUser.getLastName()))
+                .andExpect(jsonPath("$.content[0].phoneNumber").value(adminUser.getPhoneNumber()))
+                .andExpect(jsonPath("$.content[0].role").value(Role.ADMIN.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").exists())
                 .andExpect(jsonPath("$.content[0].updatedAt").exists())
 
-                .andExpect(jsonPath("$.content[1].id").value(user1.getId()))
-                .andExpect(jsonPath("$.content[1].email").value("test1@gmail.com"))
-                .andExpect(jsonPath("$.content[1].firstName").value("test1"))
-                .andExpect(jsonPath("$.content[1].lastName").value("user1"))
-                .andExpect(jsonPath("$.content[1].phoneNumber").value("123456780"))
+                .andExpect(jsonPath("$.content[1].id").value(firstUser.getId()))
+                .andExpect(jsonPath("$.content[1].email").value(firstUser.getEmail()))
+                .andExpect(jsonPath("$.content[1].firstName").value(firstUser.getFirstName()))
+                .andExpect(jsonPath("$.content[1].lastName").value(firstUser.getLastName()))
+                .andExpect(jsonPath("$.content[1].phoneNumber").value(firstUser.getPhoneNumber()))
+                .andExpect(jsonPath("$.content[1].role").value(Role.CUSTOMER.name()))
+                .andExpect(jsonPath("$.content[1].createdAt").exists())
+                .andExpect(jsonPath("$.content[1].updatedAt").exists())
+
+                .andExpect(jsonPath("$.content[2].id").value(secondUser.getId()))
+                .andExpect(jsonPath("$.content[2].email").value(secondUser.getEmail()))
+                .andExpect(jsonPath("$.content[2].firstName").value(secondUser.getFirstName()))
+                .andExpect(jsonPath("$.content[2].lastName").value(secondUser.getLastName()))
+                .andExpect(jsonPath("$.content[2].phoneNumber").value(secondUser.getPhoneNumber()))
+                .andExpect(jsonPath("$.content[2].role").value(Role.ADMIN.name()))
+                .andExpect(jsonPath("$.content[2].createdAt").exists())
+                .andExpect(jsonPath("$.content[2].updatedAt").exists())
+
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.numberOfElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void getAllUsers_withFilters_returnsPageOfUsers() throws Exception {
+        User adminUser = persistDefaultAdmin();
+
+        persistUser(
+                "firstuser@gmail.com",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "4561237891",
+                Role.CUSTOMER
+        );
+
+        User secondUser = persistUser(
+                "seconduser@gmail.com",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543212",
+                Role.ADMIN
+        );
+
+        authenticateUser(adminUser.getId());
+
+        mockMvc.perform(get(USER_URI)
+                        .param("role", Role.ADMIN.name()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id").value(adminUser.getId()))
+                .andExpect(jsonPath("$.content[0].email").value(adminUser.getEmail()))
+                .andExpect(jsonPath("$.content[0].firstName").value(adminUser.getFirstName()))
+                .andExpect(jsonPath("$.content[0].lastName").value(adminUser.getLastName()))
+                .andExpect(jsonPath("$.content[0].phoneNumber").value(adminUser.getPhoneNumber()))
+                .andExpect(jsonPath("$.content[0].role").value(Role.ADMIN.name()))
+                .andExpect(jsonPath("$.content[0].createdAt").exists())
+                .andExpect(jsonPath("$.content[0].updatedAt").exists())
+
+                .andExpect(jsonPath("$.content[1].id").value(secondUser.getId()))
+                .andExpect(jsonPath("$.content[1].email").value(secondUser.getEmail()))
+                .andExpect(jsonPath("$.content[1].firstName").value(secondUser.getFirstName()))
+                .andExpect(jsonPath("$.content[1].lastName").value(secondUser.getLastName()))
+                .andExpect(jsonPath("$.content[1].phoneNumber").value(secondUser.getPhoneNumber()))
                 .andExpect(jsonPath("$.content[1].role").value(Role.ADMIN.name()))
                 .andExpect(jsonPath("$.content[1].createdAt").exists())
                 .andExpect(jsonPath("$.content[1].updatedAt").exists())
@@ -68,60 +132,21 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void getAllUsers_withFilters_returnsPageOfUsers() throws Exception {
-
-        persistUser(
-                "test@gmail.com",
-                "test123456789",
-                "test",
-                "user",
-                "123456789",
-                Role.CUSTOMER
-        );
-
-        User user1 = persistUser(
-                "test1@gmail.com",
-                "test123456789",
-                "test1",
-                "user1",
-                "123456780",
-                Role.ADMIN
-        );
-
-        mockMvc.perform(get(USER_URI)
-                        .param("role", Role.ADMIN.name()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].id").value(user1.getId()))
-                .andExpect(jsonPath("$.content[0].email").value("test1@gmail.com"))
-                .andExpect(jsonPath("$.content[0].firstName").value("test1"))
-                .andExpect(jsonPath("$.content[0].lastName").value("user1"))
-                .andExpect(jsonPath("$.content[0].phoneNumber").value("123456780"))
-                .andExpect(jsonPath("$.content[0].role").value(Role.ADMIN.name()))
-                .andExpect(jsonPath("$.content[0].createdAt").exists())
-                .andExpect(jsonPath("$.content[0].updatedAt").exists())
-
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.size").value(10))
-                .andExpect(jsonPath("$.numberOfElements").value(1))
-                .andExpect(jsonPath("$.totalPages").value(1));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
     void getUserById_withAdminRole_returnsUser() throws Exception {
+        User adminUser = persistDefaultAdmin();
+
         User user = persistUser(
-                "test@gmail.com",
-                "test123456789",
-                "test",
-                "user",
-                "123456789",
+                VALID_EMAIL,
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_UPDATE_PHONE_NUMBER,
                 Role.CUSTOMER
         );
 
-        mockMvc.perform(get(USER_URI + "/" + user.getId()))
+        authenticateUser(adminUser.getId());
+
+        mockMvc.perform(get(userUri(user.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(user.getId()))
                 .andExpect(jsonPath("$.email").value(user.getEmail()))
@@ -133,11 +158,14 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void getUserById_whenUserNotFound_returnsNotFoundResponse() throws Exception {
+    void getUserById_whenUserNotFound_returnsNotFound() throws Exception {
+        User adminUser = persistDefaultAdmin();
+
         Long userId = 999L;
 
-        mockMvc.perform(get(USER_URI + "/" + userId))
+        authenticateUser(adminUser.getId());
+
+        mockMvc.perform(get(userUri(userId)))
                 .andExpect(status().isNotFound());
     }
 
@@ -145,9 +173,9 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     void getUserById_whenSameCustomer_returnsUser() throws Exception {
         User user = persistDefaultCustomer();
 
-        MockAuthentication.authenticateUser(user.getId());
+        authenticateUser(user.getId());
 
-        mockMvc.perform(get(USER_URI + "/" + user.getId()))
+        mockMvc.perform(get(userUri(user.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(user.getEmail()))
                 .andExpect(jsonPath("$.password").doesNotExist())
@@ -162,30 +190,30 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     void putUser_whenSameCustomer_updatesUser() throws Exception {
         User user = persistDefaultCustomer();
 
-        UserPutRequest request = createDefaultPutUserRequest();
+        UserPutRequest userPutRequest = createDefaultUserPutRequest();
 
-        MockAuthentication.authenticateUser(user.getId());
+        authenticateUser(user.getId());
 
-        mockMvc.perform(put(USER_URI + "/" + user.getId())
+        mockMvc.perform(put(userUri(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(userPutRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(user.getId()))
-                .andExpect(jsonPath("$.email").value(request.email()))
+                .andExpect(jsonPath("$.email").value(userPutRequest.email()))
                 .andExpect(jsonPath("$.password").doesNotExist())
-                .andExpect(jsonPath("$.firstName").value(request.firstName()))
-                .andExpect(jsonPath("$.lastName").value(request.lastName()))
-                .andExpect(jsonPath("$.phoneNumber").value(request.phoneNumber()))
+                .andExpect(jsonPath("$.firstName").value(userPutRequest.firstName()))
+                .andExpect(jsonPath("$.lastName").value(userPutRequest.lastName()))
+                .andExpect(jsonPath("$.phoneNumber").value(userPutRequest.phoneNumber()))
                 .andExpect(jsonPath("$.role").value(user.getRole().name()));
 
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
 
-        assertThat(updatedUser.getEmail()).isEqualTo(request.email());
-        assertThat(updatedUser.getFirstName()).isEqualTo(request.firstName());
-        assertThat(updatedUser.getLastName()).isEqualTo(request.lastName());
-        assertThat(updatedUser.getPhoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(updatedUser.getEmail()).isEqualTo(userPutRequest.email());
+        assertThat(updatedUser.getFirstName()).isEqualTo(userPutRequest.firstName());
+        assertThat(updatedUser.getLastName()).isEqualTo(userPutRequest.lastName());
+        assertThat(updatedUser.getPhoneNumber()).isEqualTo(userPutRequest.phoneNumber());
         assertThat(updatedUser.getRole()).isEqualTo(Role.CUSTOMER);
-        assertThat(passwordEncoder.matches(request.password(), updatedUser.getPasswordHash())).isTrue();
+        assertThat(passwordEncoder.matches(userPutRequest.password(), updatedUser.getPasswordHash())).isTrue();
     }
 
     @Test
@@ -194,52 +222,55 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         User otherUser = persistUser(
                 "other@gmail.com",
-                "test123456789",
-                "Other",
-                "User",
-                "1234567891",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543212",
                 Role.CUSTOMER
         );
 
         String originalEmail = user.getEmail();
+        String originalPasswordHash = user.getPasswordHash();
+        String originalFirstName = user.getFirstName();
+        String originalLastName = user.getLastName();
+        String originalPhoneNumber = user.getPhoneNumber();
 
-        UserPutRequest request = new UserPutRequest(
+        UserPutRequest userPutRequest = createUserPutRequest(
                 otherUser.getEmail(),
-                "test123456789",
-                "Updated",
-                "User",
-                "1234567892"
+                VALID_UPDATE_PASSWORD,
+                VALID_UPDATE_FIRST_NAME,
+                VALID_UPDATE_LAST_NAME,
+                VALID_UPDATE_PHONE_NUMBER
         );
 
-        MockAuthentication.authenticateUser(user.getId());
+        authenticateUser(user.getId());
 
-        mockMvc.perform(put(USER_URI + "/" + user.getId())
+        mockMvc.perform(put(userUri(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(userPutRequest)))
                 .andExpect(status().isConflict());
 
         User savedUser = userRepository.findById(user.getId()).orElseThrow();
 
         assertThat(savedUser.getEmail()).isEqualTo(originalEmail);
+        assertThat(savedUser.getPasswordHash()).isEqualTo(originalPasswordHash);
+        assertThat(savedUser.getFirstName()).isEqualTo(originalFirstName);
+        assertThat(savedUser.getLastName()).isEqualTo(originalLastName);
+        assertThat(savedUser.getPhoneNumber()).isEqualTo(originalPhoneNumber);
     }
 
     @Test
     void putUser_whenUserNotFound_returnsNotFound() throws Exception {
+        User adminUser = persistDefaultAdmin();
         Long userId = 999_999L;
 
-        UserPutRequest request = new UserPutRequest(
-                "test@gmail.com",
-                "test123456789",
-                "Updated",
-                "User",
-                "1234567892"
-        );
+        UserPutRequest userPutRequest = createDefaultUserPutRequest();
 
-        MockAuthentication.authenticateUser(userId);
+        authenticateUser(adminUser.getId());
 
-        mockMvc.perform(put(USER_URI + "/" + userId)
+        mockMvc.perform(put(userUri(userId))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(userPutRequest)))
                 .andExpect(status().isNotFound());
     }
 
@@ -247,71 +278,75 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     void patchUser_whenSameCustomer_patchesUser() throws Exception {
         User user = persistDefaultCustomer();
 
-        UserPatchRequest request = createPatchUserRequest(
+        UserPatchRequest userPatchRequest = createUserPatchRequest(
                 null,
                 null,
-                "updatedFirstName",
+                VALID_UPDATE_FIRST_NAME,
                 null,
-                "1234567801"
+                VALID_UPDATE_PHONE_NUMBER
         );
 
-        MockAuthentication.authenticateUser(user.getId());
+        String originalEmail = user.getEmail();
+        String originalLastName = user.getLastName();
+        String originalPasswordHash = user.getPasswordHash();
 
-        mockMvc.perform(patch(USER_URI + "/" + user.getId())
+        authenticateUser(user.getId());
+
+        mockMvc.perform(patch(userUri(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(userPatchRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(user.getId()))
-                .andExpect(jsonPath("$.email").value(user.getEmail()))
+                .andExpect(jsonPath("$.email").value(originalEmail))
                 .andExpect(jsonPath("$.password").doesNotExist())
-                .andExpect(jsonPath("$.firstName").value(request.firstName()))
-                .andExpect(jsonPath("$.lastName").value(user.getLastName()))
-                .andExpect(jsonPath("$.phoneNumber").value(request.phoneNumber()))
+                .andExpect(jsonPath("$.firstName").value(userPatchRequest.firstName()))
+                .andExpect(jsonPath("$.lastName").value(originalLastName))
+                .andExpect(jsonPath("$.phoneNumber").value(userPatchRequest.phoneNumber()))
                 .andExpect(jsonPath("$.role").value(user.getRole().name()));
 
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
 
-        assertThat(updatedUser.getEmail()).isEqualTo(user.getEmail());
-        assertThat(updatedUser.getFirstName()).isEqualTo(request.firstName());
-        assertThat(updatedUser.getLastName()).isEqualTo(user.getLastName());
-        assertThat(updatedUser.getPhoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(updatedUser.getEmail()).isEqualTo(originalEmail);
+        assertThat(updatedUser.getFirstName()).isEqualTo(userPatchRequest.firstName());
+        assertThat(updatedUser.getLastName()).isEqualTo(originalLastName);
+        assertThat(updatedUser.getPhoneNumber()).isEqualTo(userPatchRequest.phoneNumber());
         assertThat(updatedUser.getRole()).isEqualTo(Role.CUSTOMER);
-        assertThat(updatedUser.getPasswordHash()).isEqualTo(user.getPasswordHash());
+        assertThat(updatedUser.getPasswordHash()).isEqualTo(originalPasswordHash);
     }
 
     @Test
     void patchUser_whenPhoneNumberAlreadyExists_returnsConflictAndKeepsUserUnchanged()
             throws Exception {
 
-        User user = persistDefaultCustomer();
+        persistDefaultCustomer();
 
         User otherUser = persistUser(
                 "other@gmail.com",
-                "test123456789",
-                "Other",
-                "User",
-                "1234567891",
+                VALID_PASSWORD,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                "9876543212",
                 Role.CUSTOMER
         );
 
-        String originalPhoneNumber = user.getPhoneNumber();
+        String originalPhoneNumber = otherUser.getPhoneNumber();
 
-        UserPatchRequest request = new UserPatchRequest(
+        UserPatchRequest userPatchRequest = createUserPatchRequest(
                 null,
                 null,
                 null,
                 null,
-                otherUser.getPhoneNumber()
+                VALID_PHONE_NUMBER
         );
 
-        MockAuthentication.authenticateUser(user.getId());
+        authenticateUser(otherUser.getId());
 
-        mockMvc.perform(patch(USER_URI + "/" + user.getId())
+        mockMvc.perform(patch(userUri(otherUser.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(userPatchRequest)))
                 .andExpect(status().isConflict());
 
-        User savedUser = userRepository.findById(user.getId()).orElseThrow();
+        User savedUser = userRepository.findById(otherUser.getId()).orElseThrow();
 
         assertThat(savedUser.getPhoneNumber())
                 .isEqualTo(originalPhoneNumber);
@@ -319,41 +354,40 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void patchUser_whenUserNotFound_returnsNotFound() throws Exception {
+        User adminUser = persistDefaultAdmin();
         Long userId = 999_999L;
 
-        UserPatchRequest request = new UserPatchRequest(
-                "test@gmail.com",
-                "test123456789",
-                "Updated",
-                "User",
-                "1234567892"
-        );
+        UserPatchRequest userPatchRequest = createDefaultUserPatchRequest();
 
-        MockAuthentication.authenticateUser(userId);
+        authenticateUser(adminUser.getId());
 
-        mockMvc.perform(patch(USER_URI + "/" + userId)
+        mockMvc.perform(patch(userUri(userId))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(userPatchRequest)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void deleteUser_withAdminRole_deletesUser() throws Exception {
+        User adminUser = persistDefaultAdmin();
         User user = persistDefaultCustomer();
 
-        mockMvc.perform(delete(USER_URI + "/" + user.getId()))
+        authenticateUser(adminUser.getId());
+
+        mockMvc.perform(delete(userUri(user.getId())))
                 .andExpect(status().isNoContent());
 
         assertThat(userRepository.existsById(user.getId())).isFalse();
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void deleteUser_whenUserNotFound_returnsNotFound() throws Exception {
+        User adminUser = persistDefaultAdmin();
         Long userId = 999_999L;
+        
+        authenticateUser(adminUser.getId());
 
-        mockMvc.perform(delete(USER_URI + "/" + userId))
+        mockMvc.perform(delete(userUri(userId)))
                 .andExpect(status().isNotFound());
     }
 }

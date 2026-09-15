@@ -27,7 +27,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
         Product product = persistDefaultProduct();
         int boughtQuantity = 10;
         User user = persistDefaultCustomer();
-        CreateOrderItemRequest itemRequest = createCreateOrderItemRequest(product.getId(), boughtQuantity);
+        CreateOrderItemRequest itemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
 
         CreateOrderRequest request = new CreateOrderRequest(
                 List.of(itemRequest)
@@ -48,7 +48,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
         Product product = persistDefaultProduct();
         int boughtQuantity = 10;
         User user = persistDefaultCustomer();
-        CreateOrderItemRequest itemRequest = createCreateOrderItemRequest(product.getId(), boughtQuantity);
+        CreateOrderItemRequest itemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
 
         CreateOrderRequest request = new CreateOrderRequest(
                 List.of(itemRequest)
@@ -67,7 +67,7 @@ public class OrderSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void createOrder_withoutJwt_returnsUnauthorized() throws Exception {
         Product product = persistDefaultProduct();
         int boughtQuantity = 10;
-        CreateOrderItemRequest itemRequest = createCreateOrderItemRequest(product.getId(), boughtQuantity);
+        CreateOrderItemRequest itemRequest = createOrderItemRequest(product.getId(), boughtQuantity);
 
         CreateOrderRequest request = new CreateOrderRequest(
                 List.of(itemRequest)

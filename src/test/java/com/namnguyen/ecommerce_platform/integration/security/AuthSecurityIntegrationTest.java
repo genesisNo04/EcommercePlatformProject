@@ -15,11 +15,11 @@ public class AuthSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void registerUser_withoutToken_returnsCreated() throws Exception {
-        RegisterRequest request = createDefaultRegisterRequest();
+        RegisterRequest registerRequest = createDefaultRegisterRequest();
 
         mockMvc.perform(post(REGISTER_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").exists());
     }
@@ -28,25 +28,25 @@ public class AuthSecurityIntegrationTest extends BaseSecurityIntegrationTest {
     void loginUser_withoutToken_returnsToken() throws Exception {
         persistDefaultCustomer();
 
-        LoginRequest request = createDefaultLoginRequest();
+        LoginRequest loginRequest = createDefaultLoginRequest();
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
 
     @Test
-    void loginUser_withInvalidTokenStillUsesPublicEndpoint_returnsOk() throws Exception {
+    void loginUser_withInvalidToken_onPublicEndpoint_returnsOk() throws Exception {
         persistDefaultCustomer();
 
-        LoginRequest request = createDefaultLoginRequest();
+        LoginRequest loginRequest = createDefaultLoginRequest();
 
         mockMvc.perform(post(LOGIN_URI)
                         .header("Authorization", "Bearer invalid.token.value")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
