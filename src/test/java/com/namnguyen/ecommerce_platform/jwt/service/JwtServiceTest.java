@@ -1,13 +1,13 @@
 package com.namnguyen.ecommerce_platform.jwt.service;
 
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
+import com.namnguyen.ecommerce_platform.user.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -17,12 +17,12 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.List;
 
+import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JwtServiceTest {
 
-    @InjectMocks
     private JwtService jwtService;
 
     private static final String TEST_SECRET_KEY =
@@ -36,6 +36,14 @@ public class JwtServiceTest {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    private UserDetails createCustomerUserDetails(String email) {
+        return User
+                .withUsername(email)
+                .password(ENCODED_PASSWORD)
+                .roles(Role.CUSTOMER.name())
+                .build();
+    }
+
     @BeforeEach
     void setUp() {
         jwtService = new JwtService();
@@ -46,11 +54,7 @@ public class JwtServiceTest {
 
     @Test
     void generateToken_whenUserIsValid_returnToken() {
-        UserDetails userDetails = User
-                .withUsername("test@gmail.com")
-                .password("test")
-                .roles("CUSTOMER")
-                .build();
+        UserDetails userDetails = createCustomerUserDetails(VALID_EMAIL);
 
         String token = jwtService.generateToken(userDetails);
 
@@ -70,11 +74,7 @@ public class JwtServiceTest {
 
     @Test
     void extractUsername_whenTokenIsValid_returnUsername() {
-        UserDetails userDetails = User
-                .withUsername("test@gmail.com")
-                .password("test")
-                .roles("CUSTOMER")
-                .build();
+        UserDetails userDetails = createCustomerUserDetails(VALID_EMAIL);
 
         String token = jwtService.generateToken(userDetails);
 
@@ -85,26 +85,18 @@ public class JwtServiceTest {
 
     @Test
     void extractExpiration_whenTokenIsValid_returnExpirationDate() {
-        UserDetails userDetails = User
-                .withUsername("test@gmail.com")
-                .password("test")
-                .roles("CUSTOMER")
-                .build();
+        UserDetails userDetails = createCustomerUserDetails(VALID_EMAIL);
 
         String token = jwtService.generateToken(userDetails);
 
-        Date expired = jwtService.extractExpiration(token);
+        Date expiration = jwtService.extractExpiration(token);
 
-        assertThat(expired).isAfter(new Date());
+        assertThat(expiration).isAfter(new Date());
     }
 
     @Test
     void isTokenValid_whenTokenBelongsToUser_returnsTrue() {
-        UserDetails userDetails = User
-                .withUsername("test@gmail.com")
-                .password("test")
-                .roles("CUSTOMER")
-                .build();
+        UserDetails userDetails = createCustomerUserDetails(VALID_EMAIL);
 
         String token = jwtService.generateToken(userDetails);
 
@@ -113,32 +105,20 @@ public class JwtServiceTest {
 
     @Test
     void isTokenValid_whenTokenBelongsToDifferentUser_returnsFalse() {
-        UserDetails userDetails = User
-                .withUsername("test@gmail.com")
-                .password("test")
-                .roles("CUSTOMER")
-                .build();
+        UserDetails userDetails = createCustomerUserDetails(VALID_EMAIL);
 
-        UserDetails userDetails1 = User
-                .withUsername("test1@gmail.com")
-                .password("test1")
-                .roles("CUSTOMER")
-                .build();
+        UserDetails differentUserDetails = createCustomerUserDetails("test1@gmail.com");
 
         String token = jwtService.generateToken(userDetails);
 
-        assertFalse(jwtService.isTokenValid(token, userDetails1));
+        assertFalse(jwtService.isTokenValid(token, differentUserDetails));
     }
 
     @Test
-    void isTokenValid_whenTokenExpired_throwsExpiredJwtException() {
+    void isTokenValid_whenTokenExpired_returnsFalse() {
         ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", TEST_EXPIRED_MS);
 
-        UserDetails userDetails = User
-                .withUsername("test@gmail.com")
-                .password("test")
-                .roles("CUSTOMER")
-                .build();
+        UserDetails userDetails = createCustomerUserDetails(VALID_EMAIL);
 
         String token = jwtService.generateToken(userDetails);
 

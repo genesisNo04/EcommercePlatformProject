@@ -6,6 +6,9 @@ import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import static com.namnguyen.ecommerce_platform.order.error.OrderErrorMessages.orderNotFoundWithId;
+import static com.namnguyen.ecommerce_platform.order.error.OrderErrorMessages.orderNotFoundWithIdAndUserId;
+
 @Service
 @RequiredArgsConstructor
 public class OrderLookupService {
@@ -16,14 +19,13 @@ public class OrderLookupService {
         return orderRepository.findById(orderId)
                 .orElseThrow(() ->
                         new NoResourceFoundException(
-                                "No order found with id: " + orderId));
+                                orderNotFoundWithId(orderId)));
     }
 
     public Order getOrderByIdAndUserId(Long orderId, Long userId) {
         return orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() ->
                         new NoResourceFoundException(
-                                "No order found with id: " + orderId +
-                                " for user id: " + userId));
+                                orderNotFoundWithIdAndUserId(orderId, userId)));
     }
 }

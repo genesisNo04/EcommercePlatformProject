@@ -2,24 +2,26 @@ package com.namnguyen.ecommerce_platform.user.dto;
 
 import jakarta.validation.constraints.*;
 
+import static com.namnguyen.ecommerce_platform.user.error.UserErrorMessages.*;
+
 public record UserCreateRequest(
-        @NotBlank(message = "Email is required")
-        @Email(message = "Invalid Email format")
+        @NotBlank(message = EMAIL_IS_REQUIRED)
+        @Email(message = EMAIL_IS_INVALID)
         String email,
 
-        @NotBlank(message = "Password is required")
-        @Size(min = 8, max = 50, message = "Password has to be from 8 to 50 chars")
+        @NotBlank(message = PASSWORD_IS_REQUIRED)
+        @Size(min = 8, max = 50, message = PASSWORD_IS_INVALID)
         String password,
 
-        @NotBlank(message = "First Name is required")
+        @NotBlank(message = FIRST_NAME_IS_REQUIRED)
         String firstName,
 
-        @NotBlank(message = "Last Name is required")
+        @NotBlank(message = LAST_NAME_IS_REQUIRED)
         String lastName,
 
-        @NotBlank(message = "Phone Number is required")
+        @NotBlank(message = PHONE_NUMBER_IS_REQUIRED)
         @Pattern(regexp = "^\\+?[0-9]{10,15}$",
-                message = "Phone number must be from 10 to 15 digits (with or without +)"
+                message = PHONE_NUMBER_IS_INVALID
         )
         String phoneNumber
 ) {}

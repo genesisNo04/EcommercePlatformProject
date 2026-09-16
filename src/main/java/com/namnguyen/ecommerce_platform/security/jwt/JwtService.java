@@ -63,7 +63,7 @@ public class JwtService {
         try {
             return extractUsername(token).equals(userDetails.getUsername())
                     && !isTokenExpired(token);
-        } catch (JwtException | IllegalAccessError ex) {
+        } catch (JwtException | IllegalArgumentException ex) {
             return false;
         }
     }

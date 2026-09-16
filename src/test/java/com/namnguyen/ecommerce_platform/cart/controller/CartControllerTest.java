@@ -26,11 +26,13 @@ import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CartTestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.invalidParameter;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
@@ -64,8 +66,8 @@ public class CartControllerTest {
     @Test
     void getCart_whenRequestValidAndCartHasItems_returnCartResponse() throws Exception {
         Long userId = 1L;
-        Long productId = 1L;
-        Long productId1 = 2L;
+        Long firstProductId = 1L;
+        Long secondProductId = 2L;
         int quantity = 2;
 
         BigDecimal total = VALID_PRODUCT_PRICE.multiply(BigDecimal.valueOf(quantity));
@@ -73,23 +75,23 @@ public class CartControllerTest {
 
         authenticateUser(userId);
 
-        CartItemResponse itemResponse = new CartItemResponse(
-                productId,
+        CartItemResponse firstItemResponse = new CartItemResponse(
+                firstProductId,
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_PRICE,
                 quantity,
                 total
         );
 
-        CartItemResponse itemResponse1 = new CartItemResponse(
-                productId1,
+        CartItemResponse secondItemResponse = new CartItemResponse(
+                secondProductId,
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_PRICE,
                 quantity,
                 total
         );
 
-        CartResponse cartResponse = new CartResponse(List.of(itemResponse, itemResponse1), totalCart);
+        CartResponse cartResponse = new CartResponse(List.of(firstItemResponse, secondItemResponse), totalCart);
 
         when(cartService.getCart(userId)).thenReturn(cartResponse);
 
@@ -97,12 +99,12 @@ public class CartControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.items", hasSize(2)))
-                .andExpect(jsonPath("$.items[0].productId").value(productId))
+                .andExpect(jsonPath("$.items[0].productId").value(firstProductId))
                 .andExpect(jsonPath("$.items[0].productName").value(VALID_PRODUCT_NAME))
                 .andExpect(jsonPath("$.items[0].unitPrice").value(VALID_PRODUCT_PRICE.doubleValue()))
                 .andExpect(jsonPath("$.items[0].quantity").value(quantity))
                 .andExpect(jsonPath("$.items[0].subtotal").value(total.doubleValue()))
-                .andExpect(jsonPath("$.items[1].productId").value(productId1))
+                .andExpect(jsonPath("$.items[1].productId").value(secondProductId))
                 .andExpect(jsonPath("$.items[1].productName").value(VALID_PRODUCT_NAME))
                 .andExpect(jsonPath("$.items[1].unitPrice").value(VALID_PRODUCT_PRICE.doubleValue()))
                 .andExpect(jsonPath("$.items[1].quantity").value(quantity))
@@ -146,7 +148,7 @@ public class CartControllerTest {
 
         BigDecimal total = VALID_PRODUCT_PRICE.multiply(BigDecimal.valueOf(quantity));
 
-        CartItemResponse response = new CartItemResponse(
+        CartItemResponse itemResponse = new CartItemResponse(
                 productId,
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_PRICE,
@@ -154,7 +156,7 @@ public class CartControllerTest {
                 total
         );
 
-        when(cartService.addItem(userId, request)).thenReturn(response);
+        when(cartService.addItem(userId, request)).thenReturn(itemResponse);
 
         authenticateUser(userId);
 
@@ -171,10 +173,10 @@ public class CartControllerTest {
         ArgumentCaptor<CartItemRequest> captor = ArgumentCaptor.forClass(CartItemRequest.class);
         verify(cartService).addItem(eq(userId), captor.capture());
 
-        CartItemRequest requestCaptured = captor.getValue();
+        CartItemRequest capturedRequest = captor.getValue();
 
-        assertThat(requestCaptured.productId()).isEqualTo(productId);
-        assertThat(requestCaptured.quantity()).isEqualTo(quantity);
+        assertThat(capturedRequest.productId()).isEqualTo(productId);
+        assertThat(capturedRequest.quantity()).isEqualTo(quantity);
 
         verifyNoMoreInteractions(cartService);
     }
@@ -184,7 +186,7 @@ public class CartControllerTest {
         Long userId = 2L;
         int quantity = 2;
 
-        CartItemRequest request = new CartItemRequest(
+        CartItemRequest itemRequest = new CartItemRequest(
                 null,
                 quantity
         );
@@ -193,14 +195,43 @@ public class CartControllerTest {
 
         mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(itemRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(CART_ITEM_URI))
-                .andExpect(jsonPath("$.fieldErrors.productId", containsInAnyOrder(productIdIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.productId", containsInAnyOrder(CART_ITEM_PRODUCT_ID_IS_REQUIRED)));
+
+        verifyNoInteractions(cartService);
+    }
+
+    @Test
+    void addItem_whenProductIdIsZero_returnsBadRequest() throws Exception {
+        Long userId = 2L;
+        Long productId = 0L;
+        int quantity = 2;
+
+        CartItemRequest itemRequest = new CartItemRequest(
+                productId,
+                quantity
+        );
+
+        authenticateUser(userId);
+
+        mockMvc.perform(post(CART_ITEM_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(itemRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI))
+                .andExpect(jsonPath("$.fieldErrors.productId",
+                        containsInAnyOrder(CART_ITEM_PRODUCT_ID_IS_INVALID)
+                ));
 
         verifyNoInteractions(cartService);
     }
@@ -210,7 +241,7 @@ public class CartControllerTest {
         Long productId = 1L;
         Long userId = 2L;
 
-        CartItemRequest request = new CartItemRequest(
+        CartItemRequest itemRequest = new CartItemRequest(
                 productId,
                 null
         );
@@ -219,14 +250,14 @@ public class CartControllerTest {
 
         mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(itemRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(CART_ITEM_URI))
-                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(quantityIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(CART_ITEM_QUANTITY_IS_REQUIRED)));
 
         verifyNoInteractions(cartService);
     }
@@ -236,7 +267,7 @@ public class CartControllerTest {
         Long productId = 1L;
         Long userId = 2L;
 
-        CartItemRequest request = new CartItemRequest(
+        CartItemRequest itemRequest = new CartItemRequest(
                 productId,
                 0
         );
@@ -245,14 +276,14 @@ public class CartControllerTest {
 
         mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(itemRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(CART_ITEM_URI))
-                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(invalidQuantity())));
+                .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(CART_ITEM_QUANTITY_IS_INVALID)));
 
         verifyNoInteractions(cartService);
     }
@@ -279,7 +310,7 @@ public class CartControllerTest {
 
         when(cartService.updateItemQuantity(userId, productId, updatedQuantity)).thenReturn(cartResponse);
 
-        mockMvc.perform(patch(CART_ITEM_URI + "/" + productId)
+        mockMvc.perform(patch(cartItemUri(productId))
                         .param("quantity", String.valueOf(updatedQuantity)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray())
@@ -302,14 +333,14 @@ public class CartControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(CART_ITEM_URI + "/" + productId)
+        mockMvc.perform(patch(cartItemUri(productId))
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(invalidParameter("productId")))
-                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId));
+                .andExpect(jsonPath("$.uri").value(cartItemUri(productId)));
 
         verifyNoInteractions(cartService);
     }
@@ -322,14 +353,14 @@ public class CartControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(CART_ITEM_URI + "/" + productId)
+        mockMvc.perform(patch(cartItemUri(productId))
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.uri").value(cartItemUri(productId)))
                 .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(invalidParameter("quantity"))));
 
         verifyNoInteractions(cartService);
@@ -356,7 +387,7 @@ public class CartControllerTest {
 
         when(cartService.updateItemQuantity(userId, productId, quantity)).thenReturn(cartResponse);
 
-        mockMvc.perform(patch(CART_ITEM_URI + "/" + productId)
+        mockMvc.perform(patch(cartItemUri(productId))
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray())
@@ -378,13 +409,13 @@ public class CartControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(CART_ITEM_URI + "/" + productId))
+        mockMvc.perform(patch(cartItemUri(productId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
-                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.uri").value(cartItemUri(productId)))
                 .andExpect(jsonPath("$.fieldErrors.quantity", containsInAnyOrder(
                         invalidParameter("quantity"))));
 
@@ -399,14 +430,14 @@ public class CartControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(CART_ITEM_URI + "/" + productId)
+        mockMvc.perform(patch(cartItemUri(productId))
                         .param("quantity", badQuantity))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(invalidParameter("quantity")))
-                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId));
+                .andExpect(jsonPath("$.uri").value(cartItemUri(productId)));
 
         verifyNoInteractions(cartService);
     }
@@ -420,16 +451,16 @@ public class CartControllerTest {
         authenticateUser(userId);
 
         when(cartService.updateItemQuantity(userId, productId, quantity))
-                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
-        mockMvc.perform(patch(CART_ITEM_URI + "/" + productId)
+        mockMvc.perform(patch(cartItemUri(productId))
                         .param("quantity", String.valueOf(quantity)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
-                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId));
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
+                .andExpect(jsonPath("$.uri").value(cartItemUri(productId)));
 
         verify(cartService).updateItemQuantity(userId, productId, quantity);
         verifyNoMoreInteractions(cartService);
@@ -446,7 +477,7 @@ public class CartControllerTest {
 
         when(cartService.removeItem(userId, productId)).thenReturn(cartResponse);
 
-        mockMvc.perform(delete(CART_ITEM_URI + "/" + productId))
+        mockMvc.perform(delete(cartItemUri(productId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.items", hasSize(0)))
@@ -463,13 +494,13 @@ public class CartControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(delete(CART_ITEM_URI + "/" + productId))
+        mockMvc.perform(delete(cartItemUri(productId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(invalidParameter("productId")))
-                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId));
+                .andExpect(jsonPath("$.uri").value(cartItemUri(productId)));
 
         verifyNoInteractions(cartService);
     }
@@ -480,17 +511,17 @@ public class CartControllerTest {
         Long productId = 1L;
 
         when(cartService.removeItem(userId, productId))
-                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         authenticateUser(userId);
 
-        mockMvc.perform(delete(CART_ITEM_URI + "/" + productId))
+        mockMvc.perform(delete(cartItemUri(productId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
-                .andExpect(jsonPath("$.uri").value(CART_ITEM_URI + "/" + productId));
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
+                .andExpect(jsonPath("$.uri").value(cartItemUri(productId)));
 
         verify(cartService).removeItem(userId, productId);
         verifyNoMoreInteractions(cartService);

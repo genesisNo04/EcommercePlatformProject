@@ -5,11 +5,9 @@ import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
+import com.namnguyen.ecommerce_platform.user.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-
-import java.math.BigDecimal;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -18,34 +16,48 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
-    void createProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        ProductCreateRequest request = createDefaultProductCreateRequest();
+    void createProduct_withoutJwt_returnsUnauthorized() throws Exception {
+        ProductCreateRequest productCreateRequest = createDefaultProductCreateRequest();
 
         mockMvc.perform(post(PRODUCT_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(productCreateRequest)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @WithMockUser(roles = "CUSTOMER")
-    void createProduct_withCustomerRole_returnsForbidden() throws Exception {
-        ProductCreateRequest request = createDefaultProductCreateRequest();
+    void createProduct_withCustomerJwt_returnsForbidden() throws Exception {
+        User user = persistDefaultCustomer();
+
+        String token = loginAndGetToken(
+                user.getEmail(),
+                VALID_PASSWORD
+        );
+
+        ProductCreateRequest productCreateRequest = createDefaultProductCreateRequest();
 
         mockMvc.perform(post(PRODUCT_URI)
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(productCreateRequest)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void createProduct_withAdminRole_returnsCreated() throws Exception {
-        ProductCreateRequest request = createDefaultProductCreateRequest();
+    void createProduct_withAdminJwt_returnsCreated() throws Exception {
+        User admin = persistDefaultAdmin();
+
+        String token = loginAndGetToken(
+                admin.getEmail(),
+                VALID_PASSWORD
+        );
+
+        ProductCreateRequest productCreateRequest = createDefaultProductCreateRequest();
 
         mockMvc.perform(post(PRODUCT_URI)
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(productCreateRequest)))
                 .andExpect(status().isCreated());
     }
 
@@ -57,126 +69,147 @@ public class ProductSecurityIntegrationTest extends BaseSecurityIntegrationTest 
 
     @Test
     void getProductById_whenUnauthenticated_returnsOk() throws Exception {
-        Product product = createDefaultProduct();
+        Product product = persistDefaultProduct();
 
-        mockMvc.perform(get(PRODUCT_URI + "/" + product.getId()))
+        mockMvc.perform(get(productUri(product.getId())))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void putProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = createDefaultProduct();
+    void putProduct_withoutJwt_returnsUnauthorized() throws Exception {
+        ProductPutRequest request = createDefaultProductPutRequest();
 
-        ProductPutRequest request = createDefaultPutProductRequest();
-
-        mockMvc.perform(put(PRODUCT_URI + "/" + product.getId())
+        mockMvc.perform(put(productUri(1L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @WithMockUser(roles = "CUSTOMER")
-    void putProduct_withCustomerRole_returnsForbidden() throws Exception {
-        Product product = createDefaultProduct();
+    void putProduct_withCustomerJwt_returnsForbidden() throws Exception {
+        User user = persistDefaultCustomer();
 
-        ProductPutRequest request = createDefaultPutProductRequest();
+        String token = loginAndGetToken(
+                user.getEmail(),
+                VALID_PASSWORD
+        );
 
-        mockMvc.perform(put(PRODUCT_URI + "/" + product.getId())
+        Product product = persistDefaultProduct();
+
+        ProductPutRequest productPutRequest = createDefaultProductPutRequest();
+
+        mockMvc.perform(put(productUri(product.getId()))
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(productPutRequest)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void putProduct_withAdminRole_returnsOk() throws Exception {
-        Product product = createDefaultProduct();
+    void putProduct_withAdminJwt_returnsOk() throws Exception {
+        User admin = persistDefaultAdmin();
 
-        ProductPutRequest request = createDefaultPutProductRequest();
+        String token = loginAndGetToken(
+                admin.getEmail(),
+                VALID_PASSWORD
+        );
 
-        mockMvc.perform(put(PRODUCT_URI + "/" + product.getId())
+        Product product = persistDefaultProduct();
+
+        ProductPutRequest productPutRequest = createDefaultProductPutRequest();
+
+        mockMvc.perform(put(productUri(product.getId()))
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(productPutRequest)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void patchProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = createDefaultProduct();
+    void patchProduct_withoutJwt_returnsUnauthorized() throws Exception {
+        ProductPatchRequest productPatchRequest = createDefaultProductPatchRequest();
 
-        ProductPatchRequest request = createPatchProductRequest(
-                "PS5",
-                null,
-                BigDecimal.valueOf(399.99),
-                null
-        );
-
-        mockMvc.perform(patch(PRODUCT_URI + "/" + product.getId())
+        mockMvc.perform(patch(productUri(1L))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(productPatchRequest)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @WithMockUser(roles = "CUSTOMER")
-    void patchProduct_withCustomerRole_returnsForbidden() throws Exception {
-        Product product = createDefaultProduct();
+    void patchProduct_withCustomerJwt_returnsForbidden() throws Exception {
+        User user = persistDefaultCustomer();
 
-        ProductPatchRequest request = createPatchProductRequest(
-                "PS5",
-                null,
-                BigDecimal.valueOf(399.99),
-                null
+        String token = loginAndGetToken(
+                user.getEmail(),
+                VALID_PASSWORD
         );
 
-        mockMvc.perform(patch(PRODUCT_URI + "/" + product.getId())
+        Product product = persistDefaultProduct();
+
+        ProductPatchRequest productPatchRequest = createDefaultProductPatchRequest();
+
+        mockMvc.perform(patch(productUri(product.getId()))
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(productPatchRequest)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void patchProduct_withAdminRole_returnsOk() throws Exception {
-        Product product = createDefaultProduct();
+    void patchProduct_withAdminJwt_returnsOk() throws Exception {
+        User admin = persistDefaultAdmin();
 
-        ProductPatchRequest request = createPatchProductRequest(
-                "PS5",
-                null,
-                BigDecimal.valueOf(399.99),
-                null
+        String token = loginAndGetToken(
+                admin.getEmail(),
+                VALID_PASSWORD
         );
 
-        mockMvc.perform(patch(PRODUCT_URI + "/" + product.getId())
+        Product product = persistDefaultProduct();
+
+        ProductPatchRequest productPatchRequest = createDefaultProductPatchRequest();
+
+        mockMvc.perform(patch(productUri(product.getId()))
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(productPatchRequest)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void deleteProduct_whenUnauthenticated_returnsUnauthorized() throws Exception {
-        Product product = createDefaultProduct();
-
-        mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId()))
+    void deleteProduct_withoutJwt_returnsUnauthorized() throws Exception {
+        mockMvc.perform(delete(productUri(1L)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @WithMockUser(roles = "CUSTOMER")
-    void deleteProduct_withCustomerRole_returnsForbidden() throws Exception {
-        Product product = createDefaultProduct();
+    void deleteProduct_withCustomerJwt_returnsForbidden() throws Exception {
+        User user = persistDefaultCustomer();
 
-        mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId()))
+        String token = loginAndGetToken(
+                user.getEmail(),
+                VALID_PASSWORD
+        );
+
+        Product product = persistDefaultProduct();
+
+        mockMvc.perform(delete(productUri(product.getId()))
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void deleteProduct_withAdminRole_returnsNoContent() throws Exception {
-        Product product = createDefaultProduct();
+    void deleteProduct_withAdminJwt_returnsNoContent() throws Exception {
+        User admin = persistDefaultAdmin();
 
-        mockMvc.perform(delete(PRODUCT_URI + "/" + product.getId()))
+        String token = loginAndGetToken(
+                admin.getEmail(),
+                VALID_PASSWORD
+        );
+
+        Product product = persistDefaultProduct();
+
+        mockMvc.perform(delete(productUri(product.getId()))
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
     }
 }

@@ -22,7 +22,7 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void getCart_withUserJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
+        User user = persistDefaultCustomer();
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
@@ -33,47 +33,47 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void addItem_withoutJwt_returnsUnauthorized() throws Exception {
-        CartItemRequest request = createCartItemRequest(1L, 10);
+        CartItemRequest cartItemRequest = createCartItemRequest(1L, 10);
 
-        mockMvc.perform(post(CART_URI + "/items")
+        mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(cartItemRequest)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void addItem_withUserJwt_returnsCreated() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
-        CartItemRequest request = createCartItemRequest(product.getId(), 10);
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
+        CartItemRequest cartItemRequest = createCartItemRequest(product.getId(), 10);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(post(CART_URI + "/items")
+        mockMvc.perform(post(CART_ITEM_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
+                        .content(objectMapper.writeValueAsString(cartItemRequest))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated());
     }
 
     @Test
     void updateItem_withoutJwt_returnsUnauthorized() throws Exception {
-        mockMvc.perform(patch(CART_URI + "/items/1")
+        mockMvc.perform(patch(cartItemUri(1L))
                         .param("quantity", "10"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void updateItem_withUserJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, 2);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, 2);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(patch(CART_URI + "/items/" + product.getId())
+        mockMvc.perform(patch(cartItemUri(product.getId()))
                         .param("quantity", "10")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
@@ -81,21 +81,21 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void deleteItem_withoutJwt_returnsUnauthorized() throws Exception {
-        mockMvc.perform(delete(CART_URI + "/items/1"))
+        mockMvc.perform(delete(cartItemUri(1L)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void deleteItem_withUserJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, 2);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, 2);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
-        mockMvc.perform(delete(CART_URI + "/items/" + product.getId())
+        mockMvc.perform(delete(cartItemUri(product.getId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
@@ -108,16 +108,23 @@ public class CartSecurityIntegrationTest extends BaseSecurityIntegrationTest {
 
     @Test
     void clearCart_withUserJwt_returnsOk() throws Exception {
-        User user = createDefaultCustomer();
-        Product product = createDefaultProduct();
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
 
-        Cart cart = createCart(user);
-        createCartItem(cart, product, 2);
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, 2);
 
         String token = loginAndGetToken(user.getEmail(), VALID_PASSWORD);
 
         mockMvc.perform(delete(CART_URI)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void getCart_withInvalidJwt_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get(CART_URI)
+                        .header("Authorization", "Bearer invalid.token.value"))
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -4,19 +4,21 @@ import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.*;
+
 public record ProductPatchRequest(
 
-        @Size(min = 1, max = 100, message = "Product Name cannot exceed 100 characters")
-        @Pattern(regexp = ".*\\S.*", message = "Product Name cannot be empty")
+        @Pattern(regexp = ".*\\S.*", message = PRODUCT_NAME_IS_EMPTY)
+        @Size(max = 100, message = PRODUCT_NAME_IS_INVALID)
         String name,
 
-        @Pattern(regexp = ".*\\S.*", message = "Product Description cannot be empty")
-        @Size(min = 5, max = 1000, message = "Description has to be from 5 to 1000 chars")
+        @Pattern(regexp = ".*\\S.*", message = PRODUCT_DESCRIPTION_IS_EMPTY)
+        @Size(min = 5, max = 1000, message = PRODUCT_DESCRIPTION_IS_INVALID)
         String description,
 
-        @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+        @DecimalMin(value = "0.01", message = PRODUCT_PRICE_IS_INVALID)
         BigDecimal price,
 
-        @Min(value = 0, message = "Quantity cannot be negative")
+        @Min(value = 0, message = PRODUCT_QUANTITY_IS_INVALID)
         Integer quantity
 ) {}

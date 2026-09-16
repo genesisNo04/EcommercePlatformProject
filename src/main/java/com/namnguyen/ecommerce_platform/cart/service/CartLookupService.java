@@ -6,6 +6,8 @@ import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundExceptio
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import static com.namnguyen.ecommerce_platform.cart.error.CartErrorMessages.cartNotFoundWithUserId;
+
 @Service
 @RequiredArgsConstructor
 public class CartLookupService {
@@ -14,6 +16,6 @@ public class CartLookupService {
 
     public Cart getCartByUserId(Long userId) {
         return cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new NoResourceFoundException("No cart for user with id: " + userId));
+                .orElseThrow(() -> new NoResourceFoundException(cartNotFoundWithUserId(userId)));
     }
 }

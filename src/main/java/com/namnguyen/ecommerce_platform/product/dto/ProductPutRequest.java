@@ -4,22 +4,24 @@ import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.*;
+
 public record ProductPutRequest(
 
-        @NotBlank(message = "Product Name is required")
-        @Size(min = 1, max = 100, message = "Product Name cannot exceed 100 characters")
+        @NotBlank(message = PRODUCT_NAME_IS_REQUIRED)
+        @Size(max = 100, message = PRODUCT_NAME_IS_INVALID)
         String name,
 
-        @NotBlank(message = "Product Description is required")
-        @Size(min = 5, max = 1000, message = "Description has to be from 5 to 1000 chars")
+        @NotBlank(message = PRODUCT_DESCRIPTION_IS_REQUIRED)
+        @Size(min = 5, max = 1000, message = PRODUCT_DESCRIPTION_IS_INVALID)
         String description,
 
-        @NotNull(message = "Product Price is required")
-        @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+        @NotNull(message = PRODUCT_PRICE_IS_REQUIRED)
+        @DecimalMin(value = "0.01", message = PRODUCT_PRICE_IS_INVALID)
         BigDecimal price,
 
-        @NotNull(message = "Product Quantity is required")
-        @Min(value = 0, message = "Quantity cannot be negative")
+        @NotNull(message = PRODUCT_QUANTITY_IS_REQUIRED)
+        @Min(value = 0, message = PRODUCT_QUANTITY_IS_INVALID)
         Integer quantity
 ) {
 }

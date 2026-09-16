@@ -1,6 +1,12 @@
 package com.namnguyen.ecommerce_platform.common.exception;
 
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidQuantityException;
 import com.namnguyen.ecommerce_platform.common.response.ValidationErrorResponse;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderException;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
+import com.namnguyen.ecommerce_platform.payment.exception.InvalidPaymentStateException;
+import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.namnguyen.ecommerce_platform.common.exception.error.ExceptionErrorMessages.*;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private String resolveFieldErrorMessage(FieldError fieldError) {
         if ("typeMismatch".equals(fieldError.getCode())) {
-            return String.format("Invalid parameter: %s", fieldError.getField());
+            return invalidParameter(fieldError.getField());
         }
 
         return fieldError.getDefaultMessage();
@@ -51,12 +59,25 @@ public class GlobalExceptionHandler {
         return "requestBody";
     }
 
-    private String resolveInvalidJsonFieldMessage(String fieldName) {
-        if ("paymentMethod".equals(fieldName)) {
-            return "Invalid value 'TESTING' for parameter 'paymentStatus''. Allowed values: [CARD, PAYPAL, BANK_TRANSFER]";
+    private String resolveInvalidJsonFieldMessage(
+            HttpMessageNotReadableException ex,
+            String fieldName
+    ) {
+        Throwable cause = ex.getCause();
+
+        if (cause instanceof InvalidFormatException invalidFormatException) {
+            Class<?> targetType = invalidFormatException.getTargetType();
+
+            if (targetType != null && targetType.isEnum()) {
+                return invalidEnumValue(
+                        invalidFormatException.getValue(),
+                        fieldName,
+                        targetType.getEnumConstants()
+                );
+            }
         }
 
-        return String.format("Invalid parameter: %s", fieldName);
+        return invalidParameter(fieldName);
     }
 
     @ExceptionHandler(BindException.class)
@@ -79,7 +100,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        "Validation failed",
+                        VALIDATION_FAILED,
                         request.getRequestURI(),
                         fieldsErrors
                 ));
@@ -94,7 +115,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        ex.getMessage(),
+                        INVALID_CREDENTIALS,
                         request.getRequestURI()));
     }
 
@@ -142,7 +163,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        "Validation failed",
+                        VALIDATION_FAILED,
                         request.getRequestURI(),
                         fieldErrors));
     }
@@ -157,7 +178,7 @@ public class GlobalExceptionHandler {
                         result -> result.getMethodParameter().getParameterName(),
                         result -> result.getResolvableErrors()
                                 .stream()
-                                .map(error -> String.format("Invalid parameter: %s", result.getMethodParameter().getParameterName()))
+                                .map(error -> invalidParameter(result.getMethodParameter().getParameterName()))
                                 .toList(),
                         (existing, replacement) -> existing
                 ));
@@ -167,7 +188,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        "Validation failed",
+                        VALIDATION_FAILED,
                         request.getRequestURI(),
                         fieldErrors));
     }
@@ -189,6 +210,32 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidOrderStateException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidOrderStateException(InvalidOrderStateException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidCartStateException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidCartStateException(InvalidCartStateException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidQuantityException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidQuantityException(InvalidQuantityException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
         return ResponseEntity.status(status)
@@ -227,7 +274,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidPaymentStateException(AuthorizationDeniedException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleAuthorizationDeniedException(AuthorizationDeniedException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.FORBIDDEN;
 
         return ResponseEntity.status(status)
@@ -247,12 +294,13 @@ public class GlobalExceptionHandler {
         String message;
 
         if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
-            message = "Invalid value '" + ex.getValue() +
-                    "' for parameter '" + ex.getName() + "'" +
-                    "'. Allowed values: " +
-                    Arrays.toString(ex.getRequiredType().getEnumConstants());
+            message = invalidEnumValue(
+                    ex.getValue(),
+                    ex.getName(),
+                    ex.getRequiredType().getEnumConstants()
+            );
         } else {
-            message = "Invalid parameter: " + ex.getName();
+            message = invalidParameter(ex.getName());
         }
 
         return ResponseEntity.status(status)
@@ -270,7 +318,7 @@ public class GlobalExceptionHandler {
 
         Map<String, List<String>> fieldErrors = Map.of(
           ex.getParameterName(),
-          List.of(String.format("Invalid parameter: %s", ex.getParameterName()))
+          List.of(invalidParameter(ex.getParameterName()))
         );
 
         return ResponseEntity.status(status)
@@ -278,7 +326,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        "Validation failed",
+                        VALIDATION_FAILED,
                         request.getRequestURI(),
                         fieldErrors));
     }
@@ -294,7 +342,7 @@ public class GlobalExceptionHandler {
 
         Map<String, List<String>> fieldErrors = Map.of(
                 fieldName,
-                List.of(resolveInvalidJsonFieldMessage(fieldName))
+                List.of(resolveInvalidJsonFieldMessage(ex, fieldName))
         );
 
         return ResponseEntity.status(status)
@@ -302,7 +350,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        "Validation failed",
+                        VALIDATION_FAILED,
                         request.getRequestURI(),
                         fieldErrors
                 ));
@@ -319,7 +367,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        "An unexpected error occurred",
+                        UNEXPECTED_ERROR,
                         request.getRequestURI()));
     }
 }

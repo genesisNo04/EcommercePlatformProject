@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.order.controller;
 
-import com.namnguyen.ecommerce_platform.common.exception.InvalidOrderStateException;
+import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
+import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.order.dto.*;
@@ -28,9 +29,9 @@ import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.*;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.invalidQuantity;
-import static com.namnguyen.ecommerce_platform.testutil.TestMessages.quantityIsRequired;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.invalidParameter;
+import static com.namnguyen.ecommerce_platform.testutil.messages.OrderTestMessages.*;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -68,46 +69,46 @@ public class OrderControllerTest {
     @Test
     void createOrder_whenRequestIsValid_returnOrderResponse() throws Exception {
         Long userId = 1L;
-        Long productId = 2L;
-        Long productId1 = 3L;
+        Long firstProductId = 2L;
+        Long secondProductId = 3L;
         Long orderId = 4L;
-        int quantity = 1;
-        int quantity1 = 2;
+        int firstProductQuantity = 1;
+        int secondProductQuantity = 2;
 
-        CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
-                productId,
-                quantity
+        CreateOrderItemRequest firstOrderItemRequest = new CreateOrderItemRequest(
+                firstProductId,
+                firstProductQuantity
         );
 
-        OrderItemResponse itemResponse = new OrderItemResponse(
-                productId,
+        OrderItemResponse firstItemResponse = new OrderItemResponse(
+                firstProductId,
                 VALID_PRODUCT_NAME,
-                quantity,
+                firstProductQuantity,
                 VALID_PRODUCT_PRICE
         );
 
-        CreateOrderItemRequest orderItemRequest1 = new CreateOrderItemRequest(
-                productId1,
-                quantity1
+        CreateOrderItemRequest secondOrderItemRequest = new CreateOrderItemRequest(
+                secondProductId,
+                secondProductQuantity
         );
 
-        OrderItemResponse itemResponse1 = new OrderItemResponse(
-                productId1,
+        OrderItemResponse secondItemResponse = new OrderItemResponse(
+                secondProductId,
                 VALID_PRODUCT_NAME,
-                quantity1,
+                secondProductQuantity,
                 VALID_PRODUCT_PRICE.add(BigDecimal.TEN)
         );
 
-        BigDecimal totalItem = itemResponse.price().multiply(BigDecimal.valueOf(itemResponse.quantity()));
-        BigDecimal totalItem1 = itemResponse1.price().multiply(BigDecimal.valueOf(itemResponse1.quantity()));
-        BigDecimal total = totalItem.add(totalItem1);
+        BigDecimal firstItemTotal = firstItemResponse.price().multiply(BigDecimal.valueOf(firstItemResponse.quantity()));
+        BigDecimal secondItemTotal = secondItemResponse.price().multiply(BigDecimal.valueOf(secondItemResponse.quantity()));
+        BigDecimal total = firstItemTotal.add(secondItemTotal);
 
-        CreateOrderRequest request = new CreateOrderRequest(List.of(orderItemRequest, orderItemRequest1));
+        CreateOrderRequest orderRequest = new CreateOrderRequest(List.of(firstOrderItemRequest, secondOrderItemRequest));
 
-        OrderResponse response = new OrderResponse(
+        OrderResponse orderResponse = new OrderResponse(
                 orderId,
                 userId,
-                List.of(itemResponse, itemResponse1),
+                List.of(firstItemResponse, secondItemResponse),
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 LocalDateTime.now(),
@@ -116,30 +117,30 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        when(orderService.createOrder(request, userId)).thenReturn(response);
+        when(orderService.createOrder(orderRequest, userId)).thenReturn(orderResponse);
 
         mockMvc.perform(post(ORDER_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").value(orderId))
                 .andExpect(jsonPath("$.userId").value(userId))
                 .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.items", hasSize(2)))
-                .andExpect(jsonPath("$.items[0].productId").value(productId))
+                .andExpect(jsonPath("$.items[0].productId").value(firstProductId))
                 .andExpect(jsonPath("$.items[0].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.items[0].quantity").value(quantity))
+                .andExpect(jsonPath("$.items[0].quantity").value(firstProductQuantity))
                 .andExpect(jsonPath("$.items[0].price").value(VALID_PRODUCT_PRICE.doubleValue()))
-                .andExpect(jsonPath("$.items[1].productId").value(productId1))
+                .andExpect(jsonPath("$.items[1].productId").value(secondProductId))
                 .andExpect(jsonPath("$.items[1].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.items[1].quantity").value(quantity1))
+                .andExpect(jsonPath("$.items[1].quantity").value(secondProductQuantity))
                 .andExpect(jsonPath("$.items[1].price").value((VALID_PRODUCT_PRICE.add(BigDecimal.TEN)).doubleValue()))
                 .andExpect(jsonPath("$.total").value(total.doubleValue()))
                 .andExpect(jsonPath("$.status").value(OrderStatus.PENDING_PAYMENT.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService).createOrder(request, userId);
+        verify(orderService).createOrder(orderRequest, userId);
         verifyNoMoreInteractions(orderService);
     }
 
@@ -153,20 +154,20 @@ public class OrderControllerTest {
                 quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(List.of(orderItemRequest));
+        CreateOrderRequest orderRequest = new CreateOrderRequest(List.of(orderItemRequest));
 
         authenticateUser(userId);
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
-                .andExpect(jsonPath("$.fieldErrors['items[0].productId']", containsInAnyOrder(productIdIsRequired())));
+                .andExpect(jsonPath("$.fieldErrors['items[0].productId']", containsInAnyOrder(ORDER_ITEM_PRODUCT_ID_IS_REQUIRED)));
 
         verifyNoInteractions(orderService);
     }
@@ -182,21 +183,21 @@ public class OrderControllerTest {
                 quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(List.of(orderItemRequest));
+        CreateOrderRequest orderRequest = new CreateOrderRequest(List.of(orderItemRequest));
 
         authenticateUser(userId);
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
-                        containsInAnyOrder(invalidQuantity())));
+                        containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_INVALID)));
 
         verifyNoInteractions(orderService);
     }
@@ -212,21 +213,21 @@ public class OrderControllerTest {
                 quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(List.of(orderItemRequest));
+        CreateOrderRequest orderRequest = new CreateOrderRequest(List.of(orderItemRequest));
 
-        when(orderService.createOrder(request, userId))
-                .thenThrow(new NoResourceFoundException(productNotFound(productId)));
+        when(orderService.createOrder(orderRequest, userId))
+                .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         authenticateUser(userId);
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(productNotFound(productId)))
+                .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI));
 
         verify(orderService).createOrder(any(CreateOrderRequest.class), eq(userId));
@@ -243,21 +244,21 @@ public class OrderControllerTest {
                 null
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(List.of(orderItemRequest));
+        CreateOrderRequest orderRequest = new CreateOrderRequest(List.of(orderItemRequest));
 
         authenticateUser(userId);
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
-                        containsInAnyOrder(quantityIsRequired())));
+                        containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_REQUIRED)));
 
         verifyNoInteractions(orderService);
     }
@@ -273,21 +274,21 @@ public class OrderControllerTest {
                 quantity
         );
 
-        CreateOrderRequest request = new CreateOrderRequest(List.of(orderItemRequest));
+        CreateOrderRequest orderRequest = new CreateOrderRequest(List.of(orderItemRequest));
 
         authenticateUser(userId);
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
-                        containsInAnyOrder(invalidQuantity())));
+                        containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_INVALID)));
 
         verifyNoInteractions(orderService);
     }
@@ -296,21 +297,21 @@ public class OrderControllerTest {
     void createOrder_whenOrderDoesNotHaveAnyItem_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
-        CreateOrderRequest request = new CreateOrderRequest(List.of());
+        CreateOrderRequest orderRequest = new CreateOrderRequest(List.of());
 
         authenticateUser(userId);
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.items",
-                        containsInAnyOrder(orderHasAtLeastOneItem())));
+                        containsInAnyOrder(ORDER_IS_EMPTY)));
 
         verifyNoInteractions(orderService);
     }
@@ -319,21 +320,51 @@ public class OrderControllerTest {
     void createOrder_whenOrderItemsListIsNull_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
-        CreateOrderRequest request = new CreateOrderRequest(null);
+        CreateOrderRequest orderRequest = new CreateOrderRequest(null);
 
         authenticateUser(userId);
 
         mockMvc.perform(post(ORDER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(orderRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.items",
-                        containsInAnyOrder(orderHasAtLeastOneItem())));
+                        containsInAnyOrder(ORDER_IS_EMPTY)));
+
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void createOrder_whenProductIdIsZero_returnsBadRequest() throws Exception {
+        Long userId = 1L;
+        Long productId = 0L;
+
+        CreateOrderItemRequest orderItemRequest =
+                new CreateOrderItemRequest(productId, 1);
+
+        CreateOrderRequest orderRequest =
+                new CreateOrderRequest(List.of(orderItemRequest));
+
+        authenticateUser(userId);
+
+        mockMvc.perform(post(ORDER_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(orderRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.uri").value(ORDER_URI))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.fieldErrors['items[0].productId']",
+                        containsInAnyOrder(ORDER_ITEM_PRODUCT_ID_IS_INVALID)
+
+                ));
 
         verifyNoInteractions(orderService);
     }
@@ -341,56 +372,56 @@ public class OrderControllerTest {
     @Test
     void getOrders_whenOrdersExists_returnsPageOfOrderResponse() throws Exception {
         Long userId = 1L;
-        Long orderId1 = 2L;
-        Long orderId2 = 3L;
-        Long productId1 = 4L;
-        Long productId2 = 5L;
-        int quantity1 = 2;
-        int quantity2 = 3;
-        BigDecimal price1 = VALID_PRODUCT_PRICE;
-        BigDecimal price2 = VALID_PRODUCT_PRICE.add(BigDecimal.TEN);
-        BigDecimal total1 = price1.multiply(BigDecimal.valueOf(quantity1)).add(price2.multiply(BigDecimal.valueOf(quantity2)));
-        BigDecimal total2 = price2.multiply(BigDecimal.valueOf(quantity2));
+        Long firstOrderId = 2L;
+        Long secondOrderId = 3L;
+        Long firstProductId = 4L;
+        Long secondProductId = 5L;
+        int firstProductQuantity = 2;
+        int secondProductQuantity = 3;
+        BigDecimal firstProductPrice = VALID_PRODUCT_PRICE;
+        BigDecimal secondProductPrice = VALID_PRODUCT_PRICE.add(BigDecimal.TEN);
+        BigDecimal firstOrderTotal = firstProductPrice.multiply(BigDecimal.valueOf(firstProductQuantity)).add(secondProductPrice.multiply(BigDecimal.valueOf(secondProductQuantity)));
+        BigDecimal secondOrderTotal = secondProductPrice.multiply(BigDecimal.valueOf(secondProductQuantity));
 
-        OrderItemResponse itemResponse1 = new OrderItemResponse(
-                productId1,
+        OrderItemResponse firstItemResponse = new OrderItemResponse(
+                firstProductId,
                 VALID_PRODUCT_NAME,
-                quantity1,
-                price1
+                firstProductQuantity,
+                firstProductPrice
         );
 
 
-        OrderItemResponse itemResponse2 = new OrderItemResponse(
-                productId2,
+        OrderItemResponse secondItemResponse = new OrderItemResponse(
+                secondProductId,
                 VALID_PRODUCT_NAME,
-                quantity2,
-                price2
+                secondProductQuantity,
+                secondProductPrice
         );
 
-        OrderResponse orderResponse1 = new OrderResponse(
-                orderId1,
+        OrderResponse firstOrderResponse = new OrderResponse(
+                firstOrderId,
                 userId,
-                List.of(itemResponse1, itemResponse2),
-                total1,
+                List.of(firstItemResponse, secondItemResponse),
+                firstOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
 
-        OrderResponse orderResponse2 = new OrderResponse(
-                orderId2,
+        OrderResponse secondOrderResponse = new OrderResponse(
+                secondOrderId,
                 userId,
-                List.of(itemResponse2),
-                total2,
+                List.of(secondItemResponse),
+                secondOrderTotal,
                 OrderStatus.PENDING_PAYMENT,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
 
-        List<OrderResponse> responses = List.of(orderResponse1, orderResponse2);
+        List<OrderResponse> orderResponses = List.of(firstOrderResponse, secondOrderResponse);
 
         Pageable pageable = PageRequest.of(0, 10);
-        Page<OrderResponse> pageOrder = new PageImpl<>(responses, pageable, responses.size());
+        Page<OrderResponse> pageOrder = new PageImpl<>(orderResponses, pageable, orderResponses.size());
 
         when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(pageOrder);
 
@@ -400,28 +431,28 @@ public class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].orderId").value(orderId1))
+                .andExpect(jsonPath("$.content[0].orderId").value(firstOrderId))
                 .andExpect(jsonPath("$.content[0].userId").value(userId))
 
                 .andExpect(jsonPath("$.content[0].items").isArray())
                 .andExpect(jsonPath("$.content[0].items", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].items[0].productId").value(productId1))
+                .andExpect(jsonPath("$.content[0].items[0].productId").value(firstProductId))
                 .andExpect(jsonPath("$.content[0].items[0].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.content[0].items[0].quantity").value(quantity1))
-                .andExpect(jsonPath("$.content[0].items[0].price").value(price1.doubleValue()))
-                .andExpect(jsonPath("$.content[0].items[1].productId").value(productId2))
+                .andExpect(jsonPath("$.content[0].items[0].quantity").value(firstProductQuantity))
+                .andExpect(jsonPath("$.content[0].items[0].price").value(firstProductPrice.doubleValue()))
+                .andExpect(jsonPath("$.content[0].items[1].productId").value(secondProductId))
                 .andExpect(jsonPath("$.content[0].items[1].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.content[0].items[1].quantity").value(quantity2))
-                .andExpect(jsonPath("$.content[0].items[1].price").value(price2.doubleValue()))
+                .andExpect(jsonPath("$.content[0].items[1].quantity").value(secondProductQuantity))
+                .andExpect(jsonPath("$.content[0].items[1].price").value(secondProductPrice.doubleValue()))
 
                 .andExpect(jsonPath("$.content[1].items").isArray())
                 .andExpect(jsonPath("$.content[1].items", hasSize(1)))
-                .andExpect(jsonPath("$.content[1].items[0].productId").value(productId2))
+                .andExpect(jsonPath("$.content[1].items[0].productId").value(secondProductId))
                 .andExpect(jsonPath("$.content[1].items[0].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.content[1].items[0].quantity").value(quantity2))
-                .andExpect(jsonPath("$.content[1].items[0].price").value(price2.doubleValue()))
+                .andExpect(jsonPath("$.content[1].items[0].quantity").value(secondProductQuantity))
+                .andExpect(jsonPath("$.content[1].items[0].price").value(secondProductPrice.doubleValue()))
 
-                .andExpect(jsonPath("$.content[0].total").value(total1.doubleValue()))
+                .andExpect(jsonPath("$.content[0].total").value(firstOrderTotal.doubleValue()))
                 .andExpect(jsonPath("$.content[0].status").value(OrderStatus.PENDING_PAYMENT.name()))
                 .andExpect(jsonPath("$.content[0].createdAt").exists())
                 .andExpect(jsonPath("$.content[0].updatedAt").exists())
@@ -431,14 +462,14 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.totalPages").value(1));
 
-        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(orderService).getOrders(eq(userId), any(OrderFilterRequest.class), captor.capture());
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(orderService).getOrders(eq(userId), any(OrderFilterRequest.class), pageableCaptor.capture());
 
-        Pageable capturePageable = captor.getValue();
+        Pageable capturedPageable = pageableCaptor.getValue();
 
-        assertThat(capturePageable.getSort()).contains(Sort.Order.desc("id"));
-        assertThat(capturePageable.getPageSize()).isEqualTo(10);
-        assertThat(capturePageable.getPageNumber()).isEqualTo(0);
+        assertThat(capturedPageable.getSort()).contains(Sort.Order.desc("id"));
+        assertThat(capturedPageable.getPageSize()).isEqualTo(10);
+        assertThat(capturedPageable.getPageNumber()).isEqualTo(0);
 
         verifyNoMoreInteractions(orderService);
     }
@@ -449,20 +480,20 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        LocalDateTime futureDate = LocalDateTime.now().minusDays(3);
-        LocalDateTime pastDate = LocalDateTime.now().plusDays(3);
+        LocalDateTime createdAfter = LocalDateTime.now().minusDays(3);
+        LocalDateTime createdBefore = LocalDateTime.now().plusDays(3);
 
         mockMvc.perform(get(ORDER_URI)
                         .param("status", "TESTING")
                         .param("minTotal", "0.0")
                         .param("maxTotal", "100.0")
-                        .param("createdAfter", String.valueOf(futureDate))
-                        .param("createdBefore", String.valueOf(pastDate)))
+                        .param("createdAfter", String.valueOf(createdAfter))
+                        .param("createdBefore", String.valueOf(createdBefore)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.status",
                         containsInAnyOrder(invalidParameter("status"))));
@@ -476,20 +507,20 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        LocalDateTime futureDate = LocalDateTime.now().minusDays(3);
-        LocalDateTime pastDate = LocalDateTime.now().plusDays(3);
+        LocalDateTime createdAfter = LocalDateTime.now().minusDays(3);
+        LocalDateTime createdBefore = LocalDateTime.now().plusDays(3);
 
         mockMvc.perform(get(ORDER_URI)
                         .param("status", OrderStatus.PENDING_PAYMENT.name())
                         .param("minTotal", "abc")
                         .param("maxTotal", "100.0")
-                        .param("createdAfter", String.valueOf(futureDate))
-                        .param("createdBefore", String.valueOf(pastDate)))
+                        .param("createdAfter", String.valueOf(createdAfter))
+                        .param("createdBefore", String.valueOf(createdBefore)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.minTotal",
                         containsInAnyOrder(invalidParameter("minTotal"))));
@@ -503,20 +534,20 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        LocalDateTime futureDate = LocalDateTime.now().minusDays(3);
-        LocalDateTime pastDate = LocalDateTime.now().plusDays(3);
+        LocalDateTime createdAfter = LocalDateTime.now().minusDays(3);
+        LocalDateTime createdBefore = LocalDateTime.now().plusDays(3);
 
         mockMvc.perform(get(ORDER_URI)
                         .param("status", OrderStatus.PENDING_PAYMENT.name())
                         .param("minTotal", "0.0")
                         .param("maxTotal", "abc")
-                        .param("createdAfter", String.valueOf(futureDate))
-                        .param("createdBefore", String.valueOf(pastDate)))
+                        .param("createdAfter", String.valueOf(createdAfter))
+                        .param("createdBefore", String.valueOf(createdBefore)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.maxTotal",
                         containsInAnyOrder(invalidParameter("maxTotal"))));
@@ -530,19 +561,19 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        LocalDateTime pastDate = LocalDateTime.now().plusDays(3);
+        LocalDateTime createdBefore = LocalDateTime.now().plusDays(3);
 
         mockMvc.perform(get(ORDER_URI)
                         .param("status", OrderStatus.PENDING_PAYMENT.name())
                         .param("minTotal", "0.0")
                         .param("maxTotal", "100.0")
                         .param("createdAfter", "abc")
-                        .param("createdBefore", String.valueOf(pastDate)))
+                        .param("createdBefore", String.valueOf(createdBefore)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.createdAfter",
                         containsInAnyOrder(invalidParameter("createdAfter"))));
@@ -556,19 +587,19 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        LocalDateTime futureDate = LocalDateTime.now().minusDays(3);
+        LocalDateTime createdAfter = LocalDateTime.now().minusDays(3);
 
         mockMvc.perform(get(ORDER_URI)
                         .param("status", OrderStatus.PENDING_PAYMENT.name())
                         .param("minTotal", "0.0")
                         .param("maxTotal", "100.0")
-                        .param("createdAfter", String.valueOf(futureDate))
+                        .param("createdAfter", String.valueOf(createdAfter))
                         .param("createdBefore", "abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(validationFailed()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors.createdBefore",
                         containsInAnyOrder(invalidParameter("createdBefore"))));
@@ -580,10 +611,10 @@ public class OrderControllerTest {
     @Test
     void getOrders_whenOrdersPageIsEmpty_returnsPageOfOrderResponse() throws Exception {
         Long userId = 1L;
-        List<OrderResponse> responses = List.of();
+        List<OrderResponse> orderResponses = List.of();
 
         Pageable pageable = PageRequest.of(0, 10);
-        Page<OrderResponse> pageOrder = new PageImpl<>(responses, pageable, responses.size());
+        Page<OrderResponse> pageOrder = new PageImpl<>(orderResponses, pageable, orderResponses.size());
 
         when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(pageOrder);
 
@@ -598,14 +629,14 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(0))
                 .andExpect(jsonPath("$.totalPages").value(0));
 
-        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(orderService).getOrders(eq(userId), any(OrderFilterRequest.class), captor.capture());
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(orderService).getOrders(eq(userId), any(OrderFilterRequest.class), pageableCaptor.capture());
 
-        Pageable capturePageable = captor.getValue();
+        Pageable capturedPageable = pageableCaptor.getValue();
 
-        assertThat(capturePageable.getSort()).contains(Sort.Order.desc("id"));
-        assertThat(capturePageable.getPageSize()).isEqualTo(10);
-        assertThat(capturePageable.getPageNumber()).isEqualTo(0);
+        assertThat(capturedPageable.getSort()).contains(Sort.Order.desc("id"));
+        assertThat(capturedPageable.getPageSize()).isEqualTo(10);
+        assertThat(capturedPageable.getPageNumber()).isEqualTo(0);
 
         verifyNoMoreInteractions(orderService);
     }
@@ -614,24 +645,24 @@ public class OrderControllerTest {
     void getOrders_whenRequestHasFilters_returnsPageOfOrderResponse() throws Exception {
         Long userId = 1L;
 
-        List<OrderResponse> responses = List.of();
+        List<OrderResponse> orderResponses = List.of();
 
         Pageable pageable = PageRequest.of(0, 10);
-        Page<OrderResponse> pageOrder = new PageImpl<>(responses, pageable, responses.size());
+        Page<OrderResponse> pageOrder = new PageImpl<>(orderResponses, pageable, orderResponses.size());
 
         when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(pageOrder);
 
         authenticateUser(userId);
 
-        LocalDateTime futureDate = LocalDateTime.now().minusDays(3);
-        LocalDateTime pastDate = LocalDateTime.now().plusDays(3);
+        LocalDateTime createdAfter = LocalDateTime.now().minusDays(3);
+        LocalDateTime createdBefore = LocalDateTime.now().plusDays(3);
 
         mockMvc.perform(get(ORDER_URI)
                         .param("status", OrderStatus.PENDING_PAYMENT.name())
                         .param("minTotal", "0.0")
                         .param("maxTotal", "100.0")
-                        .param("createdAfter", String.valueOf(futureDate))
-                        .param("createdBefore", String.valueOf(pastDate)))
+                        .param("createdAfter", String.valueOf(createdAfter))
+                        .param("createdBefore", String.valueOf(createdBefore)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(0)))
@@ -640,23 +671,23 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(0))
                 .andExpect(jsonPath("$.totalPages").value(0));
 
-        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         ArgumentCaptor<OrderFilterRequest> filterCaptor = ArgumentCaptor.forClass(OrderFilterRequest.class);
 
-        verify(orderService).getOrders(eq(userId), filterCaptor.capture(), captor.capture());
+        verify(orderService).getOrders(eq(userId), filterCaptor.capture(), pageableCaptor.capture());
 
-        Pageable capturePageable = captor.getValue();
+        Pageable capturedPageable = pageableCaptor.getValue();
 
-        assertThat(capturePageable.getSort()).contains(Sort.Order.desc("id"));
-        assertThat(capturePageable.getPageSize()).isEqualTo(10);
-        assertThat(capturePageable.getPageNumber()).isEqualTo(0);
+        assertThat(capturedPageable.getSort()).contains(Sort.Order.desc("id"));
+        assertThat(capturedPageable.getPageSize()).isEqualTo(10);
+        assertThat(capturedPageable.getPageNumber()).isEqualTo(0);
 
-        OrderFilterRequest requestFilter = filterCaptor.getValue();
-        assertThat(requestFilter.status().name()).isEqualTo(OrderStatus.PENDING_PAYMENT.name());
-        assertThat(requestFilter.minTotal()).isEqualByComparingTo("0.0");
-        assertThat(requestFilter.maxTotal()).isEqualByComparingTo("100.0");
-        assertThat(requestFilter.createdAfter()).isEqualTo(futureDate);
-        assertThat(requestFilter.createdBefore()).isEqualTo(pastDate);
+        OrderFilterRequest orderFilterRequest = filterCaptor.getValue();
+        assertThat(orderFilterRequest.status().name()).isEqualTo(OrderStatus.PENDING_PAYMENT.name());
+        assertThat(orderFilterRequest.minTotal()).isEqualByComparingTo("0.0");
+        assertThat(orderFilterRequest.maxTotal()).isEqualByComparingTo("100.0");
+        assertThat(orderFilterRequest.createdAfter()).isEqualTo(createdAfter);
+        assertThat(orderFilterRequest.createdBefore()).isEqualTo(createdBefore);
 
         verifyNoMoreInteractions(orderService);
     }
@@ -665,33 +696,33 @@ public class OrderControllerTest {
     void getOrderById_whenRequestIsValid_returnsOrderResponse() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
-        Long productId1 = 4L;
-        Long productId2 = 5L;
-        int quantity1 = 2;
-        int quantity2 = 3;
-        BigDecimal price1 = VALID_PRODUCT_PRICE;
-        BigDecimal price2 = VALID_PRODUCT_PRICE.add(BigDecimal.TEN);
-        BigDecimal total = price1.multiply(BigDecimal.valueOf(quantity1)).add(price2.multiply(BigDecimal.valueOf(quantity2)));
+        Long firstProductId = 4L;
+        Long secondProductId = 5L;
+        int firstProductQuantity = 2;
+        int secondProductQuantity = 3;
+        BigDecimal firstProductPrice = VALID_PRODUCT_PRICE;
+        BigDecimal secondProductPrice = VALID_PRODUCT_PRICE.add(BigDecimal.TEN);
+        BigDecimal total = firstProductPrice.multiply(BigDecimal.valueOf(firstProductQuantity)).add(secondProductPrice.multiply(BigDecimal.valueOf(secondProductQuantity)));
 
-        OrderItemResponse itemResponse1 = new OrderItemResponse(
-                productId1,
+        OrderItemResponse firstItemResponse = new OrderItemResponse(
+                firstProductId,
                 VALID_PRODUCT_NAME,
-                quantity1,
-                price1
+                firstProductQuantity,
+                firstProductPrice
         );
 
 
-        OrderItemResponse itemResponse2 = new OrderItemResponse(
-                productId2,
+        OrderItemResponse secondItemResponse = new OrderItemResponse(
+                secondProductId,
                 VALID_PRODUCT_NAME,
-                quantity2,
-                price2
+                secondProductQuantity,
+                secondProductPrice
         );
 
         OrderResponse orderResponse = new OrderResponse(
                 orderId,
                 userId,
-                List.of(itemResponse1, itemResponse2),
+                List.of(firstItemResponse, secondItemResponse),
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 LocalDateTime.now(),
@@ -702,20 +733,20 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(get(ORDER_URI + "/" + orderId))
+        mockMvc.perform(get(orderUri(orderId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(orderId))
                 .andExpect(jsonPath("$.userId").value(userId))
                 .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.items", hasSize(2)))
-                .andExpect(jsonPath("$.items[0].productId").value(productId1))
+                .andExpect(jsonPath("$.items[0].productId").value(firstProductId))
                 .andExpect(jsonPath("$.items[0].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.items[0].quantity").value(quantity1))
-                .andExpect(jsonPath("$.items[0].price").value(price1.doubleValue()))
-                .andExpect(jsonPath("$.items[1].productId").value(productId2))
+                .andExpect(jsonPath("$.items[0].quantity").value(firstProductQuantity))
+                .andExpect(jsonPath("$.items[0].price").value(firstProductPrice.doubleValue()))
+                .andExpect(jsonPath("$.items[1].productId").value(secondProductId))
                 .andExpect(jsonPath("$.items[1].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.items[1].quantity").value(quantity2))
-                .andExpect(jsonPath("$.items[1].price").value(price2.doubleValue()))
+                .andExpect(jsonPath("$.items[1].quantity").value(secondProductQuantity))
+                .andExpect(jsonPath("$.items[1].price").value(secondProductPrice.doubleValue()))
                 .andExpect(jsonPath("$.total").value(total.doubleValue()))
                 .andExpect(jsonPath("$.status").value(OrderStatus.PENDING_PAYMENT.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
@@ -732,13 +763,13 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(get(ORDER_URI + "/" + orderId))
+        mockMvc.perform(get(orderUri(orderId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(invalidParameter("orderId")))
-                .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId));
+                .andExpect(jsonPath("$.uri").value(orderUri(orderId)));
 
 
         verifyNoInteractions(orderService);
@@ -750,17 +781,17 @@ public class OrderControllerTest {
         Long orderId = 2L;
 
         when(orderService.getOrderById(orderId,userId))
-                .thenThrow(new NoResourceFoundException(orderNotFound(orderId, userId)));
+                .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         authenticateUser(userId);
 
-        mockMvc.perform(get(ORDER_URI + "/" + orderId))
+        mockMvc.perform(get(orderUri(orderId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotFound(orderId, userId)))
-                .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId));
+                .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, userId)))
+                .andExpect(jsonPath("$.uri").value(orderUri(orderId)));
 
 
         verify(orderService).getOrderById(orderId, userId);
@@ -774,9 +805,8 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(ORDER_URI + "/" + orderId + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(orderId)))
                 .andExpect(status().isNoContent());
-
 
         verify(orderService).cancelOrder(orderId, userId);
         verifyNoMoreInteractions(orderService);
@@ -789,13 +819,13 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(ORDER_URI + "/" + orderId + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(orderId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value(invalidParameter("orderId")))
-                .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId + "/cancel"));
+                .andExpect(jsonPath("$.uri").value(cancelOrderUri(orderId)));
 
 
         verifyNoInteractions(orderService);
@@ -806,18 +836,18 @@ public class OrderControllerTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        doThrow(new NoResourceFoundException(orderNotFound(orderId, userId)))
+        doThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)))
                 .when(orderService).cancelOrder(orderId, userId);
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(ORDER_URI + "/" + orderId + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(orderId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderNotFound(orderId, userId)))
-                .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId + "/cancel"));
+                .andExpect(jsonPath("$.message").value(orderNotFoundWithIdAndUserId(orderId, userId)))
+                .andExpect(jsonPath("$.uri").value(cancelOrderUri(orderId)));
 
 
         verify(orderService).cancelOrder(orderId, userId);
@@ -829,18 +859,18 @@ public class OrderControllerTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        doThrow(new InvalidOrderStateException(cannotCancelDeliveredOrder()))
+        doThrow(new InvalidOrderStateException(DELIVERED_ORDER_CANNOT_BE_CANCELLED))
                 .when(orderService).cancelOrder(orderId, userId);
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(ORDER_URI + "/" + orderId + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(orderId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(cannotCancelDeliveredOrder()))
-                .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId + "/cancel"));
+                .andExpect(jsonPath("$.message").value(DELIVERED_ORDER_CANNOT_BE_CANCELLED))
+                .andExpect(jsonPath("$.uri").value(cancelOrderUri(orderId)));
 
 
         verify(orderService).cancelOrder(orderId, userId);
@@ -852,18 +882,18 @@ public class OrderControllerTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        doThrow(new InvalidOrderStateException(orderAlreadyCancelled()))
+        doThrow(new InvalidOrderStateException(ORDER_ALREADY_CANCELLED))
                 .when(orderService).cancelOrder(orderId, userId);
 
         authenticateUser(userId);
 
-        mockMvc.perform(patch(ORDER_URI + "/" + orderId + "/cancel"))
+        mockMvc.perform(patch(cancelOrderUri(orderId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(orderAlreadyCancelled()))
-                .andExpect(jsonPath("$.uri").value(ORDER_URI + "/" + orderId + "/cancel"));
+                .andExpect(jsonPath("$.message").value(ORDER_ALREADY_CANCELLED))
+                .andExpect(jsonPath("$.uri").value(cancelOrderUri(orderId)));
 
 
         verify(orderService).cancelOrder(orderId, userId);
@@ -874,33 +904,33 @@ public class OrderControllerTest {
     void checkoutCart_whenRequestIsValid_returnsOrderResponse() throws Exception {
         Long userId = 1L;
         Long orderId = 2L;
-        Long productId1 = 4L;
-        Long productId2 = 5L;
-        int quantity1 = 2;
-        int quantity2 = 3;
-        BigDecimal price1 = VALID_PRODUCT_PRICE;
-        BigDecimal price2 = VALID_PRODUCT_PRICE.add(BigDecimal.TEN);
-        BigDecimal total = price1.multiply(BigDecimal.valueOf(quantity1)).add(price2.multiply(BigDecimal.valueOf(quantity2)));
+        Long firstProductId = 4L;
+        Long secondProductId = 5L;
+        int firstProductQuantity = 2;
+        int secondProductQuantity = 3;
+        BigDecimal firstProductPrice = VALID_PRODUCT_PRICE;
+        BigDecimal secondProductPrice = VALID_PRODUCT_PRICE.add(BigDecimal.TEN);
+        BigDecimal total = firstProductPrice.multiply(BigDecimal.valueOf(firstProductQuantity)).add(secondProductPrice.multiply(BigDecimal.valueOf(secondProductQuantity)));
 
-        OrderItemResponse itemResponse1 = new OrderItemResponse(
-                productId1,
+        OrderItemResponse firstItemResponse = new OrderItemResponse(
+                firstProductId,
                 VALID_PRODUCT_NAME,
-                quantity1,
-                price1
+                firstProductQuantity,
+                firstProductPrice
         );
 
 
-        OrderItemResponse itemResponse2 = new OrderItemResponse(
-                productId2,
+        OrderItemResponse secondItemResponse = new OrderItemResponse(
+                secondProductId,
                 VALID_PRODUCT_NAME,
-                quantity2,
-                price2
+                secondProductQuantity,
+                secondProductPrice
         );
 
         OrderResponse orderResponse = new OrderResponse(
                 orderId,
                 userId,
-                List.of(itemResponse1, itemResponse2),
+                List.of(firstItemResponse, secondItemResponse),
                 total,
                 OrderStatus.PENDING_PAYMENT,
                 LocalDateTime.now(),
@@ -911,20 +941,20 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        mockMvc.perform(post(ORDER_URI + "/checkout"))
+        mockMvc.perform(post(CHECKOUT_URI))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").value(orderId))
                 .andExpect(jsonPath("$.userId").value(userId))
                 .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.items", hasSize(2)))
-                .andExpect(jsonPath("$.items[0].productId").value(productId1))
+                .andExpect(jsonPath("$.items[0].productId").value(firstProductId))
                 .andExpect(jsonPath("$.items[0].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.items[0].quantity").value(quantity1))
-                .andExpect(jsonPath("$.items[0].price").value(price1.doubleValue()))
-                .andExpect(jsonPath("$.items[1].productId").value(productId2))
+                .andExpect(jsonPath("$.items[0].quantity").value(firstProductQuantity))
+                .andExpect(jsonPath("$.items[0].price").value(firstProductPrice.doubleValue()))
+                .andExpect(jsonPath("$.items[1].productId").value(secondProductId))
                 .andExpect(jsonPath("$.items[1].productName").value(VALID_PRODUCT_NAME))
-                .andExpect(jsonPath("$.items[1].quantity").value(quantity2))
-                .andExpect(jsonPath("$.items[1].price").value(price2.doubleValue()))
+                .andExpect(jsonPath("$.items[1].quantity").value(secondProductQuantity))
+                .andExpect(jsonPath("$.items[1].price").value(secondProductPrice.doubleValue()))
                 .andExpect(jsonPath("$.total").value(total.doubleValue()))
                 .andExpect(jsonPath("$.status").value(OrderStatus.PENDING_PAYMENT.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
@@ -938,18 +968,18 @@ public class OrderControllerTest {
     void checkoutCart_whenCartIsEmpty_returnsBadRequest() throws Exception {
         Long userId = 1L;
 
-        doThrow(new InvalidOrderStateException(emptyCart()))
+        doThrow(new InvalidCartStateException(EMPTY_CART))
                 .when(orderService).checkoutCart(userId);
 
         authenticateUser(userId);
 
-        mockMvc.perform(post(ORDER_URI + "/checkout"))
+        mockMvc.perform(post(CHECKOUT_URI))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value(emptyCart()))
-                .andExpect(jsonPath("$.uri").value(ORDER_URI + "/checkout"));
+                .andExpect(jsonPath("$.message").value(EMPTY_CART))
+                .andExpect(jsonPath("$.uri").value(CHECKOUT_URI));
 
 
         verify(orderService).checkoutCart(userId);

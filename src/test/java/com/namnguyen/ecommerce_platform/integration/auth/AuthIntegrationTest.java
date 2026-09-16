@@ -4,6 +4,7 @@ import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
 import com.namnguyen.ecommerce_platform.integration.BaseIntegrationTest;
 import com.namnguyen.ecommerce_platform.user.entity.User;
+import com.namnguyen.ecommerce_platform.user.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
@@ -15,38 +16,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class AuthIntegrationTest extends BaseIntegrationTest {
 
     @Test
-    void registerUser_withValidRequest_createsUserInDatabase() throws Exception {
-        RegisterRequest request = createDefaultRegisterRequest();
+    void registerUser_whenRequestIsValid_createsUserInDatabase() throws Exception {
+        RegisterRequest registerRequest = createDefaultRegisterRequest();
 
         mockMvc.perform(post(REGISTER_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").exists());
 
-        User savedUser = userRepository.findByEmail(request.email()).orElseThrow();
+        User savedUser = userRepository.findByEmail(registerRequest.email()).orElseThrow();
 
-        assertThat(savedUser.getEmail()).isEqualTo(request.email());
-        assertThat(savedUser.getFirstName()).isEqualTo(request.firstName());
-        assertThat(savedUser.getLastName()).isEqualTo(request.lastName());
-        assertThat(savedUser.getPhoneNumber()).isEqualTo(request.phoneNumber());
-        assertThat(savedUser.getRole()).isEqualTo(ROLE_CUSTOMER);
-        assertThat(passwordEncoder.matches(request.password(), savedUser.getPasswordHash())).isTrue();
+        assertThat(savedUser.getEmail()).isEqualTo(registerRequest.email());
+        assertThat(savedUser.getFirstName()).isEqualTo(registerRequest.firstName());
+        assertThat(savedUser.getLastName()).isEqualTo(registerRequest.lastName());
+        assertThat(savedUser.getPhoneNumber()).isEqualTo(registerRequest.phoneNumber());
+        assertThat(savedUser.getRole()).isEqualTo(Role.CUSTOMER);
+        assertThat(passwordEncoder.matches(registerRequest.password(), savedUser.getPasswordHash())).isTrue();
         assertThat(userRepository.count()).isEqualTo(1);
     }
 
     @Test
-    void registerUser_withSameEmail_returnsConflict() throws Exception {
-        createUser(
-                VALID_EMAIL,
-                VALID_PASSWORD,
-                VALID_FIRST_NAME,
-                VALID_LAST_NAME,
-                VALID_PHONE_NUMBER,
-                ROLE_CUSTOMER
-        );
+    void registerUser_whenEmailAlreadyExists_returnsConflict() throws Exception {
+        persistDefaultCustomer();
 
-        RegisterRequest request = createRegisterRequest(
+        RegisterRequest registerRequest = createRegisterRequest(
                 VALID_EMAIL,
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
@@ -56,7 +50,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.token").doesNotExist());
 
@@ -64,18 +58,11 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void registerUser_withSamePhoneNumber_returnsConflict() throws Exception {
-        createUser(
-                VALID_EMAIL,
-                VALID_PASSWORD,
-                VALID_FIRST_NAME,
-                VALID_LAST_NAME,
-                VALID_PHONE_NUMBER,
-                ROLE_CUSTOMER
-        );
+    void registerUser_whenPhoneNumberAlreadyExists_returnsConflict() throws Exception {
+        persistDefaultCustomer();
 
-        RegisterRequest request = createRegisterRequest(
-                "test1@gmail.com",
+        RegisterRequest registerRequest = createRegisterRequest(
+                "secondemail@gmail.com",
                 VALID_PASSWORD,
                 VALID_FIRST_NAME,
                 VALID_LAST_NAME,
@@ -84,7 +71,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(post(REGISTER_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.token").doesNotExist());
 
@@ -92,57 +79,57 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void loginUser_withValidUser_returnsToken() throws Exception {
-        createDefaultCustomer();
+    void loginUser_whenCredentialsAreValid_returnsToken() throws Exception {
+        persistDefaultCustomer();
 
-        LoginRequest request = createDefaultLoginRequest();
+        LoginRequest loginRequest = createDefaultLoginRequest();
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
 
     @Test
-    void loginUser_withIncorrectPassword_returnsUnauthorized() throws Exception {
-        createDefaultCustomer();
+    void loginUser_whenPasswordIsIncorrect_returnsUnauthorized() throws Exception {
+        persistDefaultCustomer();
 
-        LoginRequest request = createLoginRequest(
-                "customer@gmail.com",
-                "test987654321"
+        LoginRequest loginRequest = createLoginRequest(
+                VALID_EMAIL,
+                WRONG_PASSWORD
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.token").doesNotExist());
     }
 
     @Test
-    void loginUser_withoutRequestBody_returnsBadRequest() throws Exception {
+    void loginUser_whenRequestBodyIsMissing_returnsBadRequest() throws Exception {
         mockMvc.perform(post(LOGIN_URI))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.token").doesNotExist());
     }
 
     @Test
-    void loginUser_withUnknownEmail_returnsUnauthorized() throws Exception {
-        LoginRequest request = createLoginRequest(
+    void loginUser_whenEmailDoesNotExist_returnsUnauthorized() throws Exception {
+        LoginRequest loginRequest = createLoginRequest(
                 "unknown@gmail.com",
                 VALID_PASSWORD
         );
 
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.token").doesNotExist());
     }
 
     @Test
-    void loginUser_withMissingEmailAndPassword_returnsBadRequest() throws Exception {
+    void loginUser_whenCredentialsAreMissing_returnsBadRequest() throws Exception {
         mockMvc.perform(post(LOGIN_URI)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))

@@ -1,7 +1,6 @@
 package com.namnguyen.ecommerce_platform.user.service;
 
 import com.namnguyen.ecommerce_platform.common.caching.CacheNames;
-import com.namnguyen.ecommerce_platform.common.exception.*;
 import com.namnguyen.ecommerce_platform.user.specifications.UserSpecification;
 import com.namnguyen.ecommerce_platform.user.dto.*;
 import com.namnguyen.ecommerce_platform.user.entity.User;
@@ -20,16 +19,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
+
+import static com.namnguyen.ecommerce_platform.user.error.UserErrorMessages.EMAIL_ALREADY_EXISTS;
+import static com.namnguyen.ecommerce_platform.user.error.UserErrorMessages.PHONE_NUMBER_ALREADY_EXISTS;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserLookupService userLookupService;
 
     private void validateEmailDoesNotExist(String email) {
         if (userRepository.existsByEmail(email)) {
-            throw new DuplicateResourceException("Email already exists");
+            throw new DuplicateResourceException(EMAIL_ALREADY_EXISTS);
         }
     }
 
@@ -37,25 +42,21 @@ public class UserServiceImpl implements UserService {
         userRepository.findByEmail(email)
                 .filter(existingUser -> !existingUser.getId().equals(currentUserId))
                 .ifPresent(existingUser -> {
-                    throw new DuplicateResourceException("Email already exists");
+                    throw new DuplicateResourceException(EMAIL_ALREADY_EXISTS);
                 });
     }
 
     private void validatePhoneDoesNotExist(String phone) {
         if (userRepository.existsByPhoneNumber(phone)) {
-            throw new DuplicateResourceException("Phone number already exists");
+            throw new DuplicateResourceException(PHONE_NUMBER_ALREADY_EXISTS);
         }
-    }
-
-    private User getUserOrThrow(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new NoResourceFoundException("User not found with id: " + userId));
     }
 
     private void validatePhoneAvailableForUpdate(String phoneNumber, Long currentUserId) {
         userRepository.findByPhoneNumber(phoneNumber)
                 .filter(existingUser -> !existingUser.getId().equals(currentUserId))
                 .ifPresent(existingUser -> {
-                    throw new DuplicateResourceException("Phone number already exists");
+                    throw new DuplicateResourceException(PHONE_NUMBER_ALREADY_EXISTS);
                 });
     }
 
@@ -98,7 +99,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Cacheable(value = CacheNames.USERS, key = "#userId")
     public UserResponse getUserById(Long userId) {
-        User user = getUserOrThrow(userId);
+        User user = userLookupService.getUserById(userId);
         return UserMapper.toResponse(user);
     }
 
@@ -132,7 +133,7 @@ public class UserServiceImpl implements UserService {
             }
     )
     public UserResponse putUser(Long userId, UserPutRequest request) {
-        User user = getUserOrThrow(userId);
+        User user = userLookupService.getUserById(userId);
 
         validateEmailAvailableForUpdate(request.email(), userId);
         validatePhoneAvailableForUpdate(request.phoneNumber(), userId);
@@ -157,7 +158,7 @@ public class UserServiceImpl implements UserService {
             }
     )
     public UserResponse patchUser(Long userId, UserPatchRequest request) {
-        User user = getUserOrThrow(userId);
+        User user = userLookupService.getUserById(userId);
 
         if (request.email() != null) {
             validateEmailAvailableForUpdate(request.email(), userId);
@@ -199,7 +200,7 @@ public class UserServiceImpl implements UserService {
             }
     )
     public void deleteUser(Long userId) {
-        User user = getUserOrThrow(userId);
+        User user = userLookupService.getUserById(userId);
         userRepository.delete(user);
     }
 }
