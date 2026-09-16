@@ -34,6 +34,6 @@ public final class OrderErrorMessages {
 
     public static String orderNotFoundWithIdAndUserId(Long orderId, Long userId) {
         return  "No order found with id: " + orderId +
-                " for user id: " + userId;
+                " for user id: " + userId + ".";
     }
 }

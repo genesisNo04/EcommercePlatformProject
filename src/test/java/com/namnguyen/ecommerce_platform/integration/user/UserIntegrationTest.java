@@ -39,7 +39,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 Role.ADMIN
         );
 
-        authenticateUser(adminUser.getId());
+        authenticateUser(adminUser.getId(), Role.ADMIN);
 
         mockMvc.perform(get(USER_URI))
                 .andExpect(status().isOk())
@@ -100,7 +100,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 Role.ADMIN
         );
 
-        authenticateUser(adminUser.getId());
+        authenticateUser(adminUser.getId(), Role.ADMIN);
 
         mockMvc.perform(get(USER_URI)
                         .param("role", Role.ADMIN.name()))
@@ -144,7 +144,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 Role.CUSTOMER
         );
 
-        authenticateUser(adminUser.getId());
+        authenticateUser(adminUser.getId(), Role.ADMIN);
 
         mockMvc.perform(get(userUri(user.getId())))
                 .andExpect(status().isOk())
@@ -163,7 +163,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         Long userId = 999L;
 
-        authenticateUser(adminUser.getId());
+        authenticateUser(adminUser.getId(), Role.ADMIN);
 
         mockMvc.perform(get(userUri(userId)))
                 .andExpect(status().isNotFound());
@@ -192,7 +192,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         UserPutRequest userPutRequest = createDefaultUserPutRequest();
 
-        authenticateUser(user.getId());
+        authenticateUser(user.getId(), Role.CUSTOMER);
 
         mockMvc.perform(put(userUri(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -243,7 +243,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 VALID_UPDATE_PHONE_NUMBER
         );
 
-        authenticateUser(user.getId());
+        authenticateUser(user.getId(), Role.CUSTOMER);
 
         mockMvc.perform(put(userUri(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -266,7 +266,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         UserPutRequest userPutRequest = createDefaultUserPutRequest();
 
-        authenticateUser(adminUser.getId());
+        authenticateUser(adminUser.getId(), Role.ADMIN);
 
         mockMvc.perform(put(userUri(userId))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -290,7 +290,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         String originalLastName = user.getLastName();
         String originalPasswordHash = user.getPasswordHash();
 
-        authenticateUser(user.getId());
+        authenticateUser(user.getId(), Role.CUSTOMER);
 
         mockMvc.perform(patch(userUri(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -339,7 +339,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 VALID_PHONE_NUMBER
         );
 
-        authenticateUser(otherUser.getId());
+        authenticateUser(otherUser.getId(), Role.CUSTOMER);
 
         mockMvc.perform(patch(userUri(otherUser.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -359,7 +359,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
         UserPatchRequest userPatchRequest = createDefaultUserPatchRequest();
 
-        authenticateUser(adminUser.getId());
+        authenticateUser(adminUser.getId(), Role.ADMIN);
 
         mockMvc.perform(patch(userUri(userId))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -372,7 +372,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
         User adminUser = persistDefaultAdmin();
         User user = persistDefaultCustomer();
 
-        authenticateUser(adminUser.getId());
+        authenticateUser(adminUser.getId(), Role.ADMIN);
 
         mockMvc.perform(delete(userUri(user.getId())))
                 .andExpect(status().isNoContent());
@@ -384,8 +384,8 @@ public class UserIntegrationTest extends BaseIntegrationTest {
     void deleteUser_whenUserNotFound_returnsNotFound() throws Exception {
         User adminUser = persistDefaultAdmin();
         Long userId = 999_999L;
-        
-        authenticateUser(adminUser.getId());
+
+        authenticateUser(adminUser.getId(), Role.ADMIN);
 
         mockMvc.perform(delete(userUri(userId)))
                 .andExpect(status().isNotFound());

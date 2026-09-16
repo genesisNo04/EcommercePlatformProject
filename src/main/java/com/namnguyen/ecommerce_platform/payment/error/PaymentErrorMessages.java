@@ -23,6 +23,6 @@ public final class PaymentErrorMessages {
     private PaymentErrorMessages() {}
 
     public static String paymentNotFoundWithOrderId(Long orderId) {
-        return "No payment found for order with id: " + orderId;
+        return "No payment found for order with id: " + orderId + ".";
     }
 }

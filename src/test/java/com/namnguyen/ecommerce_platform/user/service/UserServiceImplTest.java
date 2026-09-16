@@ -20,15 +20,20 @@ import java.util.Optional;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.UserTestMessages.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.UserTestMessages.userNotFoundWithId;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserLookupService userLookupService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -184,7 +189,7 @@ public class UserServiceImplTest {
         Long userId = 1L;
         User user = createDefaultUser(userId);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userLookupService.getUserById(userId)).thenReturn(user);
 
         UserResponse userResponse = userService.getUserById(userId);
 
@@ -196,8 +201,8 @@ public class UserServiceImplTest {
         assertThat(userResponse.lastName()).isEqualTo(user.getLastName());
         assertThat(userResponse.role()).isEqualTo(user.getRole());
 
-        verify(userRepository).findById(userId);
-        verifyNoMoreInteractions(userRepository);
+        verify(userLookupService).getUserById(userId);
+        verifyNoMoreInteractions(userLookupService);
         verifyNoInteractions(passwordEncoder);
     }
 
@@ -205,7 +210,9 @@ public class UserServiceImplTest {
     void getUserById_whenUserDoesNotExist_throwsNoResourceFoundException() {
         Long userId = 999L;
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userLookupService.getUserById(userId)).thenThrow(
+                new NoResourceFoundException(userNotFoundWithId(userId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -215,8 +222,8 @@ public class UserServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
-        verify(userRepository).findById(userId);
-        verifyNoMoreInteractions(userRepository);
+        verify(userLookupService).getUserById(userId);
+        verifyNoMoreInteractions(userLookupService);
         verifyNoInteractions(passwordEncoder);
     }
 
@@ -303,9 +310,9 @@ public class UserServiceImplTest {
 
         UserPutRequest userPutRequest = createDefaultUserPutRequest();
 
+        when(userLookupService.getUserById(userId)).thenReturn(user);
         when(userRepository.findByEmail(userPutRequest.email())).thenReturn(Optional.empty());
         when(userRepository.findByPhoneNumber(userPutRequest.phoneNumber())).thenReturn(Optional.empty());
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(userPutRequest.password())).thenReturn(ENCODED_UPDATE_PASSWORD);
 
         UserResponse userResponse = userService.putUser(userId, userPutRequest);
@@ -334,9 +341,10 @@ public class UserServiceImplTest {
         assertThat(user.getPasswordHash())
                 .isNotEqualTo(userPutRequest.password());
 
+        verify(userLookupService).getUserById(userId);
         verify(userRepository).findByEmail(userPutRequest.email());
         verify(userRepository).findByPhoneNumber(userPutRequest.phoneNumber());
-        verify(userRepository).findById(userId);
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
 
         verify(passwordEncoder).encode(userPutRequest.password());
@@ -349,7 +357,9 @@ public class UserServiceImplTest {
 
         UserPutRequest userPutRequest = createDefaultUserPutRequest();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userLookupService.getUserById(userId)).thenThrow(
+                new NoResourceFoundException(userNotFoundWithId(userId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -358,11 +368,10 @@ public class UserServiceImplTest {
 
         assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
-        verify(userRepository).findById(userId);
-        verify(userRepository, never()).findByEmail(anyString());
-        verify(userRepository, never()).findByPhoneNumber(anyString());
-        verifyNoMoreInteractions(userRepository);
-        verifyNoMoreInteractions(passwordEncoder);
+        verify(userLookupService).getUserById(userId);
+        verifyNoMoreInteractions(userLookupService);
+        verifyNoInteractions(passwordEncoder);
+        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -397,8 +406,8 @@ public class UserServiceImplTest {
                 "1234567893"
         );
 
+        when(userLookupService.getUserById(firstUserId)).thenReturn(firstUser);
         when(userRepository.findByEmail(userPutRequest.email())).thenReturn(Optional.of(secondUser));
-        when(userRepository.findById(firstUserId)).thenReturn(Optional.of(firstUser));
 
         DuplicateResourceException ex = assertThrows(
                 DuplicateResourceException.class,
@@ -408,10 +417,11 @@ public class UserServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(EMAIL_ALREADY_EXISTS);
 
-        verify(userRepository).findById(firstUserId);
+        verify(userLookupService).getUserById(firstUserId);
         verify(userRepository).findByEmail(userPutRequest.email());
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
-        verifyNoMoreInteractions(passwordEncoder);
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
@@ -446,9 +456,9 @@ public class UserServiceImplTest {
                 VALID_UPDATE_PHONE_NUMBER
         );
 
+        when(userLookupService.getUserById(firstUserId)).thenReturn(firstUser);
         when(userRepository.findByEmail(userPutRequest.email())).thenReturn(Optional.empty());
         when(userRepository.findByPhoneNumber(userPutRequest.phoneNumber())).thenReturn(Optional.of(secondUser));
-        when(userRepository.findById(firstUserId)).thenReturn(Optional.of(firstUser));
 
         DuplicateResourceException ex = assertThrows(
                 DuplicateResourceException.class,
@@ -458,9 +468,10 @@ public class UserServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(PHONE_NUMBER_ALREADY_EXISTS);
 
-        verify(userRepository).findById(firstUserId);
+        verify(userLookupService).getUserById(firstUserId);
         verify(userRepository).findByEmail(userPutRequest.email());
         verify(userRepository).findByPhoneNumber(userPutRequest.phoneNumber());
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
         verifyNoMoreInteractions(passwordEncoder);
     }
@@ -486,7 +497,7 @@ public class UserServiceImplTest {
                 VALID_UPDATE_PHONE_NUMBER
         );
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userLookupService.getUserById(userId)).thenReturn(user);
         when(userRepository.findByEmail(userPutRequest.email())).thenReturn(Optional.of(user));
         when(userRepository.findByPhoneNumber(userPutRequest.phoneNumber())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(userPutRequest.password())).thenReturn(ENCODED_UPDATE_PASSWORD);
@@ -517,10 +528,11 @@ public class UserServiceImplTest {
         assertThat(user.getPasswordHash())
                 .isNotEqualTo(userPutRequest.password());
 
-        verify(userRepository).findById(userId);
+        verify(userLookupService).getUserById(userId);
         verify(userRepository).findByEmail(userPutRequest.email());
         verify(userRepository).findByPhoneNumber(userPutRequest.phoneNumber());
         verify(passwordEncoder).encode(userPutRequest.password());
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
         verifyNoMoreInteractions(passwordEncoder);
     }
@@ -546,20 +558,20 @@ public class UserServiceImplTest {
                 VALID_PHONE_NUMBER
         );
 
+        when(userLookupService.getUserById(userId)).thenReturn(user);
         when(userRepository.findByEmail(userPutRequest.email())).thenReturn(Optional.empty());
         when(userRepository.findByPhoneNumber(userPutRequest.phoneNumber())).thenReturn(Optional.of(user));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(userPutRequest.password())).thenReturn(ENCODED_UPDATE_PASSWORD);
 
-        UserResponse response = userService.putUser(userId, userPutRequest);
+        UserResponse userResponse = userService.putUser(userId, userPutRequest);
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(userId);
-        assertThat(response.email()).isEqualTo(userPutRequest.email());
-        assertThat(response.firstName()).isEqualTo(userPutRequest.firstName());
-        assertThat(response.lastName()).isEqualTo(userPutRequest.lastName());
-        assertThat(response.phoneNumber()).isEqualTo(userPutRequest.phoneNumber());
-        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+        assertThat(userResponse).isNotNull();
+        assertThat(userResponse.id()).isEqualTo(userId);
+        assertThat(userResponse.email()).isEqualTo(userPutRequest.email());
+        assertThat(userResponse.firstName()).isEqualTo(userPutRequest.firstName());
+        assertThat(userResponse.lastName()).isEqualTo(userPutRequest.lastName());
+        assertThat(userResponse.phoneNumber()).isEqualTo(userPutRequest.phoneNumber());
+        assertThat(userResponse.role()).isEqualTo(Role.CUSTOMER);
         assertThat(user.getPasswordHash()).isNotEqualTo(userPutRequest.password());
 
         assertThat(user.getEmail())
@@ -577,10 +589,11 @@ public class UserServiceImplTest {
         assertThat(user.getPasswordHash())
                 .isNotEqualTo(userPutRequest.password());
 
-        verify(userRepository).findById(userId);
+        verify(userLookupService).getUserById(userId);
         verify(userRepository).findByEmail(userPutRequest.email());
         verify(userRepository).findByPhoneNumber(userPutRequest.phoneNumber());
         verify(passwordEncoder).encode(userPutRequest.password());
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
         verifyNoMoreInteractions(passwordEncoder);
     }
@@ -591,20 +604,20 @@ public class UserServiceImplTest {
         User user = createDefaultUser(userId);
         UserPatchRequest userPatchRequest = createDefaultUserPatchRequest();
 
+        when(userLookupService.getUserById(userId)).thenReturn(user);
         when(userRepository.findByEmail(userPatchRequest.email())).thenReturn(Optional.empty());
         when(userRepository.findByPhoneNumber(userPatchRequest.phoneNumber())).thenReturn(Optional.empty());
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
         when(passwordEncoder.encode(userPatchRequest.password())).thenReturn(ENCODED_UPDATE_PASSWORD);
+        UserResponse userResponse = userService.patchUser(userId, userPatchRequest);
 
-        UserResponse response = userService.patchUser(userId, userPatchRequest);
-
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(userId);
-        assertThat(response.email()).isEqualTo(userPatchRequest.email());
-        assertThat(response.firstName()).isEqualTo(userPatchRequest.firstName());
-        assertThat(response.lastName()).isEqualTo(userPatchRequest.lastName());
-        assertThat(response.phoneNumber()).isEqualTo(userPatchRequest.phoneNumber());
-        assertThat(response.role()).isEqualTo(Role.CUSTOMER);
+        assertThat(userResponse).isNotNull();
+        assertThat(userResponse.id()).isEqualTo(userId);
+        assertThat(userResponse.email()).isEqualTo(userPatchRequest.email());
+        assertThat(userResponse.firstName()).isEqualTo(userPatchRequest.firstName());
+        assertThat(userResponse.lastName()).isEqualTo(userPatchRequest.lastName());
+        assertThat(userResponse.phoneNumber()).isEqualTo(userPatchRequest.phoneNumber());
+        assertThat(userResponse.role()).isEqualTo(Role.CUSTOMER);
 
         assertThat(user.getEmail())
                 .isEqualTo(userPatchRequest.email());
@@ -621,9 +634,10 @@ public class UserServiceImplTest {
         assertThat(user.getPasswordHash())
                 .isNotEqualTo(userPatchRequest.password());
 
+        verify(userLookupService).getUserById(userId);
         verify(userRepository).findByEmail(userPatchRequest.email());
         verify(userRepository).findByPhoneNumber(userPatchRequest.phoneNumber());
-        verify(userRepository).findById(userId);
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
 
         verify(passwordEncoder).encode(userPatchRequest.password());
@@ -634,22 +648,23 @@ public class UserServiceImplTest {
     void patchUser_whenUserDoesNotExist_throwsNoResourceFoundException() {
         Long userId = 999L;
 
-        UserPatchRequest request = createDefaultUserPatchRequest();
+        UserPatchRequest userPatchRequest = createDefaultUserPatchRequest();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userLookupService.getUserById(userId)).thenThrow(
+                new NoResourceFoundException(userNotFoundWithId(userId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
-                () -> userService.patchUser(userId, request)
+                () -> userService.patchUser(userId, userPatchRequest)
         );
 
         assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
-        verify(userRepository).findById(userId);
-        verify(userRepository, never()).findByEmail(anyString());
-        verify(userRepository, never()).findByPhoneNumber(anyString());
-        verifyNoMoreInteractions(userRepository);
-        verifyNoMoreInteractions(passwordEncoder);
+        verify(userLookupService).getUserById(userId);
+        verifyNoMoreInteractions(userLookupService);
+        verifyNoInteractions(userRepository);
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
@@ -669,9 +684,9 @@ public class UserServiceImplTest {
         String originalLastName = user.getLastName();
         String originalPassword = user.getPasswordHash();
 
+        when(userLookupService.getUserById(userId)).thenReturn(user);
         when(userRepository.findByEmail(userPatchRequest.email())).thenReturn(Optional.empty());
         when(userRepository.findByPhoneNumber(userPatchRequest.phoneNumber())).thenReturn(Optional.empty());
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         UserResponse userResponse = userService.patchUser(userId, userPatchRequest);
 
@@ -696,11 +711,12 @@ public class UserServiceImplTest {
         assertThat(user.getPasswordHash())
                 .isEqualTo(originalPassword);
 
-        verifyNoInteractions(passwordEncoder);
+        verify(userLookupService).getUserById(userId);
         verify(userRepository).findByEmail(userPatchRequest.email());
         verify(userRepository).findByPhoneNumber(userPatchRequest.phoneNumber());
-        verify(userRepository).findById(userId);
+        verifyNoInteractions(passwordEncoder);
         verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(userLookupService);
     }
 
     @Test
@@ -716,7 +732,7 @@ public class UserServiceImplTest {
                 null
         );
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userLookupService.getUserById(userId)).thenReturn(user);
         
         String originalEmail = user.getEmail();
         String originalPassword = user.getPasswordHash();
@@ -747,11 +763,10 @@ public class UserServiceImplTest {
         assertThat(user.getPasswordHash())
                 .isEqualTo(originalPassword);
 
+        verify(userLookupService).getUserById(userId);
+        verifyNoMoreInteractions(userLookupService);
+        verifyNoInteractions(userRepository);
         verifyNoInteractions(passwordEncoder);
-        verify(userRepository).findById(userId);
-        verify(userRepository, never()).findByEmail(any());
-        verify(userRepository, never()).findByPhoneNumber(any());
-        verifyNoMoreInteractions(userRepository);
     }
 
     @Test
@@ -786,8 +801,8 @@ public class UserServiceImplTest {
                 "12345678913"
         );
 
+        when(userLookupService.getUserById(firstUserId)).thenReturn(firstUser);
         when(userRepository.findByEmail(userPatchRequest.email())).thenReturn(Optional.of(secondUser));
-        when(userRepository.findById(firstUserId)).thenReturn(Optional.of(firstUser));
 
         DuplicateResourceException ex = assertThrows(
                 DuplicateResourceException.class,
@@ -797,10 +812,11 @@ public class UserServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(EMAIL_ALREADY_EXISTS);
 
-        verify(userRepository).findById(firstUserId);
+        verify(userLookupService).getUserById(firstUserId);
         verify(userRepository).findByEmail(userPatchRequest.email());
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
-        verifyNoMoreInteractions(passwordEncoder);
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
@@ -835,9 +851,9 @@ public class UserServiceImplTest {
                 VALID_UPDATE_PHONE_NUMBER
         );
 
+        when(userLookupService.getUserById(firstUserId)).thenReturn(firstUser);
         when(userRepository.findByEmail(userPatchRequest.email())).thenReturn(Optional.empty());
         when(userRepository.findByPhoneNumber(userPatchRequest.phoneNumber())).thenReturn(Optional.of(secondUser));
-        when(userRepository.findById(firstUserId)).thenReturn(Optional.of(firstUser));
 
         DuplicateResourceException ex = assertThrows(
                 DuplicateResourceException.class,
@@ -847,9 +863,10 @@ public class UserServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(PHONE_NUMBER_ALREADY_EXISTS);
 
-        verify(userRepository).findById(firstUserId);
+        verify(userLookupService).getUserById(firstUserId);
         verify(userRepository).findByEmail(userPatchRequest.email());
         verify(userRepository).findByPhoneNumber(userPatchRequest.phoneNumber());
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
         verifyNoInteractions(passwordEncoder);
     }
@@ -867,9 +884,9 @@ public class UserServiceImplTest {
                 VALID_UPDATE_PHONE_NUMBER
         );
 
+        when(userLookupService.getUserById(userId)).thenReturn(user);
         when(userRepository.findByEmail(userPatchRequest.email())).thenReturn(Optional.of(user));
         when(userRepository.findByPhoneNumber(userPatchRequest.phoneNumber())).thenReturn(Optional.empty());
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(userPatchRequest.password())).thenReturn(ENCODED_UPDATE_PASSWORD);
 
         UserResponse userResponse = userService.patchUser(userId, userPatchRequest);
@@ -898,10 +915,11 @@ public class UserServiceImplTest {
         assertThat(user.getPasswordHash())
                 .isNotEqualTo(userPatchRequest.password());
 
-        verify(userRepository).findById(userId);
+        verify(userLookupService).getUserById(userId);
         verify(userRepository).findByEmail(userPatchRequest.email());
         verify(userRepository).findByPhoneNumber(userPatchRequest.phoneNumber());
         verify(passwordEncoder).encode(userPatchRequest.password());
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
         verifyNoMoreInteractions(passwordEncoder);
     }
@@ -919,9 +937,9 @@ public class UserServiceImplTest {
                 user.getPhoneNumber()
         );
 
+        when(userLookupService.getUserById(userId)).thenReturn(user);
         when(userRepository.findByEmail(userPatchRequest.email())).thenReturn(Optional.empty());
         when(userRepository.findByPhoneNumber(userPatchRequest.phoneNumber())).thenReturn(Optional.of(user));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(userPatchRequest.password())).thenReturn(ENCODED_UPDATE_PASSWORD);
 
         UserResponse userResponse = userService.patchUser(userId, userPatchRequest);
@@ -950,10 +968,11 @@ public class UserServiceImplTest {
         assertThat(user.getPasswordHash())
                 .isNotEqualTo(userPatchRequest.password());
 
-        verify(userRepository).findById(userId);
+        verify(userLookupService).getUserById(userId);
         verify(userRepository).findByEmail(userPatchRequest.email());
         verify(userRepository).findByPhoneNumber(userPatchRequest.phoneNumber());
         verify(passwordEncoder).encode(userPatchRequest.password());
+        verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(userRepository);
         verifyNoMoreInteractions(passwordEncoder);
     }
@@ -963,13 +982,14 @@ public class UserServiceImplTest {
         Long userId = 1L;
         User user = createDefaultUser(userId);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userLookupService.getUserById(userId)).thenReturn(user);
 
         userService.deleteUser(userId);
 
-        verify(userRepository).findById(userId);
+        verify(userLookupService).getUserById(userId);
         verify(userRepository).delete(user);
         verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(userLookupService);
         verifyNoInteractions(passwordEncoder);
     }
 
@@ -977,7 +997,9 @@ public class UserServiceImplTest {
     void deleteUser_whenUserDoesNotExist_throwsNoResourceFoundException() {
         Long userId = 999L;
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userLookupService.getUserById(userId)).thenThrow(
+                new NoResourceFoundException(userNotFoundWithId(userId))
+        );
 
         NoResourceFoundException ex = assertThrows(
                 NoResourceFoundException.class,
@@ -986,9 +1008,10 @@ public class UserServiceImplTest {
 
         assertThat(ex.getMessage()).isEqualTo(userNotFoundWithId(userId));
 
-        verify(userRepository).findById(userId);
+        verify(userLookupService).getUserById(userId);
         verify(userRepository, never()).delete(any(User.class));
         verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(userLookupService);
         verifyNoInteractions(passwordEncoder);
     }
 }
