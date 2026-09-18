@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.product.controller;
 
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.service.ProductService;
@@ -32,7 +33,7 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductResponse>> getAllProducts(
+    public ResponseEntity<PageResponse<ProductResponse>> getAllProducts(
             @ModelAttribute ProductFilterRequest request,
             @PageableDefault(
                     size = 10,

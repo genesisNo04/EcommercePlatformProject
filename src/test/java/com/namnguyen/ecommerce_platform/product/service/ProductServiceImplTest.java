@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.product.service;
 
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
@@ -172,18 +173,18 @@ public class ProductServiceImplTest {
 
         ProductFilterRequest productFilterRequest = new ProductFilterRequest(null, null, null, null);
 
-        Page<ProductResponse> productResponses = productService.getAllProducts(productFilterRequest, pageable);
+        PageResponse<ProductResponse> productResponses = productService.getAllProducts(productFilterRequest, pageable);
 
         assertThat(productResponses).isNotNull();
-        assertThat(productResponses.getTotalElements()).isEqualTo(2);
-        assertThat(productResponses.getNumberOfElements()).isEqualTo(2);
-        assertThat(productResponses.getTotalPages()).isEqualTo(1);
-        assertThat(productResponses.getSize()).isEqualTo(10);
-        assertThat(productResponses.getNumber()).isEqualTo(0);
+        assertThat(productResponses.totalElements()).isEqualTo(2);
+        assertThat(productResponses.content().size()).isEqualTo(2);
+        assertThat(productResponses.totalPages()).isEqualTo(1);
+        assertThat(productResponses.size()).isEqualTo(10);
+        assertThat(productResponses.page()).isEqualTo(0);
 
-        assertThat(productResponses.getContent()).hasSize(2);
+        assertThat(productResponses.content()).hasSize(2);
 
-        ProductResponse firstProductResponse = productResponses.getContent().getFirst();
+        ProductResponse firstProductResponse = productResponses.content().getFirst();
 
         assertThat(firstProductResponse.id()).isEqualTo(firstProductId);
         assertThat(firstProductResponse.name()).isEqualTo(firstProduct.getName());
@@ -192,7 +193,7 @@ public class ProductServiceImplTest {
         assertThat(firstProductResponse.quantity()).isEqualTo(firstProduct.getQuantity());
         assertThat(firstProductResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
-        ProductResponse secondProductResponse = productResponses.getContent().get(1);
+        ProductResponse secondProductResponse = productResponses.content().get(1);
 
         assertThat(secondProductResponse.id()).isEqualTo(secondProductId);
         assertThat(secondProductResponse.name()).isEqualTo(secondProduct.getName());
@@ -216,16 +217,16 @@ public class ProductServiceImplTest {
 
         ProductFilterRequest productFilterRequest = new ProductFilterRequest(null, null, null, null);
 
-        Page<ProductResponse> productResponses = productService.getAllProducts(productFilterRequest, pageable);
+        PageResponse<ProductResponse> productResponses = productService.getAllProducts(productFilterRequest, pageable);
 
         assertThat(productResponses).isNotNull();
-        assertThat(productResponses.getTotalElements()).isEqualTo(0);
-        assertThat(productResponses.getNumberOfElements()).isEqualTo(0);
-        assertThat(productResponses.getTotalPages()).isEqualTo(0);
-        assertThat(productResponses.getSize()).isEqualTo(10);
-        assertThat(productResponses.getNumber()).isEqualTo(0);
+        assertThat(productResponses.totalElements()).isEqualTo(0);
+        assertThat(productResponses.content().size()).isEqualTo(0);
+        assertThat(productResponses.totalPages()).isEqualTo(0);
+        assertThat(productResponses.size()).isEqualTo(10);
+        assertThat(productResponses.page()).isEqualTo(0);
 
-        assertThat(productResponses.getContent()).hasSize(0);
+        assertThat(productResponses.content()).hasSize(0);
 
         verify(productRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoMoreInteractions(productRepository);

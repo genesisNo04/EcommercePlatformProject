@@ -8,6 +8,8 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import tools.jackson.databind.jsontype.PolymorphicTypeValidator;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -18,10 +20,20 @@ import java.util.Map;
 public class RedisConfig {
 
     @Bean
-    public RedisCacheConfiguration cacheConfiguration(ObjectMapper objectMapper) {
+    public RedisCacheConfiguration cacheConfiguration() {
+
+        PolymorphicTypeValidator typeValidator =
+                BasicPolymorphicTypeValidator.builder()
+                        .allowIfSubType("com.namnguyen.ecommerce_platform.")
+                        .allowIfSubType("org.springframework.data.domain.")
+                        .allowIfSubType("java.util")
+                        .build();
 
         GenericJacksonJsonRedisSerializer serializer =
-                new GenericJacksonJsonRedisSerializer(objectMapper);
+                GenericJacksonJsonRedisSerializer.builder()
+                        .enableDefaultTyping(typeValidator)
+                        .build();
+
 
         return RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))

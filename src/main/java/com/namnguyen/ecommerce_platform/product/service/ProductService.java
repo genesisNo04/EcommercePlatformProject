@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.product.service;
 
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import org.springframework.data.domain.Page;
@@ -14,8 +15,8 @@ public interface ProductService {
 
     ProductResponse getProductById(Long id);
 
-    Page<ProductResponse> getAllProducts(ProductFilterRequest request,
-                                         Pageable pageable);
+    PageResponse<ProductResponse> getAllProducts(ProductFilterRequest request,
+                                                 Pageable pageable);
 
     ProductResponse putProduct(Long productId, ProductPutRequest request);
 

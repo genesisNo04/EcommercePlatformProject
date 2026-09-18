@@ -2,6 +2,7 @@ package com.namnguyen.ecommerce_platform.product.service;
 
 import com.namnguyen.ecommerce_platform.common.caching.CacheNames;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.product.specifications.ProductSpecification;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
@@ -61,7 +62,7 @@ public class ProductServiceImpl implements ProductService {
                     "#pageable.pageSize + ':' + " +
                     "#pageable.sort.toString().replace(' ', '')"
     )
-    public Page<ProductResponse> getAllProducts(
+    public PageResponse<ProductResponse> getAllProducts(
             ProductFilterRequest request,
             Pageable pageable) {
         Specification<Product> spec = Specification
@@ -70,9 +71,11 @@ public class ProductServiceImpl implements ProductService {
                 .and(ProductSpecification.priceGreaterThanOrEqual(request.minPrice()))
                 .and(ProductSpecification.priceLessThanOrEqual(request.maxPrice()));
 
-        return productRepository
+        Page<ProductResponse> page = productRepository
                 .findAll(spec, pageable)
                 .map(ProductMapper::toResponse);
+
+        return PageResponse.from(page);
     }
 
     @Override
