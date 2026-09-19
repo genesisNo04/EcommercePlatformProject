@@ -15,6 +15,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -29,8 +31,6 @@ import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessa
 import static com.namnguyen.ecommerce_platform.testutil.messages.ProductTestMessages.*;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.*;
@@ -466,7 +466,7 @@ public class ProductControllerTest {
                         productResponses,
                         0,
                         10,
-                        2,
+                        2L,
                         1,
                         true,
                         true
@@ -552,7 +552,7 @@ public class ProductControllerTest {
                 productResponses,
                 0,
                 10,
-                2,
+                2L,
                 1,
                 true,
                 true
@@ -677,7 +677,7 @@ public class ProductControllerTest {
                 productResponses,
                 0,
                 10,
-                0,
+                0L,
                 0,
                 true,
                 true

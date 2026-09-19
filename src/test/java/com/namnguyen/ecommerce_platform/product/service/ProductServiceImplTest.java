@@ -151,7 +151,7 @@ public class ProductServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(productNotFoundWithId(productId));
 
-        verify(productLookupService).getProductById(productId);
+        verifyNoMoreInteractions(productLookupService);
         verifyNoMoreInteractions(productRepository);
     }
 
@@ -176,13 +176,13 @@ public class ProductServiceImplTest {
         PageResponse<ProductResponse> productResponses = productService.getAllProducts(productFilterRequest, pageable);
 
         assertThat(productResponses).isNotNull();
-        assertThat(productResponses.totalElements()).isEqualTo(2);
-        assertThat(productResponses.content().size()).isEqualTo(2);
-        assertThat(productResponses.totalPages()).isEqualTo(1);
-        assertThat(productResponses.size()).isEqualTo(10);
-        assertThat(productResponses.page()).isEqualTo(0);
-
         assertThat(productResponses.content()).hasSize(2);
+        assertThat(productResponses.page()).isEqualTo(0);
+        assertThat(productResponses.size()).isEqualTo(10);
+        assertThat(productResponses.totalElements()).isEqualTo(2);
+        assertThat(productResponses.totalPages()).isEqualTo(1);
+        assertThat(productResponses.first()).isTrue();
+        assertThat(productResponses.last()).isTrue();
 
         ProductResponse firstProductResponse = productResponses.content().getFirst();
 
@@ -209,8 +209,8 @@ public class ProductServiceImplTest {
     @Test
     void getAllProducts_whenNoProductsExist_returnsEmptyPage() {
         List<Product> products = List.of();
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Product> productPage = new PageImpl<>(products, pageable, products.size());
+        Pageable pageable = PageRequest.of(1, 2);
+        Page<Product> productPage = new PageImpl<>(products, pageable, 6);
 
         when(productRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(productPage);
@@ -220,13 +220,13 @@ public class ProductServiceImplTest {
         PageResponse<ProductResponse> productResponses = productService.getAllProducts(productFilterRequest, pageable);
 
         assertThat(productResponses).isNotNull();
-        assertThat(productResponses.totalElements()).isEqualTo(0);
-        assertThat(productResponses.content().size()).isEqualTo(0);
-        assertThat(productResponses.totalPages()).isEqualTo(0);
-        assertThat(productResponses.size()).isEqualTo(10);
-        assertThat(productResponses.page()).isEqualTo(0);
-
-        assertThat(productResponses.content()).hasSize(0);
+        assertThat(productResponses.content()).isEmpty();
+        assertThat(productResponses.page()).isEqualTo(1);
+        assertThat(productResponses.size()).isEqualTo(2);
+        assertThat(productResponses.totalElements()).isEqualTo(6);
+        assertThat(productResponses.totalPages()).isEqualTo(3);
+        assertThat(productResponses.first()).isFalse();
+        assertThat(productResponses.last()).isFalse();
 
         verify(productRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoMoreInteractions(productRepository);
