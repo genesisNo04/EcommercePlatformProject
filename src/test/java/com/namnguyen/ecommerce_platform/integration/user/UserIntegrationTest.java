@@ -72,10 +72,13 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[2].createdAt").exists())
                 .andExpect(jsonPath("$.content[2].updatedAt").exists())
 
-                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.content", hasSize(3)))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
-                .andExpect(jsonPath("$.numberOfElements").value(3))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test
@@ -125,10 +128,13 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[1].createdAt").exists())
                 .andExpect(jsonPath("$.content[1].updatedAt").exists())
 
-                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
-                .andExpect(jsonPath("$.numberOfElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test

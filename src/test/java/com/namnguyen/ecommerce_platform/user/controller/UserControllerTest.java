@@ -3,6 +3,7 @@ package com.namnguyen.ecommerce_platform.user.controller;
 import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
 import com.namnguyen.ecommerce_platform.user.dto.UserFilterRequest;
@@ -152,9 +153,15 @@ public class UserControllerTest {
                 LocalDateTime.now()
         );
 
-        List<UserResponse> listUserResponse = List.of(firstUserResponse, secondUserResponse);
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<UserResponse> userResponsePage = new PageImpl<>(listUserResponse, pageable, listUserResponse.size());
+        List<UserResponse> userResponses = List.of(firstUserResponse, secondUserResponse);
+        PageResponse<UserResponse> userResponsePage = new PageResponse<>(
+                userResponses,
+                0,
+                10,
+                2L,
+                1,
+                true,
+                true);
 
         when(userService.getAllUsers(any(UserFilterRequest.class), any(Pageable.class))).thenReturn(userResponsePage);
 
@@ -180,10 +187,13 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.content[1].role").value(secondUserResponse.role().name()))
                 .andExpect(jsonPath("$.content[1].createdAt").exists())
                 .andExpect(jsonPath("$.content[1].updatedAt").exists())
-                .andExpect(jsonPath("$.numberOfElements").value(2))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<UserFilterRequest> userFilterCaptor = ArgumentCaptor.forClass(UserFilterRequest.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -231,9 +241,15 @@ public class UserControllerTest {
                 LocalDateTime.now()
         );
 
-        List<UserResponse> listUserResponses = List.of(firstUserResponse, secondUserResponse);
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<UserResponse> userResponsePage = new PageImpl<>(listUserResponses, pageable, listUserResponses.size());
+        List<UserResponse> userResponses = List.of(firstUserResponse, secondUserResponse);
+        PageResponse<UserResponse> userResponsePage = new PageResponse<>(
+                userResponses,
+                0,
+                10,
+                2L,
+                1,
+                true,
+                true);
 
         when(userService.getAllUsers(any(UserFilterRequest.class), any(Pageable.class))).thenReturn(userResponsePage);
 
@@ -262,10 +278,13 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.content[1].role").value(secondUserResponse.role().name()))
                 .andExpect(jsonPath("$.content[1].createdAt").exists())
                 .andExpect(jsonPath("$.content[1].updatedAt").exists())
-                .andExpect(jsonPath("$.numberOfElements").value(2))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<UserFilterRequest> userFilterRequestCaptor = ArgumentCaptor.forClass(UserFilterRequest.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -307,11 +326,17 @@ public class UserControllerTest {
 
     @Test
     void getAllUsers_whenNoUsersExist_returnsEmptyPage() throws Exception {
-        List<UserResponse> listUserResponses = List.of();
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<UserResponse> userResponsesPage = new PageImpl<>(listUserResponses, pageable, listUserResponses.size());
+        List<UserResponse> userResponses = List.of();
+        PageResponse<UserResponse> userResponsePage = new PageResponse<>(
+                userResponses,
+                0,
+                10,
+                0L,
+                0,
+                true,
+                true);
 
-        when(userService.getAllUsers(any(UserFilterRequest.class), any(Pageable.class))).thenReturn(userResponsesPage);
+        when(userService.getAllUsers(any(UserFilterRequest.class), any(Pageable.class))).thenReturn(userResponsePage);
 
         mockMvc.perform(get(USER_URI)
                         .param("page", "0")
@@ -319,10 +344,12 @@ public class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content").isEmpty())
-                .andExpect(jsonPath("$.numberOfElements").value(0))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(0))
-                .andExpect(jsonPath("$.totalPages").value(0));
+                .andExpect(jsonPath("$.totalPages").value(0))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<UserFilterRequest> userFilterCaptor = ArgumentCaptor.forClass(UserFilterRequest.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);

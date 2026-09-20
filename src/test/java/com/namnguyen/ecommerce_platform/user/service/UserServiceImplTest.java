@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.user.service;
 
 import com.namnguyen.ecommerce_platform.common.exception.*;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.user.dto.*;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
@@ -252,23 +253,23 @@ public class UserServiceImplTest {
         when(userRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(usersPage);
 
-        Page<UserResponse> userPageResponse = userService.getAllUsers(userFilterRequest, pageable);
+        PageResponse<UserResponse> userPageResponse = userService.getAllUsers(userFilterRequest, pageable);
 
         assertThat(userPageResponse).isNotNull();
-        assertThat(userPageResponse.getTotalElements()).isEqualTo(2);
-        assertThat(userPageResponse.getNumberOfElements()).isEqualTo(2);
-        assertThat(userPageResponse.getTotalPages()).isEqualTo(1);
-        assertThat(userPageResponse.getSize()).isEqualTo(10);
-        assertThat(userPageResponse.getNumber()).isEqualTo(0);
+        assertThat(userPageResponse.content()).hasSize(2);
+        assertThat(userPageResponse.page()).isEqualTo(0);
+        assertThat(userPageResponse.size()).isEqualTo(10);
+        assertThat(userPageResponse.totalElements()).isEqualTo(2);
+        assertThat(userPageResponse.totalPages()).isEqualTo(1);
+        assertThat(userPageResponse.first()).isTrue();
+        assertThat(userPageResponse.last()).isTrue();
 
-        assertThat(userPageResponse.getContent()).hasSize(2);
-
-        UserResponse firstUserResponse = userPageResponse.getContent().getFirst();
+        UserResponse firstUserResponse = userPageResponse.content().getFirst();
         assertThat(firstUserResponse.id()).isEqualTo(firstUserId);
         assertThat(firstUserResponse.email()).isEqualTo(firstUser.getEmail());
         assertThat(firstUserResponse.role()).isEqualTo(firstUser.getRole());
 
-        UserResponse secondUserResponse = userPageResponse.getContent().get(1);
+        UserResponse secondUserResponse = userPageResponse.content().get(1);
         assertThat(secondUserResponse.id()).isEqualTo(secondUserId);
         assertThat(secondUserResponse.email()).isEqualTo(secondUser.getEmail());
         assertThat(secondUserResponse.role()).isEqualTo(secondUser.getRole());
@@ -289,14 +290,16 @@ public class UserServiceImplTest {
         when(userRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(pageUsers);
 
-        Page<UserResponse> userResponsesPage = userService.getAllUsers(userFilterRequest, pageable);
+        PageResponse<UserResponse> userPageResponse = userService.getAllUsers(userFilterRequest, pageable);
 
-        assertThat(userResponsesPage).isNotNull();
-        assertThat(userResponsesPage.getTotalElements()).isEqualTo(0);
-        assertThat(userResponsesPage.getNumberOfElements()).isEqualTo(0);
-        assertThat(userResponsesPage.getTotalPages()).isEqualTo(0);
-        assertThat(userResponsesPage.getSize()).isEqualTo(10);
-        assertThat(userResponsesPage.getNumber()).isEqualTo(0);
+        assertThat(userPageResponse).isNotNull();
+        assertThat(userPageResponse.content()).hasSize(0);
+        assertThat(userPageResponse.page()).isEqualTo(0);
+        assertThat(userPageResponse.size()).isEqualTo(10);
+        assertThat(userPageResponse.totalElements()).isEqualTo(0);
+        assertThat(userPageResponse.totalPages()).isEqualTo(0);
+        assertThat(userPageResponse.first()).isTrue();
+        assertThat(userPageResponse.last()).isTrue();
 
         verify(userRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoMoreInteractions(userRepository);

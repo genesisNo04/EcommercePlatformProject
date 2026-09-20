@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.user.service;
 
 import com.namnguyen.ecommerce_platform.common.caching.CacheNames;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.user.specifications.UserSpecification;
 import com.namnguyen.ecommerce_platform.user.dto.*;
 import com.namnguyen.ecommerce_platform.user.entity.User;
@@ -113,13 +114,16 @@ public class UserServiceImpl implements UserService {
                     "#pageable.pageNumber + ':' + " +
                     "#pageable.pageSize + ':' + " +
                     "#pageable.sort.toString().replace(' ', '')")
-    public Page<UserResponse> getAllUsers(UserFilterRequest request, Pageable pageable) {
+    public PageResponse<UserResponse> getAllUsers(UserFilterRequest request, Pageable pageable) {
+
         Specification<User> spec = Specification
                 .where(UserSpecification.nameContains(request.keyword()))
                 .and(UserSpecification.emailContains(request.email()))
                 .and(UserSpecification.hasRole(request.role()));
 
-        return userRepository.findAll(spec, pageable).map(UserMapper::toResponse);
+        Page<UserResponse> userResponsePage = userRepository.findAll(spec, pageable).map(UserMapper::toResponse);
+
+        return PageResponse.from(userResponsePage);
     }
 
     @Override
