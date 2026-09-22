@@ -1,0 +1,96 @@
+---------docker command---------
+build image
+docker build -t ecommerce-platform:local -f Dockerfile .
+. : build context is in the current directory
+-t : option to add the image name and tag
+-f: specify the dockerfile name if it is not default Dockerfile
+
+docker run --name ecommerce-app -p 8080:8080 ecommerce-platform:local
+create the container from the image
+--name: specify the name of container
+--p: map host port to container port
+
+docker stop ecommerce-app
+stop the container
+
+docker start ecommerce-app
+start container
+
+docker restart ecommerce-app
+restart the container
+
+docker logs -f <container>
+show container log, -f follow log live
+
+docker exec -it <container> sh
+enter the container
+
+docker inspect <container>
+details config such as networking, mounts, env, state, ip of container
+
+docker stats
+show CPU/memory/network usage for container
+
+docker network ls, docker volume ls, docker network inspect <network>, docker volume inspect <volume>
+network and volume inspect
+
+docker system df
+show docker disk usage
+
+docker container prune, docker image prune, docker system prune
+clean unused resources (need to be careful because they delete stuff)
+
+docker rm -f ecommerce-app
+remove container
+-f: force remove container
+
+docker rmi ecommerce-platform:local
+remove docker image
+
+docker images
+show all docker image on local
+
+docker image ls: same idea, newer command
+
+docker ps
+show running container
+
+docker ps -a
+show running/stopped container
+
+---------docker compose command---------
+docker compose up -d --build
+--build option is to build image before running the contains (all container that has build: will be built)
+-d run in detach mode, the command return immediate after run but container still run behind the scene
+
+docker compose ps
+show containers belonging to this compose project
+
+docker compose logs -f <container>
+show log of the container
+-f option is to follow the live logs
+
+docker compose stop
+stop containers but keep them
+
+docker compose start
+start the compose containers
+
+docker compose restart
+restart the compose containers
+
+docker compose down
+stop and remove the compose containers
+
+docker compose build
+build the images without starting containers
+
+docker compose exec app sh
+run command inside an already running service container
+
+docker compose config
+render/validate the final compose config after the env var substitution
+
+
+
+
