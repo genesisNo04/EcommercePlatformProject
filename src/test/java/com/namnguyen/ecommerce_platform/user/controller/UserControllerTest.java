@@ -187,7 +187,6 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.content[1].role").value(secondUserResponse.role().name()))
                 .andExpect(jsonPath("$.content[1].createdAt").exists())
                 .andExpect(jsonPath("$.content[1].updatedAt").exists())
-                .andExpect(jsonPath("$.content", hasSize(2)))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))

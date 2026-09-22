@@ -115,7 +115,6 @@ public class UserServiceImpl implements UserService {
                     "#pageable.pageSize + ':' + " +
                     "#pageable.sort.toString().replace(' ', '')")
     public PageResponse<UserResponse> getAllUsers(UserFilterRequest request, Pageable pageable) {
-
         Specification<User> spec = Specification
                 .where(UserSpecification.nameContains(request.keyword()))
                 .and(UserSpecification.emailContains(request.email()))

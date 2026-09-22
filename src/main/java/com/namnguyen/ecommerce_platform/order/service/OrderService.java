@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.order.service;
 
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.order.dto.CreateOrderRequest;
 import com.namnguyen.ecommerce_platform.order.dto.OrderFilterRequest;
 import com.namnguyen.ecommerce_platform.order.dto.OrderResponse;
@@ -14,7 +15,7 @@ public interface OrderService {
 
     OrderResponse getOrderById(Long orderId, Long userId);
 
-    Page<OrderResponse> getOrders(Long userId, OrderFilterRequest request, Pageable pageable);
+    PageResponse<OrderResponse> getOrders(Long userId, OrderFilterRequest request, Pageable pageable);
 
     void cancelOrder(Long orderId, Long userId);
 }

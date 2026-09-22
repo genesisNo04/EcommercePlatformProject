@@ -5,10 +5,12 @@ import com.namnguyen.ecommerce_platform.common.caching.CacheNames;
 import com.namnguyen.ecommerce_platform.common.caching.RedisCacheConfigFactory;
 import com.namnguyen.ecommerce_platform.product.dto.ProductResponse;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Map;
 
+@Component
 public class ProductCacheConfig implements CacheConfigProvider {
 
     private static final Duration TTL = Duration.ofMinutes(10);

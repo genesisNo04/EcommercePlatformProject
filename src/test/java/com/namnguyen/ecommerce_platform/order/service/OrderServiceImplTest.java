@@ -4,6 +4,7 @@ import com.namnguyen.ecommerce_platform.cart.entity.Cart;
 import com.namnguyen.ecommerce_platform.cart.entity.CartItem;
 import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
 import com.namnguyen.ecommerce_platform.cart.service.CartLookupService;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderException;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
@@ -32,7 +33,6 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import static com.namnguyen.ecommerce_platform.testutil.messages.OrderTestMessages.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
@@ -633,19 +633,23 @@ public class OrderServiceImplTest {
 
         when(orderRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(orderPage);
 
-        Page<OrderResponse> orderResponses = orderService.getOrders(userId, orderFilterRequest, pageable);
+        PageResponse<OrderResponse> orderResponses = orderService.getOrders(userId, orderFilterRequest, pageable);
 
         assertThat(orderResponses).isNotNull();
-        assertThat(orderResponses.getContent()).hasSize(2);
-        assertThat(orderResponses.getTotalElements()).isEqualTo(2);
-        assertThat(orderResponses.getTotalPages()).isEqualTo(1);
+        assertThat(orderResponses.content()).hasSize(2);
+        assertThat(orderResponses.page()).isEqualTo(0);
+        assertThat(orderResponses.size()).isEqualTo(2);
+        assertThat(orderResponses.totalElements()).isEqualTo(2);
+        assertThat(orderResponses.totalPages()).isEqualTo(1);
+        assertThat(orderResponses.first()).isTrue();
+        assertThat(orderResponses.last()).isTrue();
 
-        OrderResponse firstOrderResponse = orderResponses.getContent().getFirst();
+        OrderResponse firstOrderResponse = orderResponses.content().getFirst();
         assertThat(firstOrderResponse.orderId()).isEqualTo(firstOrderId);
         assertThat(firstOrderResponse.userId()).isEqualTo(userId);
         assertThat(firstOrderResponse.items().getFirst().productId()).isEqualTo(firstProductId);
 
-        OrderResponse secondOrderResponse = orderResponses.getContent().getLast();
+        OrderResponse secondOrderResponse = orderResponses.content().getLast();
         assertThat(secondOrderResponse.orderId()).isEqualTo(secondOrderId);
         assertThat(secondOrderResponse.userId()).isEqualTo(userId);
         assertThat(secondOrderResponse.items().getFirst().productId()).isEqualTo(secondProductId);
@@ -665,12 +669,16 @@ public class OrderServiceImplTest {
 
         when(orderRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(orderPage);
 
-        Page<OrderResponse> orderResponses = orderService.getOrders(userId, orderFilterRequest, pageable);
+        PageResponse<OrderResponse> orderResponses = orderService.getOrders(userId, orderFilterRequest, pageable);
 
         assertThat(orderResponses).isNotNull();
-        assertThat(orderResponses.getContent()).hasSize(0);
-        assertThat(orderResponses.getTotalElements()).isEqualTo(0);
-        assertThat(orderResponses.getTotalPages()).isEqualTo(0);
+        assertThat(orderResponses.content()).isEmpty();
+        assertThat(orderResponses.page()).isEqualTo(0);
+        assertThat(orderResponses.size()).isEqualTo(2);
+        assertThat(orderResponses.totalElements()).isEqualTo(0);
+        assertThat(orderResponses.totalPages()).isEqualTo(0);
+        assertThat(orderResponses.first()).isTrue();
+        assertThat(orderResponses.last()).isTrue();
 
         verify(orderRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoMoreInteractions(orderRepository);

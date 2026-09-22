@@ -293,7 +293,7 @@ public class UserServiceImplTest {
         PageResponse<UserResponse> userPageResponse = userService.getAllUsers(userFilterRequest, pageable);
 
         assertThat(userPageResponse).isNotNull();
-        assertThat(userPageResponse.content()).hasSize(0);
+        assertThat(userPageResponse.content()).isEmpty();
         assertThat(userPageResponse.page()).isEqualTo(0);
         assertThat(userPageResponse.size()).isEqualTo(10);
         assertThat(userPageResponse.totalElements()).isEqualTo(0);

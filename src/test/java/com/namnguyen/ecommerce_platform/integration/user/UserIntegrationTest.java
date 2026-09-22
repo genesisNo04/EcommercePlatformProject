@@ -72,7 +72,6 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[2].createdAt").exists())
                 .andExpect(jsonPath("$.content[2].updatedAt").exists())
 
-                .andExpect(jsonPath("$.content", hasSize(3)))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(3))

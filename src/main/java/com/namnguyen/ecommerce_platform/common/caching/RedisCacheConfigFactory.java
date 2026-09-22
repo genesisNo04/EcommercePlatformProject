@@ -50,7 +50,6 @@ public class RedisCacheConfigFactory {
     ) {
         JacksonJsonRedisSerializer<Object> serializer =
                 new JacksonJsonRedisSerializer<>(
-
                         objectMapper,
                         javaType
                 );

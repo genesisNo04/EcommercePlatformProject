@@ -3,6 +3,7 @@ package com.namnguyen.ecommerce_platform.order.service;
 import com.namnguyen.ecommerce_platform.cart.entity.*;
 import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
 import com.namnguyen.ecommerce_platform.cart.service.CartLookupService;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderException;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.order.specifications.OrderSpecification;
@@ -148,7 +149,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getOrders(Long userId, OrderFilterRequest request, Pageable pageable) {
+    public PageResponse<OrderResponse> getOrders(Long userId, OrderFilterRequest request, Pageable pageable) {
         Specification<Order> spec = Specification
                 .where(OrderSpecification.hasUserId(userId))
                 .and(OrderSpecification.hasStatus(request.status()))
@@ -157,8 +158,10 @@ public class OrderServiceImpl implements OrderService {
                 .and(OrderSpecification.totalGreaterThanOrEqual(request.minTotal()))
                 .and(OrderSpecification.totalLessThanOrEqual(request.maxTotal()));
 
-        return orderRepository.findAll(spec, pageable)
+        Page<OrderResponse> orderResponsePage = orderRepository.findAll(spec, pageable)
                 .map(OrderMapper::toResponse);
+
+        return PageResponse.from(orderResponsePage);
     }
 
     @Override

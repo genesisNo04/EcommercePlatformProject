@@ -1,5 +1,6 @@
 package com.namnguyen.ecommerce_platform.order.controller;
 
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.order.dto.CreateOrderRequest;
 import com.namnguyen.ecommerce_platform.order.dto.OrderFilterRequest;
 import com.namnguyen.ecommerce_platform.order.dto.OrderResponse;
@@ -33,7 +34,7 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<OrderResponse>> getOrders(
+    public ResponseEntity<PageResponse<OrderResponse>> getOrders(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @ModelAttribute OrderFilterRequest request,
             @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
