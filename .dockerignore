@@ -6,3 +6,4 @@
 *.log
 README.md
 .env
+target
