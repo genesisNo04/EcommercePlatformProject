@@ -1,19 +1,16 @@
 package com.namnguyen.ecommerce_platform.user.controller;
 
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.user.dto.*;
 import com.namnguyen.ecommerce_platform.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -24,7 +21,7 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<UserResponse>> getAllUsers(
+    public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
             @ModelAttribute UserFilterRequest request,
             @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
         return ResponseEntity.ok(userService.getAllUsers(request, pageable));

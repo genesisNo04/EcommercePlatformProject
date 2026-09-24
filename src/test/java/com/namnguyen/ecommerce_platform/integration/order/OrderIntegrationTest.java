@@ -270,7 +270,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[1].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[1].userId").value(user.getId()))
                 .andExpect(jsonPath("$.content[1].total").value(firstOrder.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()));
+                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test
@@ -305,7 +311,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[0].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[0].userId").value(user.getId()))
                 .andExpect(jsonPath("$.content[0].total").value(firstOrder.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[0].status").value(firstOrder.getStatus().name()));
+                .andExpect(jsonPath("$.content[0].status").value(firstOrder.getStatus().name()))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test
@@ -355,7 +367,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[1].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[1].userId").value(user.getId()))
                 .andExpect(jsonPath("$.content[1].total").value(firstOrder.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()));
+                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test
@@ -410,7 +428,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[1].orderId").value(firstOrder.getId()))
                 .andExpect(jsonPath("$.content[1].userId").value(user.getId()))
                 .andExpect(jsonPath("$.content[1].total").value(firstOrder.getTotal().doubleValue()))
-                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()));
+                .andExpect(jsonPath("$.content[1].status").value(firstOrder.getStatus().name()))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test
@@ -422,7 +446,13 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get(ORDER_URI))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content", hasSize(0)));
+                .andExpect(jsonPath("$.content", hasSize(0)))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test

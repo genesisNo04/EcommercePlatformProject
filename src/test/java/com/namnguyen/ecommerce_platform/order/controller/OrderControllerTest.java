@@ -1,6 +1,7 @@
 package com.namnguyen.ecommerce_platform.order.controller;
 
 import com.namnguyen.ecommerce_platform.cart.exception.InvalidCartStateException;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
@@ -15,7 +16,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,6 +38,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @WebMvcTest(OrderController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -420,10 +422,17 @@ public class OrderControllerTest {
 
         List<OrderResponse> orderResponses = List.of(firstOrderResponse, secondOrderResponse);
 
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<OrderResponse> pageOrder = new PageImpl<>(orderResponses, pageable, orderResponses.size());
+        PageResponse<OrderResponse> orderPageResponse = new PageResponse<>(
+                orderResponses,
+                0,
+                10,
+                2L,
+                1,
+                true,
+                true
+        );
 
-        when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(pageOrder);
+        when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(orderPageResponse);
 
         authenticateUser(userId);
 
@@ -457,10 +466,12 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.content[0].createdAt").exists())
                 .andExpect(jsonPath("$.content[0].updatedAt").exists())
 
-                .andExpect(jsonPath("$.numberOfElements").value(2))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(orderService).getOrders(eq(userId), any(OrderFilterRequest.class), pageableCaptor.capture());
@@ -613,10 +624,17 @@ public class OrderControllerTest {
         Long userId = 1L;
         List<OrderResponse> orderResponses = List.of();
 
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<OrderResponse> pageOrder = new PageImpl<>(orderResponses, pageable, orderResponses.size());
+        PageResponse<OrderResponse> orderPageResponse = new PageResponse<>(
+                orderResponses,
+                0,
+                10,
+                0L,
+                0,
+                true,
+                true
+        );
 
-        when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(pageOrder);
+        when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(orderPageResponse);
 
         authenticateUser(userId);
 
@@ -624,10 +642,12 @@ public class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(0)))
-                .andExpect(jsonPath("$.numberOfElements").value(0))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(0))
-                .andExpect(jsonPath("$.totalPages").value(0));
+                .andExpect(jsonPath("$.totalPages").value(0))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(orderService).getOrders(eq(userId), any(OrderFilterRequest.class), pageableCaptor.capture());
@@ -647,10 +667,17 @@ public class OrderControllerTest {
 
         List<OrderResponse> orderResponses = List.of();
 
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<OrderResponse> pageOrder = new PageImpl<>(orderResponses, pageable, orderResponses.size());
+        PageResponse<OrderResponse> orderPageResponse = new PageResponse<>(
+                orderResponses,
+                0,
+                10,
+                0L,
+                0,
+                true,
+                true
+        );
 
-        when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(pageOrder);
+        when(orderService.getOrders(eq(userId), any(OrderFilterRequest.class), any(Pageable.class))).thenReturn(orderPageResponse);
 
         authenticateUser(userId);
 
@@ -666,10 +693,12 @@ public class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content", hasSize(0)))
-                .andExpect(jsonPath("$.numberOfElements").value(0))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(0))
-                .andExpect(jsonPath("$.totalPages").value(0));
+                .andExpect(jsonPath("$.totalPages").value(0))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         ArgumentCaptor<OrderFilterRequest> filterCaptor = ArgumentCaptor.forClass(OrderFilterRequest.class);

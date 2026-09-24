@@ -7,10 +7,12 @@ import org.springframework.data.redis.cache.*;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import tools.jackson.databind.jsontype.PolymorphicTypeValidator;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Configuration
@@ -18,42 +20,45 @@ import java.util.Map;
 public class RedisConfig {
 
     @Bean
-    public RedisCacheConfiguration cacheConfiguration(ObjectMapper objectMapper) {
+    public RedisCacheConfiguration defaultCacheConfiguration() {
+        PolymorphicTypeValidator typeValidator =
+                BasicPolymorphicTypeValidator.builder()
+                        .allowIfSubType("com.namnguyen.ecommerce_platform.")
+                        .allowIfSubType("java.util.")
+                        .allowIfSubType("java.math.")
+                        .allowIfSubType("java.time.")
+                        .build();
 
         GenericJacksonJsonRedisSerializer serializer =
-                new GenericJacksonJsonRedisSerializer(objectMapper);
+                GenericJacksonJsonRedisSerializer.builder()
+                        .enableDefaultTyping(typeValidator)
+                        .build();
 
         return RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))
                 .disableCachingNullValues()
                 .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(
-                                serializer
-                        )
+                        RedisSerializationContext.SerializationPair
+                                .fromSerializer(serializer)
                 );
     }
 
     @Bean
     public RedisCacheManager cacheManager(
-            RedisConnectionFactory factory,
+            RedisConnectionFactory connectionFactory,
+            List<CacheConfigProvider> cacheConfigProviders,
             RedisCacheConfiguration configuration
     ) {
 
-        RedisCacheWriter cacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(
-                factory,
-                BatchStrategies.scan(1000)
-        );
-
         Map<String, RedisCacheConfiguration> configs = new HashMap<>();
 
-        configs.put(
-                CacheNames.PRODUCTS,
-                configuration.entryTtl(Duration.ofMinutes(10))
-        );
+        for (CacheConfigProvider provider : cacheConfigProviders) {
+            configs.putAll(provider.cacheConfiguration());
+        }
 
-        configs.put(
-                CacheNames.PRODUCT_PAGES,
-                configuration.entryTtl(Duration.ofMinutes(10))
+        RedisCacheWriter cacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(
+                connectionFactory,
+                BatchStrategies.scan(1000)
         );
 
         return RedisCacheManager.builder(cacheWriter)

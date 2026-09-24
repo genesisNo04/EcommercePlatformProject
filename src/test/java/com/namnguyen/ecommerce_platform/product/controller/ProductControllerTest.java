@@ -2,6 +2,7 @@ package com.namnguyen.ecommerce_platform.product.controller;
 
 import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundException;
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
+import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.service.ProductService;
@@ -12,9 +13,10 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -459,8 +461,16 @@ public class ProductControllerTest {
         );
 
         List<ProductResponse> productResponses = List.of(firstProductResponse, secondProductResponse);
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<ProductResponse> productPageResponse = new PageImpl<>(productResponses, pageable, productResponses.size());
+        PageResponse<ProductResponse> productPageResponse =
+                new PageResponse<>(
+                        productResponses,
+                        0,
+                        10,
+                        2L,
+                        1,
+                        true,
+                        true
+                );
 
         when(productService.getAllProducts(any(ProductFilterRequest.class), any(Pageable.class))).thenReturn(productPageResponse);
 
@@ -485,10 +495,12 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.content[1].status").value(ProductStatus.ACTIVE.name()))
                 .andExpect(jsonPath("$.content[1].createdAt").exists())
                 .andExpect(jsonPath("$.content[1].updatedAt").exists())
-                .andExpect(jsonPath("$.numberOfElements").value(2))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<ProductFilterRequest> productFilterRequestCaptor = ArgumentCaptor.forClass(ProductFilterRequest.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -536,8 +548,15 @@ public class ProductControllerTest {
         );
 
         List<ProductResponse> productResponses = List.of(firstProductResponse, secondProductResponse);
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<ProductResponse> productPageResponse = new PageImpl<>(productResponses, pageable, productResponses.size());
+        PageResponse<ProductResponse> productPageResponse = new PageResponse<>(
+                productResponses,
+                0,
+                10,
+                2L,
+                1,
+                true,
+                true
+        );
 
         when(productService.getAllProducts(any(ProductFilterRequest.class), any(Pageable.class))).thenReturn(productPageResponse);
 
@@ -566,10 +585,12 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.content[1].status").value(ProductStatus.ACTIVE.name()))
                 .andExpect(jsonPath("$.content[1].createdAt").exists())
                 .andExpect(jsonPath("$.content[1].updatedAt").exists())
-                .andExpect(jsonPath("$.numberOfElements").value(2))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<ProductFilterRequest> productFilterRequestCaptor = ArgumentCaptor.forClass(ProductFilterRequest.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -652,20 +673,29 @@ public class ProductControllerTest {
     @Test
     void getAllProducts_whenNoProductsExist_returnsEmptyPage() throws Exception {
         List<ProductResponse> productResponses = List.of();
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<ProductResponse> pageProductResponse = new PageImpl<>(productResponses, pageable, productResponses.size());
+        PageResponse<ProductResponse> productPageResponse = new PageResponse<>(
+                productResponses,
+                0,
+                10,
+                0L,
+                0,
+                true,
+                true
+        );
 
-        when(productService.getAllProducts(any(ProductFilterRequest.class), any(Pageable.class))).thenReturn(pageProductResponse);
+        when(productService.getAllProducts(any(ProductFilterRequest.class), any(Pageable.class))).thenReturn(productPageResponse);
 
         mockMvc.perform(get(PRODUCT_URI)
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(0)))
-                .andExpect(jsonPath("$.numberOfElements").value(0))
+                .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(0))
-                .andExpect(jsonPath("$.totalPages").value(0));
+                .andExpect(jsonPath("$.totalPages").value(0))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
         ArgumentCaptor<ProductFilterRequest> productFilterRequestCaptor = ArgumentCaptor.forClass(ProductFilterRequest.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
