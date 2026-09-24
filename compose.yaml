@@ -32,6 +32,8 @@ services:
     image: ecommerce-platform:local
     ports:
       - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/ecommerce_platform_db
       DB_USERNAME: ${DB_USERNAME}

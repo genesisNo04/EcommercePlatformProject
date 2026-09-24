@@ -8,6 +8,7 @@ import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.mapper.ProductMapper;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -18,6 +19,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
@@ -33,9 +35,19 @@ public class ProductServiceImpl implements ProductService {
             }
     )
     public ProductResponse createProduct(ProductCreateRequest request) {
+        log.info(
+                "Creating product name={}",
+                request.name()
+        );
+
         Product product = ProductMapper.toEntity(request);
         product.updateStatusBasedOnQuantity();
         Product savedProduct = productRepository.save(product);
+
+        log.info(
+                "Product created productId={} name={}",
+                savedProduct.getId(),
+                savedProduct.getName());
         return ProductMapper.toResponse(savedProduct);
     }
 
