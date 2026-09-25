@@ -13,11 +13,13 @@ import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
 import com.namnguyen.ecommerce_platform.payment.mapper.PaymentMapper;
 import com.namnguyen.ecommerce_platform.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.namnguyen.ecommerce_platform.payment.error.PaymentErrorMessages.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
@@ -35,14 +37,26 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional(readOnly = true)
     public PaymentResponse getPaymentByOrderId(Long orderId, Long userId) {
+        log.debug(
+                "Fetching payment orderId={} userId={}",
+                orderId,
+                userId
+        );
+
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
         Payment payment = paymentLookupService.getPaymentByOrderId(order.getId());
+
         return PaymentMapper.toResponse(payment);
     }
 
     @Override
     @Transactional
     public PaymentResponse updatePayment(Long orderId, Long userId, PaymentRequest request) {
+        log.info(
+                "Updating payment orderId={} userId={}",
+                orderId,
+                userId
+        );
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
         Payment payment = paymentLookupService.getPaymentByOrderId(order.getId());
 
@@ -51,12 +65,23 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         payment.setPaymentMethod(request.paymentMethod());
+
+        log.info(
+                "Payment updated paymentId={}",
+                payment.getId()
+        );
         return PaymentMapper.toResponse(payment);
     }
 
     @Override
     @Transactional
     public PaymentResponse submitPayment(Long orderId, Long userId, PaymentRequest paymentRequest) {
+        log.info(
+                "Submitting payment orderId={} userId={}",
+                orderId,
+                userId
+        );
+
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
 
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
@@ -72,12 +97,26 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(order.getTotal())
                 .build();
 
-        return PaymentMapper.toResponse(paymentRepository.save(payment));
+        Payment savedPayment = paymentRepository.save(payment);
+
+        log.info(
+                "Payment submitted paymentId={}",
+                savedPayment.getId()
+        );
+
+        return PaymentMapper.toResponse(savedPayment);
     }
 
     @Override
     @Transactional
     public PaymentResponse confirmPayment(Long orderId, Long userId, PaymentStatus status) {
+        log.info(
+                "Confirming payment orderId={} userId={} status={}",
+                orderId,
+                userId,
+                status
+        );
+
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
         Payment payment = paymentLookupService.getPaymentByOrderId(order.getId());
 
@@ -97,6 +136,12 @@ public class PaymentServiceImpl implements PaymentService {
         } else {
             throw new InvalidPaymentStateException(INVALID_PAYMENT_STATUS);
         }
+
+        log.info(
+                "Payment status updated paymentId={} status={}",
+                payment.getId(),
+                payment.getPaymentStatus()
+        );
 
         return PaymentMapper.toResponse(payment);
     }
