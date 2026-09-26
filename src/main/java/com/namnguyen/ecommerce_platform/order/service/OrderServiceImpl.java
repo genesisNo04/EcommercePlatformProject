@@ -18,6 +18,7 @@ import com.namnguyen.ecommerce_platform.product.service.ProductLookupService;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.service.UserLookupService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -31,6 +32,7 @@ import static com.namnguyen.ecommerce_platform.cart.error.CartErrorMessages.EMPT
 import static com.namnguyen.ecommerce_platform.order.error.OrderErrorMessages.*;
 import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.insufficientStockForProduct;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -60,6 +62,12 @@ public class OrderServiceImpl implements OrderService {
     private OrderItem createOrderItem(Product product, int quantity, Order order) {
         validateOrderItemQuantity(quantity);
 
+        log.debug(
+                "Creating order item productId={} quantity={}",
+                product.getId(),
+                quantity
+        );
+
         if (product.getQuantity() < quantity) {
             throw new InsufficientStockException(insufficientStockForProduct(product.getName()));
         }
@@ -67,12 +75,14 @@ public class OrderServiceImpl implements OrderService {
         product.setQuantity(product.getQuantity() - quantity);
         product.updateStatusBasedOnQuantity();
 
-        return OrderItem.builder()
+        OrderItem item = OrderItem.builder()
                 .order(order)
                 .product(product)
                 .quantity(quantity)
                 .price(product.getPrice())
                 .build();
+
+        return item;
     }
 
     private BigDecimal calculateTotal(List<OrderItem> items) {
@@ -123,6 +133,12 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse createOrder(CreateOrderRequest request, Long userId) {
         validateCreateOrderRequest(request);
 
+        log.info(
+                "Creating order userId={} itemCount={}",
+                userId,
+                request.items().size()
+        );
+
         User user = userLookupService.getUserById(userId);
 
         Order order = new Order();
@@ -137,12 +153,22 @@ public class OrderServiceImpl implements OrderService {
         order.getOrderItems().addAll(items);
         order.setTotal(calculateTotal(items));
 
-        return OrderMapper.toResponse(orderRepository.save(order));
+        Order savedOrder = orderRepository.save(order);
+
+        log.info(
+                "Order created orderId={} userId={} itemCount={}",
+                savedOrder.getId(),
+                userId,
+                savedOrder.getOrderItems().size()
+        );
+
+        return OrderMapper.toResponse(savedOrder);
     }
 
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long orderId, Long userId) {
+        log.debug("Fetching order orderId={} userId={}", orderId, userId);
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
         return OrderMapper.toResponse(order);
     }
@@ -158,10 +184,25 @@ public class OrderServiceImpl implements OrderService {
                 .and(OrderSpecification.totalGreaterThanOrEqual(request.minTotal()))
                 .and(OrderSpecification.totalLessThanOrEqual(request.maxTotal()));
 
-        Page<OrderResponse> orderResponsePage = orderRepository.findAll(spec, pageable)
-                .map(OrderMapper::toResponse);
+        log.debug(
+                "Fetching orders userId={} page={} size={} sort={}",
+                userId,
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort()
+        );
 
-        return PageResponse.from(orderResponsePage);
+        PageResponse<OrderResponse> orderResponsePage = PageResponse.from(orderRepository.findAll(spec, pageable)
+                .map(OrderMapper::toResponse));
+
+        log.debug(
+                "Fetched orders page={} returned={} totalElements={}",
+                orderResponsePage.page(),
+                orderResponsePage.content().size(),
+                orderResponsePage.totalElements()
+        );
+
+        return orderResponsePage;
     }
 
     @Override
@@ -169,17 +210,22 @@ public class OrderServiceImpl implements OrderService {
     public void cancelOrder(Long orderId, Long userId) {
         Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
 
+        log.info("Cancelling order orderId={} userId={}", orderId, userId);
         validateOrderCanBeCancelled(order);
 
         restoreStock(order);
 
         order.setStatus(OrderStatus.CANCELLED);
+
+        log.info("Order cancelled orderId={}", orderId);
     }
 
     @Override
     @Transactional
     public OrderResponse checkoutCart(Long userId) {
         Cart cart = cartLookupService.getCartByUserId(userId);
+
+        log.info("Checking out user cart userId={}", userId);
 
         if (cart.getItems().isEmpty()) {
             throw new InvalidCartStateException(EMPTY_CART);
@@ -200,6 +246,8 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
 
         cart.clearItems();
+
+        log.info("Cart checked out userId={} orderId={}", userId, savedOrder.getId());
 
         return OrderMapper.toResponse(savedOrder);
     }
