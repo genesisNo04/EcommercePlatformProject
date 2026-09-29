@@ -8,6 +8,7 @@ import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateExcepti
 import com.namnguyen.ecommerce_platform.payment.exception.InvalidPaymentStateException;
 import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static com.namnguyen.ecommerce_platform.common.exception.error.ExceptionErrorMessages.*;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -121,6 +123,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNoResourceFoundException(NoResourceFoundException ex, HttpServletRequest request) {
+        log.warn(
+                "Request failed status=404 method={} path={} exception={} message={}",
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getClass().getSimpleName(),
+                ex.getMessage()
+        );
+
         HttpStatus status = HttpStatus.NOT_FOUND;
 
         return ResponseEntity.status(status)
@@ -134,6 +144,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiErrorResponse> handleDuplicateResourceException(DuplicateResourceException ex, HttpServletRequest request) {
+        log.warn(
+                "Request failed status=409 method={} path={} exception={} message={}",
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getClass().getSimpleName(),
+                ex.getMessage()
+        );
+        
         HttpStatus status = HttpStatus.CONFLICT;
 
         return ResponseEntity.status(status)
