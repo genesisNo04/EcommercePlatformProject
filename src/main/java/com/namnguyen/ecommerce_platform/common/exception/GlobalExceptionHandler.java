@@ -26,7 +26,6 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +35,20 @@ import static com.namnguyen.ecommerce_platform.common.exception.error.ExceptionE
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private void logClientError(
+            HttpStatus status,
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        log.warn(
+                "Request failed status={} method={} path={} exception={}",
+                status.value(),
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getClass().getSimpleName()
+        );
+    }
 
     private String resolveFieldErrorMessage(FieldError fieldError) {
         if ("typeMismatch".equals(fieldError.getCode())) {
@@ -89,6 +102,14 @@ public class GlobalExceptionHandler {
     ) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
+        log.warn(
+                "Request validation failed status={} method={} path={} fieldErrorCount={}",
+                status.value(),
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getBindingResult().getFieldErrorCount()
+        );
+
         Map<String, List<String>> fieldsErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -112,6 +133,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleBadCredentialsException(BadCredentialsException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.UNAUTHORIZED;
 
+        logClientError(status, ex, request);
+
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
                         LocalDateTime.now(),
@@ -123,15 +146,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNoResourceFoundException(NoResourceFoundException ex, HttpServletRequest request) {
-        log.warn(
-                "Request failed status=404 method={} path={} exception={} message={}",
-                request.getMethod(),
-                request.getRequestURI(),
-                ex.getClass().getSimpleName(),
-                ex.getMessage()
-        );
-
         HttpStatus status = HttpStatus.NOT_FOUND;
+
+        logClientError(status, ex, request);
 
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
@@ -144,15 +161,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiErrorResponse> handleDuplicateResourceException(DuplicateResourceException ex, HttpServletRequest request) {
-        log.warn(
-                "Request failed status=409 method={} path={} exception={} message={}",
-                request.getMethod(),
-                request.getRequestURI(),
-                ex.getClass().getSimpleName(),
-                ex.getMessage()
-        );
-        
         HttpStatus status = HttpStatus.CONFLICT;
+
+        logClientError(status, ex, request);
 
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
@@ -166,6 +177,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        log.warn(
+                "Request argument validation failed status={} method={} path={} fieldErrorCount={}",
+                status.value(),
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getBindingResult().getFieldErrorCount()
+        );
 
         Map<String, List<String>> fieldErrors = ex.getBindingResult()
                 .getFieldErrors()
@@ -189,6 +208,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ValidationErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        logClientError(status, ex, request);
 
         Map<String, List<String>> fieldErrors = ex.getParameterValidationResults()
                 .stream()
@@ -217,6 +238,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInsufficientStockException(InsufficientStockException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
+        logClientError(status, ex, request);
+
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
                         LocalDateTime.now(),
@@ -229,6 +252,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidOrderStateException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidOrderStateException(InvalidOrderStateException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        logClientError(status, ex, request);
 
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
@@ -243,6 +268,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInvalidCartStateException(InvalidCartStateException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
+        logClientError(status, ex, request);
+
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
                         LocalDateTime.now(),
@@ -255,6 +282,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidQuantityException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidQuantityException(InvalidQuantityException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        logClientError(status, ex, request);
 
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
@@ -269,6 +298,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInvalidOrderException(InvalidOrderException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
+        logClientError(status, ex, request);
+
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
                         LocalDateTime.now(),
@@ -281,6 +312,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidPaymentStateException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidPaymentStateException(InvalidPaymentStateException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        logClientError(status, ex, request);
 
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
@@ -295,6 +328,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleAuthorizationDeniedException(AuthorizationDeniedException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.FORBIDDEN;
 
+        logClientError(status, ex, request);
+
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
                         LocalDateTime.now(),
@@ -308,6 +343,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        logClientError(status, ex, request);
 
         String message;
 
@@ -334,6 +371,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ValidationErrorResponse> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
+        logClientError(status, ex, request);
+
         Map<String, List<String>> fieldErrors = Map.of(
           ex.getParameterName(),
           List.of(invalidParameter(ex.getParameterName()))
@@ -355,6 +394,8 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        logClientError(status, ex, request);
 
         String fieldName = resolveInvalidJsonFieldName(ex);
 
@@ -378,7 +419,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleException(Exception ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
-        ex.printStackTrace();
+        log.error(
+                "Unexpected server error method={} path={}",
+                request.getMethod(),
+                request.getRequestURI(),
+                ex
+        );
 
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(
