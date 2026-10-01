@@ -5,8 +5,10 @@ import com.namnguyen.ecommerce_platform.auth.dto.LoginRequest;
 import com.namnguyen.ecommerce_platform.auth.dto.RegisterRequest;
 import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceException;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
+import com.namnguyen.ecommerce_platform.security.user.CustomUserDetails;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
 import com.namnguyen.ecommerce_platform.user.dto.UserCreateRequest;
+import com.namnguyen.ecommerce_platform.user.dto.UserResponse;
 import com.namnguyen.ecommerce_platform.user.enums.Role;
 import com.namnguyen.ecommerce_platform.user.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import java.time.LocalDateTime;
+import static com.namnguyen.ecommerce_platform.auth.error.AuthErrorMessages.PRINCIPAL_IS_INVALID;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.AuthTestMessages.*;
 import static org.assertj.core.api.Assertions.*;
@@ -51,15 +55,14 @@ public class AuthServiceImplTest {
     void login_whenCredentialsAreValid_returnsAuthResponse() {
         LoginRequest loginRequest = createDefaultLoginRequest();
 
-        UserDetails userDetails = User.withUsername(loginRequest.email())
-                        .password(ENCODED_PASSWORD)
-                        .roles(Role.CUSTOMER.name())
-                        .build();
+        CustomUserDetails userDetails = mock(CustomUserDetails.class);
+        Authentication authentication = mock(Authentication.class);
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(mock(Authentication.class));
-        when(customUserDetailsService.loadUserByUsername(loginRequest.email()))
-                .thenReturn(userDetails);
+                .thenReturn(authentication);
+
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
         when(jwtService.generateToken(userDetails)).thenReturn(MOCK_JWT_TOKEN);
 
         AuthResponse authResponse = authService.login(loginRequest);
@@ -77,12 +80,11 @@ public class AuthServiceImplTest {
         assertThat(authToken.getPrincipal()).isEqualTo(loginRequest.email());
         assertThat(authToken.getCredentials()).isEqualTo(loginRequest.password());
 
-        verify(customUserDetailsService).loadUserByUsername(loginRequest.email());
         verify(jwtService).generateToken(userDetails);
         verifyNoInteractions(userService);
         verifyNoMoreInteractions(authenticationManager);
-        verifyNoMoreInteractions(customUserDetailsService);
         verifyNoMoreInteractions(jwtService);
+        verifyNoInteractions(customUserDetailsService);
     }
 
     @Test
@@ -108,13 +110,57 @@ public class AuthServiceImplTest {
     }
 
     @Test
+    void login_whenAuthenticatedPrincipalIsInvalid_throwsIllegalStateException() {
+        LoginRequest loginRequest = createDefaultLoginRequest();
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authenticationManager.authenticate(
+                any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+
+        when(authentication.getPrincipal())
+                .thenReturn(null);
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> authService.login(loginRequest)
+        );
+
+        assertThat(ex.getMessage()).isEqualTo(PRINCIPAL_IS_INVALID);
+
+        verify(authenticationManager)
+                .authenticate(any(UsernamePasswordAuthenticationToken.class));
+
+        verify(authentication).getPrincipal();
+
+        verifyNoInteractions(jwtService);
+        verifyNoInteractions(customUserDetailsService);
+        verifyNoInteractions(userService);
+    }
+
+    @Test
     void register_whenEmailIsNew_createsUserAndReturnsResponse() {
         RegisterRequest registerRequest = createDefaultRegisterRequest();
+
+        UserResponse userResponse = new UserResponse(
+                1L,
+                VALID_EMAIL,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER,
+                Role.CUSTOMER,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
 
         UserDetails userDetails = User.withUsername(registerRequest.email())
                 .password(ENCODED_PASSWORD)
                 .roles(Role.CUSTOMER.name())
                 .build();
+
+        when(userService.createUser(any(UserCreateRequest.class)))
+                .thenReturn(userResponse);
 
         when(customUserDetailsService.loadUserByUsername(registerRequest.email())).thenReturn(userDetails);
         when(jwtService.generateToken(userDetails)).thenReturn(MOCK_JWT_TOKEN);
@@ -189,6 +235,20 @@ public class AuthServiceImplTest {
     @Test
     void register_whenUserDetailsCannotBeLoaded_throwsUsernameNotFoundException() {
         RegisterRequest registerRequest = createDefaultRegisterRequest();
+
+        UserResponse userResponse = new UserResponse(
+                1L,
+                VALID_EMAIL,
+                VALID_FIRST_NAME,
+                VALID_LAST_NAME,
+                VALID_PHONE_NUMBER,
+                Role.CUSTOMER,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        when(userService.createUser(any(UserCreateRequest.class)))
+                .thenReturn(userResponse);
 
        when(customUserDetailsService.loadUserByUsername(registerRequest.email()))
                .thenThrow(new UsernameNotFoundException(USER_NOT_FOUND));

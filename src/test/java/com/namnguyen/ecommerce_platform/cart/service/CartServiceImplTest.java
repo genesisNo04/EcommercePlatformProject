@@ -544,6 +544,8 @@ public class CartServiceImplTest {
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
         when(productLookupService.getProductById(productId)).thenReturn(product);
         when(cartItemRepository.findByCartIdAndProductId(cartId, productId)).thenReturn(Optional.of(cartItem));
+        when(cartRepository.save(cart))
+                .thenReturn(cart);
 
         CartResponse cartResponse = cartService.updateItemQuantity(userId, productId, updateQuantity);
 
@@ -746,6 +748,8 @@ public class CartServiceImplTest {
 
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
         when(cartItemRepository.findByCartIdAndProductId(cartId, firstProductId)).thenReturn(Optional.of(firstCartItem));
+        when(cartRepository.save(cart))
+                .thenReturn(cart);
 
         CartResponse cartResponse = cartService.updateItemQuantity(userId, firstProductId, updatedQuantity);
 
@@ -823,6 +827,8 @@ public class CartServiceImplTest {
 
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
         when(cartItemRepository.findByCartIdAndProductId(cartId, firstProductId)).thenReturn(Optional.of(firstCartItem));
+        when(cartRepository.save(cart))
+                .thenReturn(cart);
 
         CartResponse cartResponse = cartService.removeItem(userId, firstProductId);
         CartItemResponse cartItemResponse = cartResponse.items().getFirst();
@@ -927,6 +933,9 @@ public class CartServiceImplTest {
         assertThat(cart.getItems().size()).isEqualTo(2);
 
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
+
+        when(cartRepository.save(cart))
+                .thenReturn(cart);
 
         CartResponse cartResponse = cartService.clearCart(userId);
 
