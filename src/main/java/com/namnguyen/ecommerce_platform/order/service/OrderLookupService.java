@@ -4,11 +4,13 @@ import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundExceptio
 import com.namnguyen.ecommerce_platform.order.entity.Order;
 import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import static com.namnguyen.ecommerce_platform.order.error.OrderErrorMessages.orderNotFoundWithId;
 import static com.namnguyen.ecommerce_platform.order.error.OrderErrorMessages.orderNotFoundWithIdAndUserId;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderLookupService {
@@ -16,16 +18,23 @@ public class OrderLookupService {
     private final OrderRepository orderRepository;
 
     public Order getOrderById(Long orderId) {
-        return orderRepository.findById(orderId)
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() ->
                         new NoResourceFoundException(
                                 orderNotFoundWithId(orderId)));
+
+        log.debug("Fetched order orderId={}", orderId);
+        return order;
     }
 
     public Order getOrderByIdAndUserId(Long orderId, Long userId) {
-        return orderRepository.findByIdAndUserId(orderId, userId)
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() ->
                         new NoResourceFoundException(
                                 orderNotFoundWithIdAndUserId(orderId, userId)));
+
+        log.debug("Fetched order orderId={} userId={}", orderId, userId);
+
+        return order; 
     }
 }

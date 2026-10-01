@@ -8,6 +8,7 @@ import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.mapper.ProductMapper;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -18,6 +19,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
@@ -33,9 +35,19 @@ public class ProductServiceImpl implements ProductService {
             }
     )
     public ProductResponse createProduct(ProductCreateRequest request) {
+        log.info(
+                "Creating product name={}",
+                request.name()
+        );
+
         Product product = ProductMapper.toEntity(request);
         product.updateStatusBasedOnQuantity();
         Product savedProduct = productRepository.save(product);
+
+        log.info(
+                "Product created productId={} name={}",
+                savedProduct.getId(),
+                savedProduct.getName());
         return ProductMapper.toResponse(savedProduct);
     }
 
@@ -43,6 +55,8 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     @Cacheable(value = CacheNames.PRODUCTS, key = "#productId")
     public ProductResponse getProductById(Long productId) {
+        log.debug("Fetching product productId={}", productId);
+
         Product product = productLookupService.getProductById(productId);
         return ProductMapper.toResponse(product);
     }
@@ -62,6 +76,14 @@ public class ProductServiceImpl implements ProductService {
     public PageResponse<ProductResponse> getAllProducts(
             ProductFilterRequest request,
             Pageable pageable) {
+
+        log.debug(
+                "Fetching products status={} page={} size={} sort={}",
+                request.status(),
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort()
+        );
 
         Specification<Product> spec = Specification
                 .where(ProductSpecification.hasStatus(request.status()))
@@ -87,12 +109,25 @@ public class ProductServiceImpl implements ProductService {
             }
     )
     public ProductResponse putProduct(Long productId, ProductPutRequest request) {
+
+        log.info(
+                "Update product productId={} name={}",
+                productId,
+                request.name()
+        );
+
         Product product = productLookupService.getProductById(productId);
         product.setName(request.name());
         product.setDescription(request.description());
         product.setPrice(request.price());
         product.setQuantity(request.quantity());
         product.updateStatusBasedOnQuantity();
+
+        log.info(
+                "Product updated productId={} name={}",
+                product.getId(),
+                product.getName());
+
         return ProductMapper.toResponse(product);
     }
 
@@ -107,6 +142,11 @@ public class ProductServiceImpl implements ProductService {
             }
     )
     public ProductResponse patchProduct(Long productId, ProductPatchRequest request) {
+        log.info(
+                "Patching product productId={}",
+                productId
+        );
+
         Product product = productLookupService.getProductById(productId);
 
         if (request.name() != null) {
@@ -126,6 +166,11 @@ public class ProductServiceImpl implements ProductService {
             product.updateStatusBasedOnQuantity();
         }
 
+        log.info(
+                "Product patched productId={} name={}",
+                product.getId(),
+                product.getName());
+
         return ProductMapper.toResponse(product);
     }
 
@@ -139,6 +184,12 @@ public class ProductServiceImpl implements ProductService {
     )
     public void deleteProduct(Long productId) {
         Product product = productLookupService.getProductById(productId);
+
         productRepository.delete(product);
+
+        log.info(
+                "Product deleted productId={}",
+                productId
+        );
     }
 }

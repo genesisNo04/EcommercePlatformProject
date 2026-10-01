@@ -9,6 +9,7 @@ import com.namnguyen.ecommerce_platform.user.enums.Role;
 import com.namnguyen.ecommerce_platform.user.mapper.UserMapper;
 import com.namnguyen.ecommerce_platform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,6 +26,7 @@ import com.namnguyen.ecommerce_platform.common.exception.DuplicateResourceExcept
 import static com.namnguyen.ecommerce_platform.user.error.UserErrorMessages.EMAIL_ALREADY_EXISTS;
 import static com.namnguyen.ecommerce_platform.user.error.UserErrorMessages.PHONE_NUMBER_ALREADY_EXISTS;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -65,11 +67,20 @@ public class UserServiceImpl implements UserService {
         validateEmailDoesNotExist(request.email());
         validatePhoneDoesNotExist(request.phoneNumber());
 
+        log.info("Creating user role={}", role);
+
         User user = UserMapper.toEntity(request);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(role);
 
         User savedUser = userRepository.save(user);
+
+        log.info(
+                "User created userId={} role={}",
+                savedUser.getId(),
+                savedUser.getRole()
+        );
+
         return UserMapper.toResponse(savedUser);
     }
 
@@ -92,14 +103,14 @@ public class UserServiceImpl implements UserService {
                     @CacheEvict(value = CacheNames.USERS_PAGES, allEntries = true)
             }
     )
-    public UserResponse createAdminUser(UserCreateRequest request) {
-        return createUserWithRole(request, Role.ADMIN);
+    public UserResponse createAdminUser(UserCreateRequest request) {return createUserWithRole(request, Role.ADMIN);
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = CacheNames.USERS, key = "#userId")
     public UserResponse getUserById(Long userId) {
+        log.debug("Fetching user userId={}", userId);
         User user = userLookupService.getUserById(userId);
         return UserMapper.toResponse(user);
     }
@@ -115,6 +126,13 @@ public class UserServiceImpl implements UserService {
                     "#pageable.pageSize + ':' + " +
                     "#pageable.sort.toString().replace(' ', '')")
     public PageResponse<UserResponse> getAllUsers(UserFilterRequest request, Pageable pageable) {
+        log.debug(
+                "Fetching users page={} size={} sort={}",
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort()
+        );
+
         Specification<User> spec = Specification
                 .where(UserSpecification.nameContains(request.keyword()))
                 .and(UserSpecification.emailContains(request.email()))
@@ -136,6 +154,11 @@ public class UserServiceImpl implements UserService {
             }
     )
     public UserResponse putUser(Long userId, UserPutRequest request) {
+        log.info(
+                "Updating user userId={}",
+                userId
+        );
+
         User user = userLookupService.getUserById(userId);
 
         validateEmailAvailableForUpdate(request.email(), userId);
@@ -146,6 +169,12 @@ public class UserServiceImpl implements UserService {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setPhoneNumber(request.phoneNumber());
+
+        log.info(
+                "User updated userId={}",
+                userId
+        );
+
 
         return UserMapper.toResponse(user);
     }
@@ -161,6 +190,11 @@ public class UserServiceImpl implements UserService {
             }
     )
     public UserResponse patchUser(Long userId, UserPatchRequest request) {
+        log.info(
+                "Patching user userId={}",
+                userId
+        );
+
         User user = userLookupService.getUserById(userId);
 
         if (request.email() != null) {
@@ -191,6 +225,11 @@ public class UserServiceImpl implements UserService {
             user.setPhoneNumber(request.phoneNumber());
         }
 
+        log.info(
+                "User patched userId={}",
+                userId
+        );
+
         return UserMapper.toResponse(user);
     }
 
@@ -205,5 +244,10 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Long userId) {
         User user = userLookupService.getUserById(userId);
         userRepository.delete(user);
+
+        log.info(
+                "User deleted userId={}",
+                userId
+        );
     }
 }

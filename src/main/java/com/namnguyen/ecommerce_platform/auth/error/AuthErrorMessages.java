@@ -26,6 +26,9 @@ public final class AuthErrorMessages {
     public static final String AUTH_PHONE_NUMBER_IS_INVALID =
             "Phone number must contain 10 to 15 digits, with an optional leading +.";
 
+    public static final String PRINCIPAL_IS_INVALID =
+            "Unexpected authenticated principal";
+
     public static final String INVALID_CREDENTIALS =
             "Invalid email or password.";
 
