@@ -1,5 +1,5 @@
 {
-  "taskDefinitionArn": "arn:aws:ecs:us-east-1:667512625163:task-definition/ecommerce-platform-task:2",
+  "taskDefinitionArn": "arn:aws:ecs:us-east-1:667512625163:task-definition/ecommerce-platform-task:3",
   "containerDefinitions": [
     {
       "name": "ecommerce-app",
@@ -15,7 +15,16 @@
         }
       ],
       "essential": true,
-      "environment": [],
+      "environment": [
+        {
+          "name": "DB_USERNAME",
+          "value": "postgres"
+        },
+        {
+          "name": "DB_URL",
+          "value": "jdbc:postgresql://ecommerce-postgres-db.c0n0c0mgstyc.us-east-1.rds.amazonaws.com:5432/ecommerce_platform_db"
+        }
+      ],
       "environmentFiles": [],
       "mountPoints": [],
       "volumesFrom": [],
@@ -23,6 +32,10 @@
         {
           "name": "JWT_SECRET",
           "valueFrom": "arn:aws:ssm:us-east-1:667512625163:parameter/ecommerce/JWT_SECRET"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:ssm:us-east-1:667512625163:parameter/ecommerce/DB_PASSWORD"
         }
       ],
       "ulimits": [],
@@ -41,7 +54,7 @@
   "family": "ecommerce-platform-task",
   "executionRoleArn": "arn:aws:iam::667512625163:role/ecommerce-ecs-task-execution-role",
   "networkMode": "awsvpc",
-  "revision": 2,
+  "revision": 3,
   "volumes": [],
   "status": "ACTIVE",
   "requiresAttributes": [
@@ -85,7 +98,7 @@
   ],
   "cpu": "512",
   "memory": "1024",
-  "registeredAt": "2026-10-20T03:00:53.295Z",
+  "registeredAt": "2026-10-20T23:00:15.822Z",
   "registeredBy": "arn:aws:iam::667512625163:user/genesisiamuser001",
   "enableFaultInjection": false,
   "tags": []
