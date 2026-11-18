@@ -38,6 +38,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
@@ -130,6 +131,22 @@ public abstract class AbstractIntegrationTestSupport {
         return userRepository.save(user);
     }
 
+    protected List<User> persistCustomers(int count) {
+        List<User> users = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            users.add(persistUser(
+                    "customer" + i + "@gmail.com",
+                    VALID_PASSWORD,
+                    VALID_FIRST_NAME,
+                    VALID_LAST_NAME,
+                    String.format("555%07d", i),
+                    Role.CUSTOMER
+            ));
+        }
+
+        return users;
+    }
+
     protected User persistDefaultCustomer() {
         return persistUser(
                 VALID_EMAIL,
@@ -175,6 +192,16 @@ public abstract class AbstractIntegrationTestSupport {
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY,
+                ProductStatus.ACTIVE
+        );
+    }
+
+    protected Product persistProductWithQuantity(int quantity) {
+        return persistProduct(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                quantity,
                 ProductStatus.ACTIVE
         );
     }
