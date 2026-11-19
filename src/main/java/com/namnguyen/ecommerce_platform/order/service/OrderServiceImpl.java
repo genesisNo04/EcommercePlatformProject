@@ -15,6 +15,7 @@ import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.product.service.ProductLookupService;
+import com.namnguyen.ecommerce_platform.product.service.ProductStockService;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.service.UserLookupService;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class OrderServiceImpl implements OrderService {
     private final CartLookupService cartLookupService;
     private final ProductLookupService productLookupService;
     private final OrderLookupService orderLookupService;
+    private final ProductStockService productStockService;
 
     private void validateOrderItemQuantity(int quantity) {
         if (quantity <= 0) {
@@ -68,21 +70,14 @@ public class OrderServiceImpl implements OrderService {
                 quantity
         );
 
-        if (product.getQuantity() < quantity) {
-            throw new InsufficientStockException(insufficientStockForProduct(product.getName()));
-        }
+        productStockService.decreaseStock(product, quantity);
 
-        product.setQuantity(product.getQuantity() - quantity);
-        product.updateStatusBasedOnQuantity();
-
-        OrderItem item = OrderItem.builder()
+        return OrderItem.builder()
                 .order(order)
                 .product(product)
                 .quantity(quantity)
                 .price(product.getPrice())
                 .build();
-
-        return item;
     }
 
     private BigDecimal calculateTotal(List<OrderItem> items) {
@@ -95,8 +90,7 @@ public class OrderServiceImpl implements OrderService {
     private void restoreStock(Order order) {
         for (OrderItem item : order.getOrderItems()) {
             Product product = item.getProduct();
-            product.setQuantity(product.getQuantity() + item.getQuantity());
-            product.updateStatusBasedOnQuantity();
+            productStockService.increaseStock(product, item.getQuantity());
         }
     }
 

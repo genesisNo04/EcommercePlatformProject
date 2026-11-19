@@ -8,6 +8,7 @@ import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -22,7 +23,7 @@ public class OrderConcurrencyIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private OrderService orderService;
 
-    @Test
+    @RepeatedTest(5)
     void concurrentOrders_shouldNeverOversell()  throws Exception {
         Product product = persistProductWithQuantity(5);
         List<Long> userIds = persistCustomers(20)
