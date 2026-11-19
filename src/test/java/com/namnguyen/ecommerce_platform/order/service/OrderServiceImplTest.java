@@ -17,6 +17,7 @@ import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.service.ProductLookupService;
+import com.namnguyen.ecommerce_platform.product.service.ProductStockService;
 import com.namnguyen.ecommerce_platform.user.entity.User;
 import com.namnguyen.ecommerce_platform.user.service.UserLookupService;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,9 @@ public class OrderServiceImplTest {
 
     @Mock
     private ProductLookupService productLookupService;
+
+    @Mock
+    private ProductStockService productStockService;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -125,11 +129,6 @@ public class OrderServiceImplTest {
         assertThat(orderResponse.items()).hasSize(2);
         assertThat(orderResponse.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
 
-        assertThat(firstProduct.getQuantity()).isEqualTo(firstStockQuantity - firstOrderQuantity);
-        assertThat(secondProduct.getQuantity()).isEqualTo(secondStockQuantity - secondOrderQuantity);
-        assertThat(firstProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
-        assertThat(secondProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
-
         OrderItemResponse firstItemResponse = orderResponse.items().getFirst();
         assertThat(firstItemResponse.productId()).isEqualTo(firstProductId);
         assertThat(firstItemResponse.productName()).isEqualTo(firstProduct.getName());
@@ -165,61 +164,13 @@ public class OrderServiceImplTest {
         assertThat(secondSavedOrderItem.getQuantity()).isEqualTo(secondOrderQuantity);
         assertThat(secondSavedOrderItem.getPrice()).isEqualByComparingTo(secondProduct.getPrice());
 
-        verify(userLookupService).getUserById(userId);
-        verify(productLookupService).getProductById(firstProductId);
-        verify(productLookupService).getProductById(secondProductId);
+        verify(productStockService).decreaseStock(firstProduct, firstOrderQuantity);
+        verify(productStockService).decreaseStock(secondProduct, secondOrderQuantity);
+
         verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(productLookupService);
         verifyNoMoreInteractions(orderRepository);
-    }
-
-    @Test
-    void createOrder_whenProductQuantityBecomesZero_marksProductOutOfStock() {
-        Long userId = 1L;
-        Long productId = 3L;
-        Long orderId = 4L;
-        int quantity = 10;
-
-        User user = createDefaultUser(userId);
-
-        Product product = createProduct(
-                productId,
-                VALID_PRODUCT_NAME,
-                VALID_PRODUCT_DESCRIPTION,
-                VALID_PRODUCT_PRICE,
-                10
-        );
-
-        CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
-                productId,
-                quantity
-        );
-
-        CreateOrderRequest orderRequest = new CreateOrderRequest(
-                List.of(orderItemRequest)
-        );
-
-        when(userLookupService.getUserById(userId)).thenReturn(user);
-        when(productLookupService.getProductById(productId)).thenReturn(product);
-        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
-            Order order = inv.getArgument(0);
-            order.setId(orderId);
-            return order;
-        });
-
-        OrderResponse orderResponse = orderService.createOrder(orderRequest, userId);
-
-        assertThat(orderResponse).isNotNull();
-        assertThat(orderResponse.items()).hasSize(1);
-        assertThat(product.getQuantity()).isEqualTo(0);
-        assertThat(product.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
-
-        verify(userLookupService).getUserById(userId);
-        verify(productLookupService).getProductById(productId);
-        verify(orderRepository).save(any(Order.class));
-        verifyNoMoreInteractions(userLookupService);
-        verifyNoMoreInteractions(productLookupService);
-        verifyNoMoreInteractions(orderRepository);
+        verifyNoMoreInteractions(productStockService);
     }
 
     @Test
@@ -433,6 +384,8 @@ public class OrderServiceImplTest {
 
         when(userLookupService.getUserById(userId)).thenReturn(user);
         when(productLookupService.getProductById(productId)).thenReturn(product);
+        doThrow(new InsufficientStockException(insufficientStock(product.getName())))
+                .when(productStockService).decreaseStock(product, requestQuantity);
 
         InsufficientStockException ex = assertThrows(
                 InsufficientStockException.class,
@@ -726,63 +679,11 @@ public class OrderServiceImplTest {
         orderService.cancelOrder(orderId, userId);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(product.getQuantity()).isEqualTo(stockQuantity + orderItemQuantity);
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(productStockService).increaseStock(product, orderItemQuantity);
         verifyNoMoreInteractions(orderLookupService);
-    }
-
-    @Test
-    void cancelOrder_whenProductOutOfStockGotCancel_productUpdateToActive() {
-        Long userId = 1L;
-        Long orderId = 2L;
-        Long productId = 3L;
-        Long orderItemId = 5L;
-        int stockQuantity = 0;
-        int quantity = 2;
-
-        Product product = createProduct(
-                productId,
-                VALID_PRODUCT_NAME,
-                VALID_PRODUCT_DESCRIPTION,
-                VALID_PRODUCT_PRICE,
-                stockQuantity
-        );
-
-        product.updateStatusBasedOnQuantity();
-
-        assertThat(product.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
-
-        User user = createDefaultUser(userId);
-        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(quantity));
-
-        Order order = createOrder(
-                orderId,
-                total,
-                OrderStatus.PENDING_PAYMENT,
-                user
-        );
-
-        OrderItem item = createOrderItem(
-                orderItemId,
-                order,
-                product,
-                quantity,
-                product.getPrice()
-        );
-
-        order.addOrderItem(item);
-
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
-
-        orderService.cancelOrder(orderId, userId);
-
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(product.getQuantity()).isEqualTo(stockQuantity + quantity);
-        assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
-
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
-        verifyNoMoreInteractions(orderLookupService);
+        verifyNoMoreInteractions(productStockService);
     }
 
     @Test
@@ -990,9 +891,6 @@ public class OrderServiceImplTest {
         assertThat(orderResponse.items()).hasSize(1);
         assertThat(orderResponse.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
 
-        assertThat(product.getQuantity()).isEqualTo(stockQuantity - quantity);
-        assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
-
         assertThat(item.getCart()).isNull();
 
         OrderItemResponse itemResponse = orderResponse.items().getFirst();
@@ -1021,8 +919,10 @@ public class OrderServiceImplTest {
         assertThat(savedOrderItem.getPrice()).isEqualByComparingTo(product.getPrice());
 
         verify(cartLookupService).getCartByUserId(userId);
+        verify(productStockService).decreaseStock(product, quantity);
         verifyNoMoreInteractions(cartLookupService);
         verifyNoMoreInteractions(orderRepository);
+        verifyNoMoreInteractions(productStockService);
     }
 
     @Test
@@ -1096,6 +996,8 @@ public class OrderServiceImplTest {
         cart.addItem(item);
 
         when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
+        doThrow(new InsufficientStockException(insufficientStock(product.getName())))
+                .when(productStockService).decreaseStock(product, quantity);
 
         InsufficientStockException ex = assertThrows(
                 InsufficientStockException.class,
@@ -1205,53 +1107,5 @@ public class OrderServiceImplTest {
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoMoreInteractions(cartLookupService);
         verifyNoInteractions(orderRepository);
-    }
-
-    @Test
-    void checkoutCart_whenProductQuantityBecomesZero_marksProductOutOfStock() {
-        Long userId = 1L;
-        Long cartId = 2L;
-        Long productId = 3L;
-        Long cartItemId = 4L;
-        Long orderId = 5L;
-        int quantity = 10;
-        int stockQuantity = 10;
-
-        User user = createDefaultUser(userId);
-        Product product = createProduct(
-                productId,
-                VALID_PRODUCT_NAME,
-                VALID_PRODUCT_DESCRIPTION,
-                VALID_PRODUCT_PRICE,
-                stockQuantity
-        );
-
-        Cart cart = createCart(cartId, user);
-
-        CartItem item = createCartItem(
-                cartItemId,
-                cart,
-                product,
-                quantity
-        );
-
-        cart.addItem(item);
-
-        when(cartLookupService.getCartByUserId(userId)).thenReturn(cart);
-        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
-            Order order = inv.getArgument(0);
-            order.setId(orderId);
-            return order;
-        });
-
-        orderService.checkoutCart(userId);
-
-        assertThat(product.getQuantity()).isEqualTo(0);
-        assertThat(product.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
-
-        verify(cartLookupService).getCartByUserId(userId);
-        verify(orderRepository).save(any(Order.class));
-        verifyNoMoreInteractions(cartLookupService);
-        verifyNoMoreInteractions(orderRepository);
     }
 }
