@@ -37,4 +37,12 @@ public class OrderLookupService {
 
         return order; 
     }
+
+    public Order getOrderByIdAndUserIdForUpdate(Long orderId, Long userId) {
+        Order order = orderRepository.findWithLockByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new NoResourceFoundException(
+                        orderNotFoundWithIdAndUserId(orderId, userId)));
+        log.debug("Fetched and locked order orderId={} userId={}", orderId, userId);
+        return order;
+    }
 }

@@ -17,7 +17,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
@@ -28,13 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class OrderIntegrationTest extends BaseIntegrationTest {
@@ -218,8 +210,14 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
         assertThat(firstSavedProduct.getQuantity())
                 .isEqualTo(originalFirstProductQuantity);
 
+        assertThat(firstSavedProduct.getStatus())
+                .isEqualTo(ProductStatus.ACTIVE);
+
         assertThat(secondSavedProduct.getQuantity())
                 .isEqualTo(originalSecondProductQuantity);
+
+        assertThat(secondSavedProduct.getStatus())
+                .isEqualTo(ProductStatus.ACTIVE);
     }
 
     @Test
@@ -575,6 +573,67 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         assertThat(updatedProduct.getQuantity())
                 .isEqualTo(originalStock);
+
+        assertThat(updatedProduct.getStatus())
+                .isEqualTo(ProductStatus.ACTIVE);
+    }
+
+    @Test
+    void cancelOrder_whenProductWasOutOfStock_restoresStockAndMarksActive()
+            throws Exception {
+
+        User user = persistDefaultCustomer();
+        Product product = persistDefaultProduct();
+        int originalStock = product.getQuantity();
+
+        authenticateUser(user.getId());
+
+        CreateOrderRequest request =
+                new CreateOrderRequest(
+                        List.of(
+                                createOrderItemRequest(
+                                        product.getId(),
+                                        originalStock
+                                )
+                        )
+                );
+
+        MvcResult result = mockMvc.perform(
+                        post(ORDER_URI)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        OrderResponse orderResponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                OrderResponse.class
+        );
+
+        Product outOfStockProduct = productRepository.findById(product.getId()).orElseThrow();
+        assertThat(outOfStockProduct.getQuantity()).isZero();
+        assertThat(outOfStockProduct.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
+
+        mockMvc.perform(patch(cancelOrderUri(orderResponse.orderId())))
+                .andExpect(status().isNoContent());
+
+        Order order = orderRepository
+                .findById(orderResponse.orderId())
+                .orElseThrow();
+
+        Product savedProduct = productRepository
+                .findById(product.getId())
+                .orElseThrow();
+
+        assertThat(order.getStatus())
+                .isEqualTo(OrderStatus.CANCELLED);
+
+        assertThat(savedProduct.getQuantity())
+                .isEqualTo(originalStock);
+
+        assertThat(savedProduct.getStatus())
+                .isEqualTo(ProductStatus.ACTIVE);
     }
 
     @Test
@@ -804,6 +863,60 @@ public class OrderIntegrationTest extends BaseIntegrationTest {
 
         assertThat(savedProduct.getQuantity())
                 .isEqualTo(originalProductQuantity - quantity);
+
+        assertThat(cartItemRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void checkoutCart_whenProductOutOfStockAfterCheckout_returnsOrderResponse() throws Exception {
+        User user = persistDefaultCustomer();
+
+        Product product = persistDefaultProduct();
+        int originalProductQuantity = product.getQuantity();
+
+        Cart cart = persistCart(user);
+        persistCartItem(cart, product, originalProductQuantity);
+
+        BigDecimal expectedSubtotal = product.getPrice().multiply(BigDecimal.valueOf(originalProductQuantity));
+
+        authenticateUser(user.getId());
+
+        MvcResult result = mockMvc.perform(post(CHECKOUT_URI))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orderId").exists())
+                .andExpect(jsonPath("$.userId").value(user.getId()))
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.items[0].productId").value(product.getId()))
+                .andExpect(jsonPath("$.items[0].productName").value(product.getName()))
+                .andExpect(jsonPath("$.items[0].quantity").value(originalProductQuantity))
+                .andExpect(jsonPath("$.items[0].price").value(product.getPrice().doubleValue()))
+                .andExpect(jsonPath("$.total").value(expectedSubtotal.doubleValue()))
+                .andExpect(jsonPath("$.status").value(OrderStatus.PENDING_PAYMENT.name()))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists())
+                .andReturn();
+
+        OrderResponse orderResponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                OrderResponse.class
+        );
+
+        Order savedOrder = orderRepository.findById(orderResponse.orderId()).orElseThrow();
+
+        assertThat(savedOrder.getUser().getId()).isEqualTo(user.getId());
+        assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+        assertThat(savedOrder.getTotal()).isEqualByComparingTo(expectedSubtotal);
+
+        mockMvc.perform(get(CART_URI))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(0)));
+
+        Product savedProduct = productRepository.findById(product.getId())
+                .orElseThrow();
+
+        assertThat(savedProduct.getQuantity()).isZero();
+        assertThat(savedProduct.getStatus()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         assertThat(cartItemRepository.findAll()).isEmpty();
     }

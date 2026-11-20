@@ -15,7 +15,6 @@ import com.namnguyen.ecommerce_platform.order.entity.OrderItem;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
 import com.namnguyen.ecommerce_platform.order.repository.OrderRepository;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
-import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.service.ProductLookupService;
 import com.namnguyen.ecommerce_platform.product.service.ProductStockService;
 import com.namnguyen.ecommerce_platform.user.entity.User;
@@ -203,6 +202,7 @@ public class OrderServiceImplTest {
         verifyNoMoreInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -239,6 +239,7 @@ public class OrderServiceImplTest {
         verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -259,6 +260,7 @@ public class OrderServiceImplTest {
         verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -279,6 +281,7 @@ public class OrderServiceImplTest {
         verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -296,6 +299,7 @@ public class OrderServiceImplTest {
         verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -303,8 +307,6 @@ public class OrderServiceImplTest {
         Long userId = 1L;
         Long productId = 3L;
         int quantity = -1;
-
-        User user = createDefaultUser(userId);
 
         CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
                 productId,
@@ -326,6 +328,7 @@ public class OrderServiceImplTest {
         verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -354,6 +357,7 @@ public class OrderServiceImplTest {
         verifyNoInteractions(userLookupService);
         verifyNoInteractions(productLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -394,13 +398,12 @@ public class OrderServiceImplTest {
 
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(insufficientStock(product.getName()));
-        assertThat(product.getQuantity()).isEqualTo(quantity);
-        assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(userLookupService).getUserById(userId);
         verify(productLookupService).getProductById(productId);
         verifyNoMoreInteractions(userLookupService);
         verifyNoMoreInteractions(productLookupService);
+        verifyNoMoreInteractions(productStockService);
         verifyNoInteractions(orderRepository);
     }
 
@@ -674,13 +677,13 @@ public class OrderServiceImplTest {
 
         order.addOrderItem(item);
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
 
         orderService.cancelOrder(orderId, userId);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(productStockService).increaseStock(product, orderItemQuantity);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(productStockService);
@@ -691,7 +694,7 @@ public class OrderServiceImplTest {
         Long userId = 1L;
         Long orderId = 2L;
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId))
                 .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
@@ -702,8 +705,9 @@ public class OrderServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -743,7 +747,7 @@ public class OrderServiceImplTest {
 
         order.addOrderItem(item);
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
 
         InvalidOrderStateException ex = assertThrows(
                 InvalidOrderStateException.class,
@@ -752,11 +756,11 @@ public class OrderServiceImplTest {
 
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(DELIVERED_ORDER_CANNOT_BE_CANCELLED);
-        assertThat(product.getQuantity()).isEqualTo(initialQuantity);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -796,7 +800,7 @@ public class OrderServiceImplTest {
 
         order.addOrderItem(orderItem);
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
 
         InvalidOrderStateException ex = assertThrows(
                 InvalidOrderStateException.class,
@@ -805,11 +809,11 @@ public class OrderServiceImplTest {
 
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(ORDER_ALREADY_CANCELLED);
-        assertThat(product.getQuantity()).isEqualTo(stockQuantity);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -826,7 +830,7 @@ public class OrderServiceImplTest {
                 user
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId))
                 .thenReturn(order);
 
         InvalidOrderStateException ex = assertThrows(
@@ -839,8 +843,9 @@ public class OrderServiceImplTest {
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -909,7 +914,6 @@ public class OrderServiceImplTest {
         assertThat(savedOrder.getTotal()).isEqualByComparingTo(total);
         assertThat(savedOrder.getOrderItems()).hasSize(1);
         assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
-        assertThat(savedOrder.getTotal()).isEqualTo(total);
         assertThat(cart.getItems()).isEmpty();
 
         OrderItem savedOrderItem = savedOrder.getOrderItems().getFirst();
@@ -942,6 +946,7 @@ public class OrderServiceImplTest {
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -964,6 +969,7 @@ public class OrderServiceImplTest {
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -1004,12 +1010,13 @@ public class OrderServiceImplTest {
                 () -> orderService.checkoutCart(userId)
         );
 
-        assertThat(product.getQuantity()).isEqualTo(stockQuantity);
+        assertThat(ex.getMessage()).isEqualTo(insufficientStock(product.getName()));
         assertThat(cart.getItems()).containsExactly(item);
         assertThat(item.getCart()).isEqualTo(cart);
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoMoreInteractions(cartLookupService);
+        verifyNoMoreInteractions(productStockService);
         verifyNoInteractions(orderRepository);
     }
 
@@ -1052,13 +1059,13 @@ public class OrderServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
 
-        assertThat(product.getQuantity()).isEqualTo(stockQuantity);
         assertThat(cart.getItems()).contains(item);
         assertThat(item.getCart()).isEqualTo(cart);
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoMoreInteractions(cartLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 
     @Test
@@ -1100,12 +1107,12 @@ public class OrderServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(ORDER_ITEM_QUANTITY_IS_INVALID);
 
-        assertThat(product.getQuantity()).isEqualTo(stockQuantity);
         assertThat(cart.getItems()).contains(item);
         assertThat(item.getCart()).isEqualTo(cart);
 
         verify(cartLookupService).getCartByUserId(userId);
         verifyNoMoreInteractions(cartLookupService);
         verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productStockService);
     }
 }

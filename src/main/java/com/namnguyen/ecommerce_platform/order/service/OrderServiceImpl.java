@@ -202,7 +202,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void cancelOrder(Long orderId, Long userId) {
-        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+        Order order = orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId);
 
         log.info("Cancelling order orderId={} userId={}", orderId, userId);
         validateOrderCanBeCancelled(order);
