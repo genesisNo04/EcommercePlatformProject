@@ -22,7 +22,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.PaymentTestMessages.*;
@@ -64,7 +63,7 @@ public class PaymentServiceImplTest {
 
         PaymentRequest paymentRequest = new PaymentRequest(paymentMethod);
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentRepository.existsByOrderId(orderId)).thenReturn(false);
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
             Payment payment = inv.getArgument(0);
@@ -91,7 +90,7 @@ public class PaymentServiceImplTest {
         assertThat(savedPayment.getPaymentMethod()).isEqualTo(paymentMethod);
         assertThat(savedPayment.getPaymentStatus()).isEqualTo(paymentStatus);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentRepository).existsByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentRepository);
@@ -105,7 +104,7 @@ public class PaymentServiceImplTest {
 
         PaymentRequest paymentRequest = new PaymentRequest(paymentMethod);
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId))
                 .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
@@ -116,7 +115,7 @@ public class PaymentServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoInteractions(paymentRepository);
     }
@@ -138,7 +137,7 @@ public class PaymentServiceImplTest {
 
         PaymentRequest paymentRequest = new PaymentRequest(paymentMethod);
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
 
         InvalidOrderStateException ex = assertThrows(
                 InvalidOrderStateException.class,
@@ -149,7 +148,7 @@ public class PaymentServiceImplTest {
         assertThat(ex.getMessage()).isEqualTo(ORDER_NOT_PENDING_PAYMENT);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoInteractions(paymentRepository);
     }
@@ -172,7 +171,7 @@ public class PaymentServiceImplTest {
 
         PaymentRequest paymentRequest = new PaymentRequest(paymentMethod);
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentRepository.existsByOrderId(orderId)).thenReturn(true);
 
         DuplicateResourceException ex = assertThrows(
@@ -184,7 +183,7 @@ public class PaymentServiceImplTest {
         assertThat(ex.getMessage()).isEqualTo(PAYMENT_ALREADY_EXISTS);
         assertThat(order.getStatus()).isEqualTo(orderStatus);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentRepository).existsByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentRepository);
@@ -251,7 +250,7 @@ public class PaymentServiceImplTest {
 
         verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoInteractions(paymentRepository);
+        verifyNoInteractions(paymentLookupService);
     }
 
     @Test
@@ -316,7 +315,7 @@ public class PaymentServiceImplTest {
                 total
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         PaymentResponse paymentResponse = paymentService.updatePayment(orderId, userId, paymentRequest);
@@ -331,7 +330,7 @@ public class PaymentServiceImplTest {
         assertThat(payment.getPaymentMethod()).isEqualTo(updatePaymentMethod);
         assertThat(order.getStatus()).isEqualTo(orderStatus);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);
@@ -365,7 +364,7 @@ public class PaymentServiceImplTest {
                 total
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         InvalidPaymentStateException ex = assertThrows(
@@ -380,7 +379,7 @@ public class PaymentServiceImplTest {
         assertThat(payment.getPaymentMethod()).isEqualTo(paymentMethod);
         assertThat(order.getStatus()).isEqualTo(orderStatus);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);
@@ -394,7 +393,7 @@ public class PaymentServiceImplTest {
 
         PaymentRequest paymentRequest = new PaymentRequest(updatePaymentMethod);
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId))
                 .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
@@ -405,9 +404,9 @@ public class PaymentServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoInteractions(paymentRepository);
+        verifyNoInteractions(paymentLookupService);
     }
 
     @Test
@@ -428,7 +427,7 @@ public class PaymentServiceImplTest {
                 user
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenThrow(
                 new NoResourceFoundException(paymentNotFoundWithOrderId(orderId))
         );
@@ -441,7 +440,7 @@ public class PaymentServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(paymentNotFoundWithOrderId(orderId));
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);
@@ -473,7 +472,7 @@ public class PaymentServiceImplTest {
                 total
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         PaymentResponse paymentResponse = paymentService.confirmPayment(orderId, userId, confirmationStatus);
@@ -488,7 +487,7 @@ public class PaymentServiceImplTest {
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
         assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);
@@ -520,7 +519,7 @@ public class PaymentServiceImplTest {
                 total
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         PaymentResponse paymentResponse = paymentService.confirmPayment(orderId, userId, confirmationStatus);
@@ -535,7 +534,7 @@ public class PaymentServiceImplTest {
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
         assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.FAILED);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);
@@ -567,7 +566,7 @@ public class PaymentServiceImplTest {
                 total
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         InvalidPaymentStateException ex = assertThrows(
@@ -584,7 +583,7 @@ public class PaymentServiceImplTest {
         assertThat(order.getStatus()).isEqualTo(orderStatus);
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);
@@ -596,7 +595,7 @@ public class PaymentServiceImplTest {
         Long orderId = 3L;
         PaymentStatus paymentStatus = PaymentStatus.SUCCESS;
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId))
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId))
                 .thenThrow(new NoResourceFoundException(orderNotFoundWithIdAndUserId(orderId, userId)));
 
         NoResourceFoundException ex = assertThrows(
@@ -607,9 +606,9 @@ public class PaymentServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(orderNotFoundWithIdAndUserId(orderId, userId));
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verifyNoMoreInteractions(orderLookupService);
-        verifyNoInteractions(paymentRepository);
+        verifyNoInteractions(paymentLookupService);
     }
 
     @Test
@@ -627,7 +626,7 @@ public class PaymentServiceImplTest {
         );
         PaymentStatus paymentStatus = PaymentStatus.SUCCESS;
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenThrow(
                 new NoResourceFoundException(paymentNotFoundWithOrderId(orderId))
         );
@@ -640,7 +639,7 @@ public class PaymentServiceImplTest {
         assertThat(ex).isNotNull();
         assertThat(ex.getMessage()).isEqualTo(paymentNotFoundWithOrderId(orderId));
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);
@@ -673,7 +672,7 @@ public class PaymentServiceImplTest {
                 total
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         InvalidPaymentStateException ex = assertThrows(
@@ -686,7 +685,7 @@ public class PaymentServiceImplTest {
         assertThat(order.getStatus()).isEqualTo(orderStatus);
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);
@@ -719,7 +718,7 @@ public class PaymentServiceImplTest {
                 total
         );
 
-        when(orderLookupService.getOrderByIdAndUserId(orderId, userId)).thenReturn(order);
+        when(orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId)).thenReturn(order);
         when(paymentLookupService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         InvalidOrderStateException ex = assertThrows(
@@ -732,7 +731,7 @@ public class PaymentServiceImplTest {
         assertThat(order.getStatus()).isEqualTo(orderStatus);
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentStatus);
 
-        verify(orderLookupService).getOrderByIdAndUserId(orderId, userId);
+        verify(orderLookupService).getOrderByIdAndUserIdForUpdate(orderId, userId);
         verify(paymentLookupService).getPaymentByOrderId(orderId);
         verifyNoMoreInteractions(orderLookupService);
         verifyNoMoreInteractions(paymentLookupService);

@@ -15,6 +15,7 @@ import com.namnguyen.ecommerce_platform.payment.enums.PaymentStatus;
 import com.namnguyen.ecommerce_platform.payment.service.PaymentService;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.user.entity.User;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,7 +34,7 @@ public class PaymentConcurrencyIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private OrderService orderService;
 
-    @Test
+    @RepeatedTest(5)
     void concurrentPayAndCancel_onlyOneWinsPerOrder() throws InterruptedException, ExecutionException {
         int orderCount = 10;
         int quantityPerOrder = 3;
@@ -103,6 +104,12 @@ public class PaymentConcurrencyIntegrationTest extends BaseIntegrationTest {
                     softly.assertThat(payment.getPaymentStatus())
                             .as("order %d is cancelled but payment succeeded", id)
                             .isNotEqualTo(PaymentStatus.SUCCESS);
+                }
+
+                if (order.getStatus() == OrderStatus.PAID) {
+                    softly.assertThat(payment.getPaymentStatus())
+                            .as("order %d is paid but payment is not SUCCESS", id)
+                            .isEqualTo(PaymentStatus.SUCCESS);
                 }
             }
         });

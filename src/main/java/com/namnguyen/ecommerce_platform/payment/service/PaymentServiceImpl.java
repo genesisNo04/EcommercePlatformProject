@@ -57,7 +57,7 @@ public class PaymentServiceImpl implements PaymentService {
                 orderId,
                 userId
         );
-        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+        Order order = orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId);
         Payment payment = paymentLookupService.getPaymentByOrderId(order.getId());
 
         if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
@@ -82,7 +82,7 @@ public class PaymentServiceImpl implements PaymentService {
                 userId
         );
 
-        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+        Order order = orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId);
 
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw new InvalidOrderStateException(ORDER_NOT_PENDING_PAYMENT);
@@ -117,7 +117,7 @@ public class PaymentServiceImpl implements PaymentService {
                 status
         );
 
-        Order order = orderLookupService.getOrderByIdAndUserId(orderId, userId);
+        Order order = orderLookupService.getOrderByIdAndUserIdForUpdate(orderId, userId);
         Payment payment = paymentLookupService.getPaymentByOrderId(order.getId());
 
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
