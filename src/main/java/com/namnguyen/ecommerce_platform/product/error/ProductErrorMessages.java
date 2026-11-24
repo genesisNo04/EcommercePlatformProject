@@ -32,6 +32,12 @@ public final class ProductErrorMessages {
     public static final String PRODUCT_QUANTITY_IS_INVALID =
             "Product quantity must be greater than or equal to 0.";
 
+    public static final String PRODUCT_VERSION_IS_REQUIRED =
+            "Product version is required.";
+
+    public static final String PRODUCT_HAS_BEEN_MODIFIED =
+            "Product was modified by someone else. Please reload and try again.";
+
     private ProductErrorMessages() {
     }
 

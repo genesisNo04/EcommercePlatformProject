@@ -80,7 +80,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                firstStockQuantity
+                firstStockQuantity,
+                0L
         );
 
         Product secondProduct = createProduct(
@@ -88,7 +89,8 @@ public class OrderServiceImplTest {
                 "XBOX",
                 VALID_PRODUCT_DESCRIPTION,
                 BigDecimal.valueOf(450.99),
-                secondStockQuantity
+                secondStockQuantity,
+                0L
         );
 
         BigDecimal total = firstProduct.getPrice().multiply(BigDecimal.valueOf(firstOrderQuantity))
@@ -374,7 +376,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                quantity
+                quantity,
+                0L
         );
 
         CreateOrderItemRequest orderItemRequest = new CreateOrderItemRequest(
@@ -425,7 +428,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                firstProductStockQuantity
+                firstProductStockQuantity,
+                0L
         );
 
         Product secondProduct = createProduct(
@@ -433,7 +437,8 @@ public class OrderServiceImplTest {
                 "XBOX",
                 VALID_PRODUCT_DESCRIPTION,
                 BigDecimal.valueOf(450.99),
-                secondProductStockQuantity
+                secondProductStockQuantity,
+                0L
         );
 
         User user = createDefaultUser(userId);
@@ -532,7 +537,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                firstProductStockQuantity
+                firstProductStockQuantity,
+                0L
         );
 
         Product secondProduct = createProduct(
@@ -540,7 +546,8 @@ public class OrderServiceImplTest {
                 "XBOX",
                 VALID_PRODUCT_DESCRIPTION,
                 BigDecimal.valueOf(450.99),
-                secondProductStockQuantity
+                secondProductStockQuantity,
+                0L
         );
 
         User user = createDefaultUser(userId);
@@ -654,7 +661,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                stockQuantity
+                stockQuantity,
+                0L
         );
 
         User user = createDefaultUser(userId);
@@ -724,7 +732,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                initialQuantity
+                initialQuantity,
+                0L
         );
 
         User user = createDefaultUser(userId);
@@ -777,7 +786,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                stockQuantity
+                stockQuantity,
+                0L
         );
 
         User user = createDefaultUser(userId);
@@ -864,7 +874,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                stockQuantity
+                stockQuantity,
+                0L
         );
 
         Cart cart = createCart(cartId, user);
@@ -987,7 +998,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                stockQuantity
+                stockQuantity,
+                0L
         );
 
         Cart cart = createCart(cartId, user);
@@ -1035,7 +1047,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                stockQuantity
+                stockQuantity,
+                0L
         );
 
         Cart cart = createCart(cartId, user);
@@ -1083,7 +1096,8 @@ public class OrderServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                stockQuantity
+                stockQuantity,
+                0L
         );
 
         Cart cart = createCart(cartId, user);

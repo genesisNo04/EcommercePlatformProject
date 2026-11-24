@@ -1,20 +1,28 @@
 package com.namnguyen.ecommerce_platform.integration.product;
 
 import com.namnguyen.ecommerce_platform.integration.BaseIntegrationTest;
+import com.namnguyen.ecommerce_platform.order.dto.CreateOrderRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductCreateRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPatchRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductPutRequest;
 import com.namnguyen.ecommerce_platform.product.dto.ProductResponse;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
+import com.namnguyen.ecommerce_platform.user.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.util.List;
 
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.PRODUCT_HAS_BEEN_MODIFIED;
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.PRODUCT_VERSION_IS_REQUIRED;
+import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.authenticateUser;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
+import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
 import static com.namnguyen.ecommerce_platform.testutil.messages.ProductTestMessages.*;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -35,7 +43,8 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.description").value(product.getDescription()))
                 .andExpect(jsonPath("$.price").value(product.getPrice().doubleValue()))
                 .andExpect(jsonPath("$.quantity").value(product.getQuantity()))
-                .andExpect(jsonPath("$.status").value(ProductStatus.ACTIVE.name()));
+                .andExpect(jsonPath("$.status").value(ProductStatus.ACTIVE.name()))
+                .andExpect(jsonPath("$.version").value(0));
     }
 
     @Test
@@ -518,6 +527,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.status").value(ProductStatus.ACTIVE.name()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists())
+                .andExpect(jsonPath("$.version").value(1))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -532,8 +542,126 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
         assertThat(savedUpdateProduct.getQuantity()).isEqualTo(VALID_UPDATE_PRODUCT_QUANTITY);
         assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
         assertThat(savedUpdateProduct.getId()).isEqualTo(productResponse.id());
+        assertThat(savedUpdateProduct.getVersion()).isEqualTo(productResponse.version());
+        assertThat(productRepository.count()).isEqualTo(1);
+    }
 
-        assertThat(productResponse.id()).isEqualTo(product.getId());
+    @Test
+    void putProduct_whenRequestHasDifferentVersion_returnsConflict() throws Exception {
+        Product product = persistDefaultProduct();
+
+        ProductPutRequest request = createProductPutRequest(
+                VALID_UPDATE_PRODUCT_NAME,
+                VALID_UPDATE_PRODUCT_DESCRIPTION,
+                VALID_UPDATE_PRODUCT_PRICE,
+                VALID_UPDATE_PRODUCT_QUANTITY,
+                1L
+        );
+
+        mockMvc.perform(put(productUri(product.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(PRODUCT_HAS_BEEN_MODIFIED))
+                .andExpect(jsonPath("$.uri").value(productUri(product.getId())));
+
+        Product savedUpdateProduct = productRepository.findById(product.getId()).orElseThrow();
+
+        assertThat(savedUpdateProduct.getName()).isEqualTo(product.getName());
+        assertThat(savedUpdateProduct.getDescription()).isEqualTo(product.getDescription());
+        assertThat(savedUpdateProduct.getPrice()).isEqualByComparingTo(product.getPrice());
+        assertThat(savedUpdateProduct.getQuantity()).isEqualTo(product.getQuantity());
+        assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(savedUpdateProduct.getId()).isEqualTo(product.getId());
+        assertThat(productRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void putProduct_whenVersionMissing_returnsBadRequest() throws Exception {
+        Product product = persistDefaultProduct();
+
+        ProductPutRequest request = createProductPutRequest(
+                VALID_UPDATE_PRODUCT_NAME,
+                VALID_UPDATE_PRODUCT_DESCRIPTION,
+                VALID_UPDATE_PRODUCT_PRICE,
+                VALID_UPDATE_PRODUCT_QUANTITY,
+                null
+        );
+
+        mockMvc.perform(put(productUri(product.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.fieldErrors.version").value(PRODUCT_VERSION_IS_REQUIRED))
+                .andExpect(jsonPath("$.uri").value(productUri(product.getId())));
+
+        Product savedUpdateProduct = productRepository.findById(product.getId()).orElseThrow();
+
+        assertThat(savedUpdateProduct.getName()).isEqualTo(product.getName());
+        assertThat(savedUpdateProduct.getDescription()).isEqualTo(product.getDescription());
+        assertThat(savedUpdateProduct.getPrice()).isEqualByComparingTo(product.getPrice());
+        assertThat(savedUpdateProduct.getQuantity()).isEqualTo(product.getQuantity());
+        assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(savedUpdateProduct.getId()).isEqualTo(product.getId());
+        assertThat(productRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void putProduct_whenProductSoldAfterAdminLoadedIt_returnsConflict() throws Exception {
+        Product product = persistDefaultProduct();
+        User customer = persistDefaultCustomer();
+        int requestQuantity = 3;
+
+        MvcResult getResult = mockMvc.perform(get(productUri(product.getId())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        ProductResponse loaded = objectMapper.readValue(
+                getResult.getResponse().getContentAsString(), ProductResponse.class);
+
+        ProductPutRequest productPutRequest = createProductPutRequest(
+                loaded.name(),
+                loaded.description(),
+                BigDecimal.valueOf(45.00),
+                VALID_UPDATE_PRODUCT_QUANTITY,
+                loaded.version()
+        );
+
+        authenticateUser(customer.getId());
+        CreateOrderRequest order = new CreateOrderRequest(
+                List.of(createOrderItemRequest(product.getId(), requestQuantity)));
+        mockMvc.perform(post(ORDER_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(order)))
+                .andExpect(status().isCreated());
+        SecurityContextHolder.clearContext();
+
+        mockMvc.perform(put(productUri(product.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(productPutRequest)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(PRODUCT_HAS_BEEN_MODIFIED))
+                .andExpect(jsonPath("$.uri").value(productUri(product.getId())));
+
+        Product savedUpdateProduct = productRepository.findById(product.getId()).orElseThrow();
+
+        assertThat(savedUpdateProduct.getName()).isEqualTo(product.getName());
+        assertThat(savedUpdateProduct.getDescription()).isEqualTo(product.getDescription());
+        assertThat(savedUpdateProduct.getPrice()).isEqualByComparingTo(product.getPrice());
+        assertThat(savedUpdateProduct.getQuantity()).isEqualTo(product.getQuantity() - requestQuantity);
+        assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(savedUpdateProduct.getId()).isEqualTo(product.getId());
+        assertThat(savedUpdateProduct.getVersion()).isEqualTo(1L);
         assertThat(productRepository.count()).isEqualTo(1);
     }
 
@@ -550,7 +678,8 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 VALID_UPDATE_PRODUCT_NAME,
                 VALID_UPDATE_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                0
+                0,
+                0L
         );
 
         MvcResult result = mockMvc.perform(put(productUri(product.getId()))
@@ -596,7 +725,8 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 VALID_UPDATE_PRODUCT_NAME,
                 null,
                 VALID_UPDATE_PRODUCT_PRICE,
-                null
+                null,
+                0L
         );
 
         String originalProductDescription = product.getDescription();
@@ -612,6 +742,7 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.price").value(VALID_UPDATE_PRODUCT_PRICE.doubleValue()))
                 .andExpect(jsonPath("$.quantity").value(originalProductQuantity))
                 .andExpect(jsonPath("$.status").value(ProductStatus.ACTIVE.name()))
+                .andExpect(jsonPath("$.version").value(1L))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists())
                 .andReturn();
@@ -634,6 +765,73 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void patchProduct_whenVersionMismatch_returnsConflict() throws Exception {
+        Product product = persistDefaultProduct();
+
+        ProductPatchRequest request = createProductPatchRequest(
+                VALID_UPDATE_PRODUCT_NAME,
+                null,
+                VALID_UPDATE_PRODUCT_PRICE,
+                null,
+                1L
+        );
+
+        mockMvc.perform(patch(productUri(product.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(PRODUCT_HAS_BEEN_MODIFIED))
+                .andExpect(jsonPath("$.uri").value(productUri(product.getId())));
+
+        Product savedUpdateProduct = productRepository.findById(product.getId()).orElseThrow();
+
+        assertThat(savedUpdateProduct.getName()).isEqualTo(product.getName());
+        assertThat(savedUpdateProduct.getDescription()).isEqualTo(product.getDescription());
+        assertThat(savedUpdateProduct.getPrice()).isEqualByComparingTo(product.getPrice());
+        assertThat(savedUpdateProduct.getQuantity()).isEqualTo(product.getQuantity());
+        assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(savedUpdateProduct.getId()).isEqualTo(product.getId());
+        assertThat(productRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void patchProduct_whenVersionMissing_returnsBadRequest() throws Exception {
+        Product product = persistDefaultProduct();
+
+        ProductPatchRequest request = createProductPatchRequest(
+                VALID_UPDATE_PRODUCT_NAME,
+                null,
+                VALID_UPDATE_PRODUCT_PRICE,
+                null,
+                null
+        );
+
+        mockMvc.perform(patch(productUri(product.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(VALIDATION_FAILED))
+                .andExpect(jsonPath("$.fieldErrors.version").value(PRODUCT_VERSION_IS_REQUIRED))
+                .andExpect(jsonPath("$.uri").value(productUri(product.getId())));
+
+        Product savedUpdateProduct = productRepository.findById(product.getId()).orElseThrow();
+
+        assertThat(savedUpdateProduct.getName()).isEqualTo(product.getName());
+        assertThat(savedUpdateProduct.getDescription()).isEqualTo(product.getDescription());
+        assertThat(savedUpdateProduct.getPrice()).isEqualByComparingTo(product.getPrice());
+        assertThat(savedUpdateProduct.getQuantity()).isEqualTo(product.getQuantity());
+        assertThat(savedUpdateProduct.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(savedUpdateProduct.getId()).isEqualTo(product.getId());
+        assertThat(productRepository.count()).isEqualTo(1);
+    }
+
+    @Test
     void patchProduct_whenQuantityIsZero_savesProductAsOutOfStock() throws Exception {
         Product product = persistDefaultProduct();
 
@@ -641,7 +839,8 @@ public class ProductIntegrationTest extends BaseIntegrationTest {
                 VALID_UPDATE_PRODUCT_NAME,
                 VALID_UPDATE_PRODUCT_DESCRIPTION,
                 VALID_UPDATE_PRODUCT_PRICE,
-                0
+                0,
+                0L
         );
 
         MvcResult result = mockMvc.perform(patch(productUri(product.getId()))

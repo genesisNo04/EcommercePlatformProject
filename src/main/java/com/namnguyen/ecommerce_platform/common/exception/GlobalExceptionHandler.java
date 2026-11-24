@@ -7,10 +7,12 @@ import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderException;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.payment.exception.InvalidPaymentStateException;
 import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
+import com.namnguyen.ecommerce_platform.product.exception.ProductVersionConflictException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindException;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.namnguyen.ecommerce_platform.common.exception.error.ExceptionErrorMessages.*;
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.PRODUCT_HAS_BEEN_MODIFIED;
 
 @Slf4j
 @RestControllerAdvice
@@ -246,6 +249,36 @@ public class GlobalExceptionHandler {
                         status.value(),
                         status.getReasonPhrase(),
                         ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(ProductVersionConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleProductVersionConflictException(ProductVersionConflictException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        logClientError(status, ex, request);
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorResponse> handleObjectOptimisticLockingFailureException(ObjectOptimisticLockingFailureException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        logClientError(status, ex, request);
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        PRODUCT_HAS_BEEN_MODIFIED,
                         request.getRequestURI()));
     }
 

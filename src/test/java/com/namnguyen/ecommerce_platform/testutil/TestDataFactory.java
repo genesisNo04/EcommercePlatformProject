@@ -239,7 +239,8 @@
                 String name,
                 String description,
                 BigDecimal price,
-                Integer quantity
+                Integer quantity,
+                Long version
         ) {
             Product product = new Product();
             product.setId(productId);
@@ -248,6 +249,7 @@
             product.setPrice(price);
             product.setQuantity(quantity);
             product.updateStatusBasedOnQuantity();
+            product.setVersion(version);
             return product;
         }
 
@@ -257,7 +259,8 @@
                     VALID_PRODUCT_NAME,
                     VALID_PRODUCT_DESCRIPTION,
                     VALID_PRODUCT_PRICE,
-                    VALID_PRODUCT_QUANTITY
+                    VALID_PRODUCT_QUANTITY,
+                    0L
             );
         }
 
@@ -419,13 +422,15 @@
                 String productName,
                 String productDescription,
                 BigDecimal productPrice,
-                int productQuantity
+                int productQuantity,
+                Long version
         ) {
             return new ProductPutRequest(
                     productName,
                     productDescription,
                     productPrice,
-                    productQuantity
+                    productQuantity,
+                    version
             );
         }
 
@@ -434,7 +439,8 @@
                     VALID_UPDATE_PRODUCT_NAME,
                     VALID_UPDATE_PRODUCT_DESCRIPTION,
                     VALID_UPDATE_PRODUCT_PRICE,
-                    VALID_UPDATE_PRODUCT_QUANTITY
+                    VALID_UPDATE_PRODUCT_QUANTITY,
+                    0L
             );
         }
 
@@ -443,7 +449,8 @@
                     VALID_UPDATE_PRODUCT_NAME,
                     VALID_UPDATE_PRODUCT_DESCRIPTION,
                     VALID_UPDATE_PRODUCT_PRICE,
-                    VALID_UPDATE_PRODUCT_QUANTITY
+                    VALID_UPDATE_PRODUCT_QUANTITY,
+                    0L
             );
         }
 
@@ -451,13 +458,15 @@
                 String productName,
                 String productDescription,
                 BigDecimal productPrice,
-                Integer productQuantity
+                Integer productQuantity,
+                Long version
         ) {
             return new ProductPatchRequest(
                     productName,
                     productDescription,
                     productPrice,
-                    productQuantity
+                    productQuantity,
+                    version
             );
         }
 

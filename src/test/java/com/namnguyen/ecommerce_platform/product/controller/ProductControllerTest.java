@@ -4,7 +4,9 @@ import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundExceptio
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.product.dto.*;
+import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
+import com.namnguyen.ecommerce_platform.product.exception.ProductVersionConflictException;
 import com.namnguyen.ecommerce_platform.product.service.ProductService;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
@@ -17,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -25,6 +28,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.PRODUCT_HAS_BEEN_MODIFIED;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
 import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.invalidParameter;
@@ -77,6 +81,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -377,6 +382,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -445,6 +451,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -456,6 +463,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY + 1,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -532,6 +540,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -543,6 +552,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY + 1,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -729,6 +739,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 updateQuantity,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -737,7 +748,8 @@ public class ProductControllerTest {
                 updateName,
                 updateDescription,
                 VALID_PRODUCT_PRICE,
-                updateQuantity
+                updateQuantity,
+                0L
         );
 
         when(productService.putProduct(productId, productPutRequest)).thenReturn(productResponse);
@@ -769,6 +781,48 @@ public class ProductControllerTest {
     }
 
     @Test
+    void putProduct_whenOptimisticLockFails_returnsConflict() throws Exception {
+        Long productId = 1L;
+        ProductPutRequest request = new ProductPutRequest(
+                VALID_PRODUCT_NAME, VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE, VALID_PRODUCT_QUANTITY, 0L);
+
+        when(productService.putProduct(productId, request))
+                .thenThrow(new ObjectOptimisticLockingFailureException(Product.class, productId));
+
+        mockMvc.perform(put(productUri(productId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(PRODUCT_HAS_BEEN_MODIFIED))
+                .andExpect(jsonPath("$.uri").value(productUri(productId)));
+    }
+
+    @Test
+    void putProduct_whenVersionMismatch_returnsConflict() throws Exception {
+        Long productId = 1L;
+        ProductPutRequest request = new ProductPutRequest(
+                VALID_PRODUCT_NAME, VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE, VALID_PRODUCT_QUANTITY, 0L);
+
+        when(productService.putProduct(productId, request))
+                .thenThrow(new ProductVersionConflictException(PRODUCT_HAS_BEEN_MODIFIED));
+
+        mockMvc.perform(put(productUri(productId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(PRODUCT_HAS_BEEN_MODIFIED))
+                .andExpect(jsonPath("$.uri").value(productUri(productId)));
+    }
+
+    @Test
     void putProduct_whenProductIdIsInvalid_returnsBadRequest() throws Exception {
         String productId = INVALID_ID;
 
@@ -776,7 +830,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -800,7 +855,8 @@ public class ProductControllerTest {
                 "",
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -826,7 +882,8 @@ public class ProductControllerTest {
                 null,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -851,7 +908,8 @@ public class ProductControllerTest {
                 INVALID_PRODUCT_NAME_MORE_THAN_LIMIT,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -876,7 +934,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 "",
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -903,7 +962,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 null,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -928,7 +988,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 INVALID_PRODUCT_DESCRIPTION_LESS_THAN_LIMIT,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -953,7 +1014,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -978,7 +1040,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 null,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -1003,7 +1066,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 BigDecimal.ZERO,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -1028,7 +1092,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                null
+                null,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -1053,7 +1118,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                -1
+                -1,
+                0L
         );
 
         mockMvc.perform(put(productUri(productId))
@@ -1078,7 +1144,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         doThrow(new NoResourceFoundException(productNotFoundWithId(productId)))
@@ -1110,6 +1177,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -1118,7 +1186,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         when(productService.patchProduct(productId, productPatchRequest)).thenReturn(productResponse);
@@ -1150,6 +1219,48 @@ public class ProductControllerTest {
     }
 
     @Test
+    void patchProduct_whenOptimisticLockFails_returnsConflict() throws Exception {
+        Long productId = 1L;
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME, VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE, VALID_PRODUCT_QUANTITY, 0L);
+
+        when(productService.patchProduct(productId, request))
+                .thenThrow(new ObjectOptimisticLockingFailureException(Product.class, productId));
+
+        mockMvc.perform(patch(productUri(productId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(PRODUCT_HAS_BEEN_MODIFIED))
+                .andExpect(jsonPath("$.uri").value(productUri(productId)));
+    }
+
+    @Test
+    void patchProduct_whenVersionMismatch_returnsConflict() throws Exception {
+        Long productId = 1L;
+        ProductPatchRequest request = new ProductPatchRequest(
+                VALID_PRODUCT_NAME, VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE, VALID_PRODUCT_QUANTITY, 0L);
+
+        when(productService.patchProduct(productId, request))
+                .thenThrow(new ProductVersionConflictException(PRODUCT_HAS_BEEN_MODIFIED));
+
+        mockMvc.perform(patch(productUri(productId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(PRODUCT_HAS_BEEN_MODIFIED))
+                .andExpect(jsonPath("$.uri").value(productUri(productId)));
+    }
+
+    @Test
     void patchProduct_whenRequestHasAllFieldsNull_returnsProductResponse() throws Exception {
         Long productId = 1L;
 
@@ -1160,6 +1271,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -1168,7 +1280,8 @@ public class ProductControllerTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                0L
         );
 
         when(productService.patchProduct(productId, productPatchRequest)).thenReturn(productResponse);
@@ -1210,6 +1323,7 @@ public class ProductControllerTest {
                 VALID_PRODUCT_PRICE,
                 VALID_PRODUCT_QUANTITY,
                 ProductStatus.ACTIVE,
+                0L,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -1218,7 +1332,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 null,
                 VALID_PRODUCT_PRICE,
-                null
+                null,
+                0L
         );
 
         when(productService.patchProduct(productId, productPatchRequest)).thenReturn(productResponse);
@@ -1257,7 +1372,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(patch(productUri(productId))
@@ -1281,7 +1397,8 @@ public class ProductControllerTest {
                 "",
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(patch(productUri(productId))
@@ -1308,7 +1425,8 @@ public class ProductControllerTest {
                 INVALID_PRODUCT_NAME_MORE_THAN_LIMIT,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(patch(productUri(productId))
@@ -1335,7 +1453,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 "",
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(patch(productUri(productId))
@@ -1363,7 +1482,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 INVALID_PRODUCT_DESCRIPTION_LESS_THAN_LIMIT,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(patch(productUri(productId))
@@ -1390,7 +1510,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 INVALID_PRODUCT_DESCRIPTION_MORE_THAN_LIMIT,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(patch(productUri(productId))
@@ -1417,7 +1538,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 BigDecimal.ZERO,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         mockMvc.perform(patch(productUri(productId))
@@ -1444,7 +1566,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                INVALID_PRODUCT_NEGATIVE_QUANTITY
+                INVALID_PRODUCT_NEGATIVE_QUANTITY,
+                0L
         );
 
         mockMvc.perform(patch(productUri(productId))
@@ -1471,7 +1594,8 @@ public class ProductControllerTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                VALID_PRODUCT_QUANTITY
+                VALID_PRODUCT_QUANTITY,
+                0L
         );
 
         doThrow(new NoResourceFoundException(productNotFoundWithId(productId)))

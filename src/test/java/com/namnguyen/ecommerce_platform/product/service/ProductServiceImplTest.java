@@ -5,6 +5,7 @@ import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
 import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
+import com.namnguyen.ecommerce_platform.product.exception.ProductVersionConflictException;
 import com.namnguyen.ecommerce_platform.product.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.PRODUCT_HAS_BEEN_MODIFIED;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.ProductTestMessages.*;
 import static org.assertj.core.api.Assertions.*;
@@ -253,6 +255,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(productLookupService).getProductById(productId);
+        verify(productRepository).flush();
+        verifyNoMoreInteractions(productRepository);
         verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
@@ -268,6 +272,25 @@ public class ProductServiceImplTest {
     }
 
     @Test
+    void putProduct_whenVersionMismatch_throwsProductVersionConflictException() {
+        Long productId = 1L;
+        Product product = createDefaultProduct(productId);
+        ProductPutRequest request = createProductPutRequest(
+                VALID_UPDATE_PRODUCT_NAME, VALID_UPDATE_PRODUCT_DESCRIPTION,
+                VALID_UPDATE_PRODUCT_PRICE, VALID_UPDATE_PRODUCT_QUANTITY, 1L);
+
+        when(productLookupService.getProductById(productId)).thenReturn(product);
+
+        ProductVersionConflictException ex = assertThrows(
+                ProductVersionConflictException.class,
+                () -> productService.putProduct(productId, request));
+
+        assertThat(ex.getMessage()).isEqualTo(PRODUCT_HAS_BEEN_MODIFIED);
+        assertThat(product.getName()).isEqualTo(VALID_PRODUCT_NAME);
+        verifyNoInteractions(productRepository);
+    }
+
+    @Test
     void putProduct_whenQuantityIsZero_returnsOutOfStockProductResponse() {
         Long productId = 1L;
 
@@ -277,7 +300,8 @@ public class ProductServiceImplTest {
                 VALID_UPDATE_PRODUCT_NAME,
                 VALID_UPDATE_PRODUCT_DESCRIPTION,
                 VALID_UPDATE_PRODUCT_PRICE,
-                0
+                0,
+                0L
         );
 
         when(productLookupService.getProductById(productId)).thenReturn(product);
@@ -293,6 +317,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         verify(productLookupService).getProductById(productId);
+        verify(productRepository).flush();
+        verifyNoMoreInteractions(productRepository);
         verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
@@ -337,7 +363,8 @@ public class ProductServiceImplTest {
                 null,
                 VALID_UPDATE_PRODUCT_DESCRIPTION,
                 null,
-                VALID_UPDATE_PRODUCT_QUANTITY
+                VALID_UPDATE_PRODUCT_QUANTITY,
+                0L
         );
 
         when(productLookupService.getProductById(productId)).thenReturn(product);
@@ -356,6 +383,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(productLookupService).getProductById(productId);
+        verify(productRepository).flush();
+        verifyNoMoreInteractions(productRepository);
         verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
@@ -371,6 +400,25 @@ public class ProductServiceImplTest {
     }
 
     @Test
+    void patchProduct_whenVersionMismatch_throwsProductVersionConflictException() {
+        Long productId = 1L;
+        Product product = createDefaultProduct(productId);
+        ProductPatchRequest request = createProductPatchRequest(
+                VALID_UPDATE_PRODUCT_NAME, VALID_UPDATE_PRODUCT_DESCRIPTION,
+                VALID_UPDATE_PRODUCT_PRICE, VALID_UPDATE_PRODUCT_QUANTITY, 1L);
+
+        when(productLookupService.getProductById(productId)).thenReturn(product);
+
+        ProductVersionConflictException ex = assertThrows(
+                ProductVersionConflictException.class,
+                () -> productService.patchProduct(productId, request));
+
+        assertThat(ex.getMessage()).isEqualTo(PRODUCT_HAS_BEEN_MODIFIED);
+        assertThat(product.getName()).isEqualTo(VALID_PRODUCT_NAME);
+        verifyNoInteractions(productRepository);
+    }
+
+    @Test
     void patchProduct_whenAllFieldsAreNull_returnsProductResponse() {
         Long productId = 1L;
 
@@ -380,7 +428,8 @@ public class ProductServiceImplTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                0L
         );
 
         String originalName = product.getName();
@@ -401,6 +450,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.status()).isEqualTo(ProductStatus.ACTIVE);
 
         verify(productLookupService).getProductById(productId);
+        verify(productRepository).flush();
+        verifyNoMoreInteractions(productRepository);
         verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())
@@ -425,7 +476,8 @@ public class ProductServiceImplTest {
                 null,
                 VALID_UPDATE_PRODUCT_DESCRIPTION,
                 null,
-                0
+                0,
+                0L
         );
 
         when(productLookupService.getProductById(productId)).thenReturn(product);
@@ -444,6 +496,8 @@ public class ProductServiceImplTest {
         assertThat(productResponse.status()).isEqualTo(ProductStatus.OUT_OF_STOCK);
 
         verify(productLookupService).getProductById(productId);
+        verify(productRepository).flush();
+        verifyNoMoreInteractions(productRepository);
         verifyNoMoreInteractions(productLookupService);
 
         assertThat(product.getName())

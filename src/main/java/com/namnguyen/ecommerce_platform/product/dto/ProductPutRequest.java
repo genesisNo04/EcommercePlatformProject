@@ -22,6 +22,9 @@ public record ProductPutRequest(
 
         @NotNull(message = PRODUCT_QUANTITY_IS_REQUIRED)
         @Min(value = 0, message = PRODUCT_QUANTITY_IS_INVALID)
-        Integer quantity
+        Integer quantity,
+
+        @NotNull(message = PRODUCT_VERSION_IS_REQUIRED)
+        Long version
 ) {
 }

@@ -24,7 +24,8 @@ public interface ProductRepository extends
         UPDATE products
         SET quantity = quantity - :qty,
             status = CASE WHEN quantity - :qty <= 0 THEN 'OUT_OF_STOCK' ELSE 'ACTIVE' END,
-            updated_at = now()
+            updated_at = now(),
+            version = version + 1
         WHERE id = :id AND quantity >= :qty
     """, nativeQuery = true)
     int decreaseStock(@Param("id") Long id, @Param("qty") int qty);
@@ -34,7 +35,8 @@ public interface ProductRepository extends
         UPDATE products
         SET quantity = quantity + :qty,
             status = 'ACTIVE',
-            updated_at = now()
+            updated_at = now(),
+            version = version + 1
         WHERE id = :id
     """, nativeQuery = true)
     int increaseStock(@Param("id") Long id, @Param("qty") int qty);

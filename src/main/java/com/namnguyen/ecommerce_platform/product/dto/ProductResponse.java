@@ -13,6 +13,7 @@ public record ProductResponse(
         BigDecimal price,
         Integer quantity,
         ProductStatus status,
+        Long version,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

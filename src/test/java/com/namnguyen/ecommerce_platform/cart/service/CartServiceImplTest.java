@@ -359,7 +359,8 @@ public class CartServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                availableStock
+                availableStock,
+                0L
         );
 
         Cart cart = createCart(cartId, user);
@@ -408,7 +409,8 @@ public class CartServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                availableStock
+                availableStock,
+                0L
         );
 
         Cart cart = createCart(cartId, user);
@@ -683,7 +685,8 @@ public class CartServiceImplTest {
                 VALID_PRODUCT_NAME,
                 VALID_PRODUCT_DESCRIPTION,
                 VALID_PRODUCT_PRICE,
-                availableStock
+                availableStock,
+                0L
         );
 
         CartItem cartItem = createCartItem(

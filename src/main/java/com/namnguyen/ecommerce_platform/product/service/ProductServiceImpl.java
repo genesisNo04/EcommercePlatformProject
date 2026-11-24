@@ -2,6 +2,7 @@ package com.namnguyen.ecommerce_platform.product.service;
 
 import com.namnguyen.ecommerce_platform.common.caching.CacheNames;
 import com.namnguyen.ecommerce_platform.common.response.PageResponse;
+import com.namnguyen.ecommerce_platform.product.exception.ProductVersionConflictException;
 import com.namnguyen.ecommerce_platform.product.specifications.ProductSpecification;
 import com.namnguyen.ecommerce_platform.product.dto.*;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
@@ -18,6 +19,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
+
+import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.PRODUCT_HAS_BEEN_MODIFIED;
 
 @Slf4j
 @Service
@@ -117,11 +122,18 @@ public class ProductServiceImpl implements ProductService {
         );
 
         Product product = productLookupService.getProductById(productId);
+
+        if (!Objects.equals(product.getVersion(), request.version())) {
+            throw new ProductVersionConflictException(PRODUCT_HAS_BEEN_MODIFIED);
+        }
+
         product.setName(request.name());
         product.setDescription(request.description());
         product.setPrice(request.price());
         product.setQuantity(request.quantity());
         product.updateStatusBasedOnQuantity();
+
+        productRepository.flush();
 
         log.info(
                 "Product updated productId={} name={}",
@@ -149,6 +161,10 @@ public class ProductServiceImpl implements ProductService {
 
         Product product = productLookupService.getProductById(productId);
 
+        if (!Objects.equals(product.getVersion(), request.version())) {
+            throw new ProductVersionConflictException(PRODUCT_HAS_BEEN_MODIFIED);
+        }
+
         if (request.name() != null) {
             product.setName(request.name());
         }
@@ -165,6 +181,8 @@ public class ProductServiceImpl implements ProductService {
             product.setQuantity(request.quantity());
             product.updateStatusBasedOnQuantity();
         }
+
+        productRepository.flush();
 
         log.info(
                 "Product patched productId={} name={}",
