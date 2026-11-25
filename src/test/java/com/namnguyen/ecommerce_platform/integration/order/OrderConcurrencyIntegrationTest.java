@@ -7,10 +7,14 @@ import com.namnguyen.ecommerce_platform.order.dto.OrderResponse;
 import com.namnguyen.ecommerce_platform.order.exception.InvalidOrderStateException;
 import com.namnguyen.ecommerce_platform.order.service.OrderService;
 import com.namnguyen.ecommerce_platform.product.entity.Product;
+import com.namnguyen.ecommerce_platform.product.enums.ProductStatus;
 import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockException;
 import com.namnguyen.ecommerce_platform.user.entity.User;
+import com.namnguyen.ecommerce_platform.user.enums.Role;
 import org.assertj.core.api.SoftAssertions;
+import org.hibernate.dialect.lock.PessimisticEntityLockException;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
@@ -18,7 +22,9 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static org.assertj.core.api.Assertions.*;
+import static org.testcontainers.shaded.org.bouncycastle.asn1.cmc.CMCStatus.failed;
 
 public class OrderConcurrencyIntegrationTest extends BaseIntegrationTest {
 
@@ -111,6 +117,82 @@ public class OrderConcurrencyIntegrationTest extends BaseIntegrationTest {
             softly.assertThat(cancelled.get()).isEqualTo(1);
             softly.assertThat(rejected.get()).isEqualTo(threads - 1);
             softly.assertThat(productRepository.findById(product.getId()).orElseThrow().getQuantity()).isEqualTo(10);
+        });
+    }
+
+    @RepeatedTest(5)
+    void concurrentOrders_withOppositeItemOrder_shouldNotDeadlock() throws Exception {
+        int stock = 1000;
+        int orderQuantity = 10;
+        int threads = 10;
+        int totalOrders = threads * 2;
+        int expectedStock = stock - totalOrders * orderQuantity;
+
+        Product firstProduct = persistProduct(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                stock,
+                ProductStatus.ACTIVE
+        );
+
+        Product secondProduct = persistProduct(
+                VALID_PRODUCT_NAME,
+                VALID_PRODUCT_DESCRIPTION,
+                VALID_PRODUCT_PRICE,
+                stock,
+                ProductStatus.ACTIVE
+        );
+
+        List<User> listUsers = persistCustomers(2);
+
+
+        ExecutorService pool = Executors.newFixedThreadPool(totalOrders);
+        CountDownLatch startGate = new CountDownLatch(1);
+        AtomicInteger success = new AtomicInteger();
+        List<Future<?>> futures = new ArrayList<>();
+
+        for (int i = 0; i < threads; i++) {
+            futures.add(pool.submit(() -> {
+                startGate.await();
+                orderService.createOrder(
+                        new CreateOrderRequest(List.of(
+                                new CreateOrderItemRequest(firstProduct.getId(), orderQuantity),
+                                new CreateOrderItemRequest(secondProduct.getId(), orderQuantity)
+                        )),
+                        listUsers.getFirst().getId());
+                success.incrementAndGet();
+                return null;
+            }));
+
+            futures.add(pool.submit(() -> {
+                startGate.await();
+                orderService.createOrder(
+                        new CreateOrderRequest(List.of(
+                                new CreateOrderItemRequest(secondProduct.getId(), orderQuantity),
+                                new CreateOrderItemRequest(firstProduct.getId(), orderQuantity)
+                        )),
+                        listUsers.getLast().getId());
+                success.incrementAndGet();
+                return null;
+            }));
+        }
+
+        startGate.countDown();
+        pool.shutdown();
+        assertThat(pool.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+
+        for (Future<?> future : futures) {
+            future.get();
+        }
+
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(success.get()).isEqualTo(totalOrders);
+            softly.assertThat(orderRepository.count()).isEqualTo(totalOrders);
+            softly.assertThat(productRepository.findById(firstProduct.getId())
+                    .orElseThrow().getQuantity()).isEqualTo(expectedStock);
+            softly.assertThat(productRepository.findById(secondProduct.getId())
+                    .orElseThrow().getQuantity()).isEqualTo(expectedStock);
         });
     }
 }

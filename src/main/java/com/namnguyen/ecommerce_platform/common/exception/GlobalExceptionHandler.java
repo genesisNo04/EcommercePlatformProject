@@ -10,6 +10,7 @@ import com.namnguyen.ecommerce_platform.product.exception.InsufficientStockExcep
 import com.namnguyen.ecommerce_platform.product.exception.ProductVersionConflictException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.namnguyen.ecommerce_platform.common.exception.error.ExceptionErrorMessages.*;
+import static com.namnguyen.ecommerce_platform.order.error.OrderErrorMessages.ORDER_FAILED;
 import static com.namnguyen.ecommerce_platform.product.error.ProductErrorMessages.PRODUCT_HAS_BEEN_MODIFIED;
 
 @Slf4j
@@ -279,6 +281,21 @@ public class GlobalExceptionHandler {
                         status.value(),
                         status.getReasonPhrase(),
                         PRODUCT_HAS_BEEN_MODIFIED,
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorResponse> handlePessimisticLockingFailureException(PessimisticLockingFailureException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        logClientError(status, ex, request);
+
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ORDER_FAILED,
                         request.getRequestURI()));
     }
 

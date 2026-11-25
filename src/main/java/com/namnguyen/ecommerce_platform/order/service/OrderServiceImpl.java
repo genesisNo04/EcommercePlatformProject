@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 
 import static com.namnguyen.ecommerce_platform.cart.error.CartErrorMessages.EMPTY_CART;
@@ -141,6 +142,7 @@ public class OrderServiceImpl implements OrderService {
 
         List<OrderItem> items = request.items()
                 .stream()
+                .sorted(Comparator.comparing(CreateOrderItemRequest::productId))
                 .map(item -> createOrderItem(item, order))
                 .toList();
 
@@ -231,6 +233,7 @@ public class OrderServiceImpl implements OrderService {
 
         List<OrderItem> items = cart.getItems()
                 .stream()
+                .sorted(Comparator.comparing(item -> item.getProduct().getId()))
                 .map(item -> createOrderItem(item, order))
                 .toList();
 

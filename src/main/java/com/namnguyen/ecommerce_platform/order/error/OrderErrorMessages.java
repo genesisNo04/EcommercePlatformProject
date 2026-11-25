@@ -26,6 +26,9 @@ public final class OrderErrorMessages {
     public static final String ORDER_IS_EMPTY =
             "Order must contain at least one item.";
 
+    public static final String ORDER_FAILED =
+            "Please try again.";
+
     private OrderErrorMessages() {}
 
     public static String orderNotFoundWithId(Long orderId) {
