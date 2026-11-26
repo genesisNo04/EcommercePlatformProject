@@ -7,6 +7,7 @@ import com.namnguyen.ecommerce_platform.common.exception.NoResourceFoundExceptio
 import com.namnguyen.ecommerce_platform.common.rate_limit.RateLimitService;
 import com.namnguyen.ecommerce_platform.order.dto.*;
 import com.namnguyen.ecommerce_platform.order.enums.OrderStatus;
+import com.namnguyen.ecommerce_platform.order.service.OrderRetryFacade;
 import com.namnguyen.ecommerce_platform.order.service.OrderService;
 import com.namnguyen.ecommerce_platform.security.jwt.JwtService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetailsService;
@@ -16,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.namnguyen.ecommerce_platform.common.exception.error.ExceptionErrorMessages.REQUEST_CONFLICT_TRY_AGAIN;
 import static com.namnguyen.ecommerce_platform.testutil.MockAuthentication.*;
 import static com.namnguyen.ecommerce_platform.testutil.TestDataFactory.*;
 import static com.namnguyen.ecommerce_platform.testutil.messages.CommonTestMessages.VALIDATION_FAILED;
@@ -62,6 +65,9 @@ public class OrderControllerTest {
 
     @MockitoBean
     private RateLimitService rateLimitService;
+
+    @MockitoBean
+    private OrderRetryFacade orderRetryFacade;
 
     @AfterEach
     void clearContext() {
@@ -119,7 +125,7 @@ public class OrderControllerTest {
 
         authenticateUser(userId);
 
-        when(orderService.createOrder(orderRequest, userId)).thenReturn(orderResponse);
+        when(orderRetryFacade.createOrder(orderRequest, userId)).thenReturn(orderResponse);
 
         mockMvc.perform(post(ORDER_URI)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -142,8 +148,8 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService).createOrder(orderRequest, userId);
-        verifyNoMoreInteractions(orderService);
+        verify(orderRetryFacade).createOrder(orderRequest, userId);
+        verifyNoMoreInteractions(orderRetryFacade);
     }
 
     @Test
@@ -171,7 +177,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.uri").value(ORDER_URI))
                 .andExpect(jsonPath("$.fieldErrors['items[0].productId']", containsInAnyOrder(ORDER_ITEM_PRODUCT_ID_IS_REQUIRED)));
 
-        verifyNoInteractions(orderService);
+        verifyNoInteractions(orderRetryFacade);
     }
 
     @Test
@@ -201,7 +207,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
                         containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_INVALID)));
 
-        verifyNoInteractions(orderService);
+        verifyNoInteractions(orderRetryFacade);
     }
 
     @Test
@@ -217,7 +223,7 @@ public class OrderControllerTest {
 
         CreateOrderRequest orderRequest = new CreateOrderRequest(List.of(orderItemRequest));
 
-        when(orderService.createOrder(orderRequest, userId))
+        when(orderRetryFacade.createOrder(orderRequest, userId))
                 .thenThrow(new NoResourceFoundException(productNotFoundWithId(productId)));
 
         authenticateUser(userId);
@@ -232,8 +238,8 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.message").value(productNotFoundWithId(productId)))
                 .andExpect(jsonPath("$.uri").value(ORDER_URI));
 
-        verify(orderService).createOrder(any(CreateOrderRequest.class), eq(userId));
-        verifyNoMoreInteractions(orderService);
+        verify(orderRetryFacade).createOrder(orderRequest, userId);
+        verifyNoMoreInteractions(orderRetryFacade);
     }
 
     @Test
@@ -262,7 +268,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
                         containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_REQUIRED)));
 
-        verifyNoInteractions(orderService);
+        verifyNoInteractions(orderRetryFacade);
     }
 
     @Test
@@ -292,7 +298,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.fieldErrors['items[0].quantity']",
                         containsInAnyOrder(ORDER_ITEM_QUANTITY_IS_INVALID)));
 
-        verifyNoInteractions(orderService);
+        verifyNoInteractions(orderRetryFacade);
     }
 
     @Test
@@ -315,7 +321,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.items",
                         containsInAnyOrder(ORDER_IS_EMPTY)));
 
-        verifyNoInteractions(orderService);
+        verifyNoInteractions(orderRetryFacade);
     }
 
     @Test
@@ -338,7 +344,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.items",
                         containsInAnyOrder(ORDER_IS_EMPTY)));
 
-        verifyNoInteractions(orderService);
+        verifyNoInteractions(orderRetryFacade);
     }
 
     @Test
@@ -368,7 +374,32 @@ public class OrderControllerTest {
 
                 ));
 
-        verifyNoInteractions(orderService);
+        verifyNoInteractions(orderRetryFacade);
+    }
+
+    @Test
+    void createOrder_whenLockConflictPersists_returnsConflict() throws Exception {
+        Long userId = 1L;
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                List.of(new CreateOrderItemRequest(2L, 1)));
+
+        when(orderRetryFacade.createOrder(orderRequest, userId))
+                .thenThrow(new CannotAcquireLockException("deadlock detected"));
+
+        authenticateUser(userId);
+
+        mockMvc.perform(post(ORDER_URI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(orderRequest)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
+                .andExpect(jsonPath("$.message").value(REQUEST_CONFLICT_TRY_AGAIN))
+                .andExpect(jsonPath("$.uri").value(ORDER_URI));
+
+        verify(orderRetryFacade).createOrder(orderRequest, userId);
+        verifyNoMoreInteractions(orderRetryFacade);
     }
 
     @Test
@@ -966,7 +997,7 @@ public class OrderControllerTest {
                 LocalDateTime.now()
         );
 
-        when(orderService.checkoutCart(userId)).thenReturn(orderResponse);
+        when(orderRetryFacade.checkoutCart(userId)).thenReturn(orderResponse);
 
         authenticateUser(userId);
 
@@ -989,8 +1020,8 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService).checkoutCart(userId);
-        verifyNoMoreInteractions(orderService);
+        verify(orderRetryFacade).checkoutCart(userId);
+        verifyNoMoreInteractions(orderRetryFacade);
     }
 
     @Test
@@ -998,7 +1029,7 @@ public class OrderControllerTest {
         Long userId = 1L;
 
         doThrow(new InvalidCartStateException(EMPTY_CART))
-                .when(orderService).checkoutCart(userId);
+                .when(orderRetryFacade).checkoutCart(userId);
 
         authenticateUser(userId);
 
@@ -1011,7 +1042,7 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.uri").value(CHECKOUT_URI));
 
 
-        verify(orderService).checkoutCart(userId);
-        verifyNoMoreInteractions(orderService);
+        verify(orderRetryFacade).checkoutCart(userId);
+        verifyNoMoreInteractions(orderRetryFacade);
     }
 }

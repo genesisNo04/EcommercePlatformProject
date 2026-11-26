@@ -295,7 +295,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
-                        ORDER_FAILED,
+                        REQUEST_CONFLICT_TRY_AGAIN,
                         request.getRequestURI()));
     }
 

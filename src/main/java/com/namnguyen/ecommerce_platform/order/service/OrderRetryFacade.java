@@ -1,44 +1,60 @@
 package com.namnguyen.ecommerce_platform.order.service;
 
+import com.namnguyen.ecommerce_platform.order.dto.CreateOrderRequest;
 import com.namnguyen.ecommerce_platform.order.dto.OrderResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.dialect.lock.PessimisticEntityLockException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class OrderRetryFacade {
 
-    private static final int MAX_ATTEMPS = 3;
+    private static final int MAX_ATTEMPTS = 3;
     private final OrderService orderService;
+    private final long baseDelayMs;
 
-    public OrderResponse checkoutCart(Long userId) {
-        for (int attemp = 1; ; attemp++) {
-            try {
-                return orderService.checkoutCart(userId);
-            } catch (PessimisticEntityLockException e) {
-                if (attemp == MAX_ATTEMPS) {
-                    throw e;
-                }
-
-                log.warn("Checkout lock conflict, retrying attempt={} userId={}", attemp, userId);
-                sleepWithBackOff(attemp);
-            }
-        }
+    public OrderRetryFacade(OrderService orderService,
+                            @Value("${order.retry.base-delay-ms:50}") long baseDelayMs) {
+        this.orderService = orderService;
+        this.baseDelayMs = baseDelayMs;
     }
 
-    private void sleepWithBackOff(int attemp) {
-        long base = 50L * (1L << (attemp - 1));
-        long jitter = ThreadLocalRandom.current().nextLong(25);
+    public OrderResponse checkoutCart(Long userId) {
+        return withRetry(() -> orderService.checkoutCart(userId), userId);
+    }
+
+    public OrderResponse createOrder(CreateOrderRequest request, Long userId) {
+        return withRetry(() -> orderService.createOrder(request, userId), userId);
+    }
+
+    private void sleepWithBackOff(int attempt) {
+        long base = baseDelayMs * attempt;
+        long jitter = ThreadLocalRandom.current().nextLong(baseDelayMs / 2 + 1);
         try {
             Thread.sleep(base + jitter);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
+        }
+    }
+
+    private OrderResponse withRetry(Supplier<OrderResponse> action, Long userId) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return action.get();
+            } catch (PessimisticLockingFailureException e) {
+                if (attempt == MAX_ATTEMPTS) {
+                    throw e;
+                }
+
+                log.warn("Lock conflict, retrying attempt={} userId={}", attempt, userId);
+                sleepWithBackOff(attempt);
+            }
         }
     }
 }

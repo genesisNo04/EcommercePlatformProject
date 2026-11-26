@@ -15,6 +15,9 @@ public final class ExceptionErrorMessages {
     public static final String INVALID_CREDENTIALS =
             "Invalid email or password.";
 
+    public static final String REQUEST_CONFLICT_TRY_AGAIN =
+            "The request conflicted with another operation. Please try again.";
+
     public static String invalidParameter(String parameter) {
         return "Invalid parameter: " + parameter  + ".";
     }

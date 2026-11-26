@@ -4,6 +4,7 @@ import com.namnguyen.ecommerce_platform.common.response.PageResponse;
 import com.namnguyen.ecommerce_platform.order.dto.CreateOrderRequest;
 import com.namnguyen.ecommerce_platform.order.dto.OrderFilterRequest;
 import com.namnguyen.ecommerce_platform.order.dto.OrderResponse;
+import com.namnguyen.ecommerce_platform.order.service.OrderRetryFacade;
 import com.namnguyen.ecommerce_platform.order.service.OrderService;
 import com.namnguyen.ecommerce_platform.security.user.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderRetryFacade orderRetryFacade;
 
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(
@@ -30,7 +32,7 @@ public class OrderController {
             @Valid @RequestBody CreateOrderRequest request
             ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(orderService.createOrder(request, userDetails.getUserId()));
+                .body(orderRetryFacade.createOrder(request, userDetails.getUserId()));
     }
 
     @GetMapping
@@ -63,6 +65,6 @@ public class OrderController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(orderService.checkoutCart(userDetails.getUserId()));
+                .body(orderRetryFacade.checkoutCart(userDetails.getUserId()));
     }
 }

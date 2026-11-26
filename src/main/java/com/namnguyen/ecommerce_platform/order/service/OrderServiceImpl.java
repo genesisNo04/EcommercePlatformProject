@@ -89,10 +89,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void restoreStock(Order order) {
-        for (OrderItem item : order.getOrderItems()) {
-            Product product = item.getProduct();
-            productStockService.increaseStock(product, item.getQuantity());
-        }
+        order.getOrderItems().stream()
+                .sorted(Comparator.comparing(item -> item.getProduct().getId()))
+                .forEach(item -> productStockService.increaseStock(
+                        item.getProduct(), item.getQuantity()));
     }
 
     private void validateOrderCanBeCancelled(Order order) {
